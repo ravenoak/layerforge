@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "layerforge"
+version = "0.1.0"
+description = "A 3D Model Slicing and SVG Generation Application"
+authors = ["Caitlyn O'Hanna <caitlyn.ohanna@gmail.com>"]
+readme = "README.md"
+packages = [{include = "layerforge"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+trimesh = "^4.4.1"
+numpy = "^2.0.0"
+svgwrite = "^1.4.3"
+shapely = "^2.0.4"
+scipy = "^1.14.0"
+networkx = "^3.3"
+Rtree = "^1.2.0"
+click = "^8.1.7"
+
+[tool.poetry.scripts]
+layerforge = "layerforge.cli:cli"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

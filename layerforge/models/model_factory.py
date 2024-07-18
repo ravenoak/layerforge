@@ -1,4 +1,4 @@
-from layerforge.models.model import Model
+from .model import Model
 
 
 class ModelFactory:

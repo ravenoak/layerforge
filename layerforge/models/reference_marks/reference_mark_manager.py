@@ -4,7 +4,7 @@ class ReferenceMarkManager:
 
     def find_mark_by_position(self, x, y, tolerance=10):
         for mark in self.marks:
-            distance = ((x - mark['x'])**2 + (y - mark['y'])**2)**0.5
+            distance = ((x - mark['x']) ** 2 + (y - mark['y']) ** 2) ** 0.5
             if distance <= tolerance:
                 return mark
         return None

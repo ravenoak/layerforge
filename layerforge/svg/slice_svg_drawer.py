@@ -1,28 +1,33 @@
-from shapely.geometry import Polygon
 import numpy as np
+from shapely.geometry import Polygon
+
+from layerforge.svg.drawing.shape_factory import ShapeFactory
 
 
 class SliceSVGDrawer:
+
     @staticmethod
-    def draw_slice(dwg, slice_obj):
+    def draw_contour(dwg, contour):
+        if isinstance(contour, Polygon):
+            points = [(x, y) for x, y in contour.exterior.coords]
+            dwg.add(dwg.polygon(points, fill='none', stroke='black'))
+        elif isinstance(contour, np.ndarray):
+            points = [(point[0], point[1]) for point in contour]
+            dwg.add(dwg.polygon(points, fill='none', stroke='black'))
+
+    @staticmethod
+    def draw_reference_marks(dwg, ref_marks, shape_context):
+        for mark in ref_marks:
+            shape_instance = ShapeFactory.get_shape(mark[2], *mark[:2], size=mark[3])
+            if shape_instance:
+                shape_context.draw(dwg, shape_instance)
+
+    @staticmethod
+    def draw_slice(dwg, slice_obj, shape_context):
         for contour in slice_obj.contours:
-            if isinstance(contour, Polygon):
-                points = [(x, y) for x, y in contour.exterior.coords]
-                dwg.add(dwg.polygon(points, fill='none', stroke='black'))
-            elif isinstance(contour, np.ndarray):
-                points = [(point[0], point[1]) for point in contour]
-                dwg.add(dwg.polygon(points, fill='none', stroke='black'))
+            SliceSVGDrawer.draw_contour(dwg, contour)
 
-        print(f"Drawing slice {slice_obj.index} with ref_marks: {slice_obj.ref_marks}")
-        for mark in slice_obj.ref_marks:
-            x, y, shape, size = mark
-            if shape == 'circle':
-                dwg.add(dwg.circle(center=(x, y), r=size, stroke='red', fill='none'))
-            elif shape == 'square':
-                dwg.add(dwg.rect(insert=(x - size / 2, y - size / 2), size=(size, size), stroke='blue', fill='none'))
-            elif shape == 'triangle':
-                points = [(x, y - size), (x - size, y + size), (x + size, y + size)]
-                dwg.add(dwg.polygon(points, stroke='green', fill='none'))
+        SliceSVGDrawer.draw_reference_marks(dwg, slice_obj.ref_marks, shape_context)
 
-        # Add slice number
+        # TODO: Ensure text is inside the individual slice
         dwg.add(dwg.text(f"Slice {slice_obj.index}", insert=(10, 20), fill='black'))

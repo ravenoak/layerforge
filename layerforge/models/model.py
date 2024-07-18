@@ -1,7 +1,3 @@
-from .slice import Slice
-from ..writers.svg_writer import SVGFileWriter
-
-
 class Model:
     def __init__(self, mesh, layer_height, origin):
         self.mesh = mesh

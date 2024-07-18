@@ -1,4 +1,5 @@
-from .mesh_loader import MeshLoader, TrimeshLoader
+from .loading.base import MeshLoader
 from .model import Model
 from .model_factory import ModelFactory
-from .slice import Slice, SlicerService
+from .slicing.slice import Slice
+from .slicing.slicer_service import SlicerService

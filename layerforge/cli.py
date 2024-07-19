@@ -2,15 +2,18 @@ import sys
 
 import click
 
-from layerforge.models import ModelFactory, TrimeshLoader, SlicerService
+from layerforge.models import ModelFactory, SlicerService
+from layerforge.models.loading import LoaderFactory
 from layerforge.svg import SVGGenerator
+from layerforge.svg.drawing import StrategyContext
+from layerforge.utils import initialize_loaders, register_shape_strategies
 from layerforge.writers import SVGFileWriter
 
 
-def process_model(model, output_folder):
+def process_model(model, output_folder, shape_context):
     slices = SlicerService.slice_model(model)
     svg_writer = SVGFileWriter()
-    svg_generator = SVGGenerator(output_folder, svg_writer)
+    svg_generator = SVGGenerator(output_folder, svg_writer, shape_context)
     svg_generator.generate_svgs(slices)
 
 
@@ -26,11 +29,14 @@ def cli(stl_file, layer_height, output_folder, scale_factor, target_height):
         print("Only one of scale_factor or target_height can be provided.")
         sys.exit(1)
 
-    mesh_loader = TrimeshLoader()
+    shape_context = StrategyContext()
+    register_shape_strategies(shape_context)
+    initialize_loaders()
+    mesh_loader = LoaderFactory.get_loader("trimesh")
     model_factory = ModelFactory(mesh_loader)
     model = model_factory.create_model(stl_file, layer_height, scale_factor, target_height)
 
-    process_model(model, output_folder)
+    process_model(model, output_folder, shape_context)
 
 
 if __name__ == '__main__':

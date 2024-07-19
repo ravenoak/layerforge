@@ -1,12 +1,6 @@
-from abc import ABC, abstractmethod
-
 import trimesh
 
-
-class MeshLoader(ABC):
-    @abstractmethod
-    def load_mesh(self, model_file):
-        pass
+from layerforge.models.loading.base import MeshLoader
 
 
 class TrimeshLoader(MeshLoader):

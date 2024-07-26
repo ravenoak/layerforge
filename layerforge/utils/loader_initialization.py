@@ -3,4 +3,5 @@ from layerforge.models.loading.implementations.trimesh_loader import TrimeshLoad
 
 
 def initialize_loaders():
+    """Registers all loaders with the LoaderFactory."""
     LoaderFactory.register_loader("trimesh", TrimeshLoader)

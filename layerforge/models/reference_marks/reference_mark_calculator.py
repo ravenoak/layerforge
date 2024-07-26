@@ -1,4 +1,9 @@
-from shapely.geometry import Polygon
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from layerforge.models.slicing.slice import Slice
 
 
 class ReferenceMarkCalculator:
@@ -6,47 +11,27 @@ class ReferenceMarkCalculator:
 
     Reference marks are calculated based on the centroids of the polygons in the slice.
 
-    Pseudocode:
+    For each polygon in the slice:
+        1. Calculate the centroid of the polygon.
+        2. Add the centroid to the list of potential marks.
     """
 
     @staticmethod
-    def calculate_reference_marks(slice_, mark_manager):
-        current_marks = ReferenceMarkCalculator.get_potential_marks(slice_)
-        aligned_marks = []
+    def get_potential_marks(layer: Slice) -> list:
+        """Calculate the potential reference marks for a slice.
 
-        for centroid in current_marks:
-            x, y = centroid
-            closest_mark = mark_manager.find_closest_mark(x, y)
+        Parameters
+        ----------
+        layer : Slice
+            The slice to calculate reference marks for.
 
-            if closest_mark:
-                # Directly inherit the shape and size from the closest mark
-                mark_tuple = closest_mark
-            else:
-                # Assign a new mark with a unique shape and default size
-                mark_tuple = ReferenceMarkCalculator.assign_new_mark(x, y, mark_manager)
-
-            aligned_marks.append(mark_tuple)
-
-        return aligned_marks
-
-    @staticmethod
-    def get_potential_marks(slice_):
+        Returns
+        -------
+        list
+            A list of potential reference marks.
+        """
         potential_marks = []
-        for poly in slice_.contours:
-            if isinstance(poly, Polygon):
-                centroid = poly.centroid
-                potential_marks.append((centroid.x, centroid.y))
+        for poly in layer.contours:
+            centroid = poly.centroid
+            potential_marks.append((centroid.x, centroid.y))
         return potential_marks
-
-    @staticmethod
-    def assign_new_mark(x, y, mark_manager):
-        shape_options = ['circle', 'square', 'triangle']
-        size = 5  # Default size
-        for shape in shape_options:
-            if not any(mark["shape"] == shape for mark in mark_manager.marks.values()):
-                mark_manager.add_or_update_mark(x, y, shape, size)
-                return x, y, shape, size
-        # If all shapes are used, default to 'circle'
-        default_shape = 'circle'
-        mark_manager.add_or_update_mark(x, y, default_shape, size)
-        return x, y, default_shape, size

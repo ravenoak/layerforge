@@ -1,0 +1,36 @@
+site_name: LayerForge
+repo_url: https://github.com/ravenoak/layerforge
+
+theme:
+  # https://mkdocstrings.github.io/usage/theming/
+  name: "material" # https://squidfunk.github.io/mkdocs-material/getting-started/
+
+nav:
+  - Home: index.md
+  - "CLI Reference": cli_reference.md
+  - "API Reference": api_reference/
+
+markdown_extensions:
+  - attr_list
+  - mkdocs-click # https://github.com/mkdocs/mkdocs-click?tab=readme-ov-file
+
+plugins:
+  - search
+  - gen-files:
+      # https://github.com/oprypin/mkdocs-gen-files
+      scripts:
+        - scripts/gen_ref_pages.py # https://mkdocstrings.github.io/recipes/#generate-pages-on-the-fly
+  - include-markdown # https://github.com/mondeja/mkdocs-include-markdown-plugin
+  - literate-nav:
+      nav_file: SUMMARY.md
+  - mkdocstrings:
+      # https://mkdocstrings.github.io/usage/
+      default_handler: python
+      handlers:
+        python:
+          # https://mkdocstrings.github.io/python/
+          options:
+            docstring_style: numpy
+            docstring_options:
+              ignore_init_summary: true
+            merge_init_into_class: true

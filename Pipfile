@@ -4,14 +4,6 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-trimesh = "*"
-numpy = "*"
-svgwrite = "*"
-shapely = "*"
-scipy = "*"
-networkx = "*"
-rtree = "*"
-click = "*"
 layerforge = {editable = true, path = "."}
 
 [dev-packages]

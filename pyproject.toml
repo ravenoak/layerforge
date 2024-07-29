@@ -22,8 +22,13 @@ optional = true
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "*"
-myst-parser = "*"
-sphinx = "*"
+mkdocs-material = "*"
+mkdocstrings-python = "*"
+mkdocs-gen-files = "*"
+mkdocs-include-markdown-plugin = "*"
+mkdocs-click = "*"
+mkdocs-literate-nav = "*"
+mkdocs-section-index = "*"
 
 [tool.poetry.scripts]
 layerforge = "layerforge.cli:cli"

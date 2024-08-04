@@ -1,5 +1,7 @@
 # LayerForge
 
+[![Build Documentation using MkDocs](https://github.com/ravenoak/layerforge/actions/workflows/docs.yaml/badge.svg)](https://github.com/ravenoak/layerforge/actions/workflows/docs.yaml)
+
 ## Description
 
 A 3D Model Slicing and SVG Generation Application

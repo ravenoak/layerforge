@@ -7,8 +7,14 @@ theme:
 
 nav:
   - Home: index.md
-  - "CLI Reference": cli_reference.md
-  - "API Reference": api_reference/
+  - "Getting Started": getting_started.md
+  - Features: features.md
+  - Configuration: configuration.md
+  - Development: development.md
+  - "Technologies Used": technologies_used.md
+  - Reference:
+    - "CLI Reference": cli_reference.md
+    - "API Reference": api_reference/
 
 markdown_extensions:
   - attr_list

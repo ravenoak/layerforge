@@ -4,15 +4,12 @@ on:
   push:
     branches: [main]
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
 jobs:
   build:
     name: Build and Deploy Documentation
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout Master
         uses: actions/checkout@v4
@@ -27,6 +24,23 @@ jobs:
           python -m pip install --upgrade poetry
           poetry install --with docs
 
-      - name: Deploy
+      - name: Build
         run: |
-          poetry run mkdocs gh-deploy
+          poetry run mkdocs build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./site
+
+  deploy:
+    name: Deploy Documentation
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

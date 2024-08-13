@@ -1,0 +1,129 @@
+@startuml classes
+set namespaceSeparator none
+class "abc.ABC" as abc.ABC {
+}
+class "layerforge.domain.shapes.arrow.Arrow" as layerforge.domain.shapes.arrow.Arrow {
+  type() -> str
+}
+class "layerforge.domain.shapes.base_shape.BaseShape" as layerforge.domain.shapes.base_shape.BaseShape {
+  size : float
+  x : float
+  y : float
+  {abstract}type() -> str
+}
+class "layerforge.domain.shapes.circle.Circle" as layerforge.domain.shapes.circle.Circle {
+  radius
+  type() -> str
+}
+class "layerforge.domain.shapes.square.Square" as layerforge.domain.shapes.square.Square {
+  type() -> str
+}
+class "layerforge.domain.shapes.triangle.Triangle" as layerforge.domain.shapes.triangle.Triangle {
+  vertices
+  type() -> str
+}
+class "layerforge.models.loading.LoaderFactory" as layerforge.models.loading.LoaderFactory {
+  loaders : dict
+  get_loader(name: str) -> object
+  register_loader(name: str, loader_cls: type) -> None
+}
+class "layerforge.models.loading.base.MeshLoader" as layerforge.models.loading.base.MeshLoader {
+  {abstract}load_mesh(model_file: str) -> object
+}
+class "layerforge.models.loading.implementations.trimesh_loader.TrimeshLoader" as layerforge.models.loading.implementations.trimesh_loader.TrimeshLoader {
+  load_mesh(model_file: str) -> Union[trimesh.Geometry, List[trimesh.Geometry]]
+}
+class "layerforge.models.model.Model" as layerforge.models.model.Model {
+  layer_height : float
+  mesh : Trimesh
+  origin : tuple
+  calculate_height() -> float
+  calculate_slice_contours(position) -> List[Polygon]
+}
+class "layerforge.models.model_factory.ModelFactory" as layerforge.models.model_factory.ModelFactory {
+  mesh_loader
+  create_model(model_file: str, layer_height: float, scale_factor: float, target_height: float) -> Model
+}
+class "layerforge.models.reference_marks.reference_mark_adjuster.ReferenceMarkAdjuster" as layerforge.models.reference_marks.reference_mark_adjuster.ReferenceMarkAdjuster {
+  adjust_marks(marks: List[dict], contours: List[Polygon], min_distance: float) -> List[dict]
+}
+class "layerforge.models.reference_marks.reference_mark_calculator.ReferenceMarkCalculator" as layerforge.models.reference_marks.reference_mark_calculator.ReferenceMarkCalculator {
+  get_potential_marks(layer: Slice) -> list
+}
+class "layerforge.models.reference_marks.reference_mark_manager.ReferenceMarkManager" as layerforge.models.reference_marks.reference_mark_manager.ReferenceMarkManager {
+  marks : list
+  add_or_update_mark(x: float, y: float, shape: str, size: float) -> None
+  find_mark_by_position(x: float, y: float, tolerance: float) -> dict or None
+}
+class "layerforge.models.slicing.slice.Slice" as layerforge.models.slicing.slice.Slice {
+  contours : List[Polygon]
+  index : int
+  mark_manager
+  origin : tuple
+  position : float
+  ref_marks : list
+  adjust_marks() -> None
+  process_reference_marks() -> None
+}
+class "layerforge.models.slicing.slicer_service.SlicerService" as layerforge.models.slicing.slicer_service.SlicerService {
+  calculate_slice_positions(total_height: float, layer_height: float) -> list
+  slice_model(model: Model) -> List[Slice]
+}
+class "layerforge.svg.drawing.shape_factory.ShapeFactory" as layerforge.svg.drawing.shape_factory.ShapeFactory {
+  get_shape(shape_type: str) -> object
+}
+class "layerforge.svg.drawing.strategies.arrow_strategy.ArrowDrawingStrategy" as layerforge.svg.drawing.strategies.arrow_strategy.ArrowDrawingStrategy {
+  draw(dwg: Drawing, arrow: Arrow)
+}
+class "layerforge.svg.drawing.strategies.base_strategy.ShapeDrawingStrategy" as layerforge.svg.drawing.strategies.base_strategy.ShapeDrawingStrategy {
+  {abstract}draw(dwg: Drawing, shape: BaseShape) -> None
+}
+class "layerforge.svg.drawing.strategies.circle_strategy.CircleDrawingStrategy" as layerforge.svg.drawing.strategies.circle_strategy.CircleDrawingStrategy {
+  draw(dwg: Drawing, circle: Circle) -> None
+}
+class "layerforge.svg.drawing.strategies.square_strategy.SquareDrawingStrategy" as layerforge.svg.drawing.strategies.square_strategy.SquareDrawingStrategy {
+  draw(dwg: Drawing, square: Square) -> None
+}
+class "layerforge.svg.drawing.strategies.triangle_strategy.TriangleDrawingStrategy" as layerforge.svg.drawing.strategies.triangle_strategy.TriangleDrawingStrategy {
+  draw(dwg: Drawing, triangle: Triangle) -> None
+}
+class "layerforge.svg.drawing.strategy_context.StrategyContext" as layerforge.svg.drawing.strategy_context.StrategyContext {
+  draw(dwg: Drawing, shape: BaseShape) -> None
+  register_strategy(shape_type: str, strategy: ShapeDrawingStrategy) -> None
+}
+class "layerforge.svg.slice_svg_drawer.SliceSVGDrawer" as layerforge.svg.slice_svg_drawer.SliceSVGDrawer {
+  draw_contour(dwg: Drawing, contour: Polygon) -> None
+  draw_reference_marks(dwg: Drawing, ref_marks: list, shape_context: StrategyContext) -> None
+  draw_slice(dwg: Drawing, slice_obj: Slice, shape_context: StrategyContext) -> None
+}
+class "layerforge.svg.svg_generator.SVGGenerator" as layerforge.svg.svg_generator.SVGGenerator {
+  output_folder : str
+  shape_context
+  svg_writer
+  generate_svgs(slices: List[Slice]) -> None
+}
+class "layerforge.writers.svg_writer.SVGFileWriter" as layerforge.writers.svg_writer.SVGFileWriter {
+  write(svg: Drawing, output_folder: str, index: int) -> None
+}
+class "layerforge.writers.svg_writer.SVGWriter" as layerforge.writers.svg_writer.SVGWriter {
+  {abstract}write(svg: Drawing, output_folder: str, index: int) -> None
+}
+layerforge.domain.shapes.arrow.Arrow --|> layerforge.domain.shapes.base_shape.BaseShape
+layerforge.domain.shapes.base_shape.BaseShape --|> abc.ABC
+layerforge.domain.shapes.circle.Circle --|> layerforge.domain.shapes.base_shape.BaseShape
+layerforge.domain.shapes.square.Square --|> layerforge.domain.shapes.base_shape.BaseShape
+layerforge.domain.shapes.triangle.Triangle --|> layerforge.domain.shapes.base_shape.BaseShape
+layerforge.models.loading.base.MeshLoader --|> abc.ABC
+layerforge.models.loading.implementations.trimesh_loader.TrimeshLoader --|> layerforge.models.loading.base.MeshLoader
+layerforge.svg.drawing.strategies.arrow_strategy.ArrowDrawingStrategy --|> layerforge.svg.drawing.strategies.base_strategy.ShapeDrawingStrategy
+layerforge.svg.drawing.strategies.base_strategy.ShapeDrawingStrategy --|> abc.ABC
+layerforge.svg.drawing.strategies.circle_strategy.CircleDrawingStrategy --|> layerforge.svg.drawing.strategies.base_strategy.ShapeDrawingStrategy
+layerforge.svg.drawing.strategies.square_strategy.SquareDrawingStrategy --|> layerforge.svg.drawing.strategies.base_strategy.ShapeDrawingStrategy
+layerforge.svg.drawing.strategies.triangle_strategy.TriangleDrawingStrategy --|> layerforge.svg.drawing.strategies.base_strategy.ShapeDrawingStrategy
+layerforge.writers.svg_writer.SVGFileWriter --|> layerforge.writers.svg_writer.SVGWriter
+layerforge.writers.svg_writer.SVGWriter --|> abc.ABC
+layerforge.models.loading.base.MeshLoader --o layerforge.models.model_factory.ModelFactory : mesh_loader
+layerforge.models.reference_marks.reference_mark_manager.ReferenceMarkManager --o layerforge.models.slicing.slice.Slice : mark_manager
+layerforge.svg.drawing.strategy_context.StrategyContext --o layerforge.svg.svg_generator.SVGGenerator : shape_context
+layerforge.writers.svg_writer.SVGWriter --o layerforge.svg.svg_generator.SVGGenerator : svg_writer
+@enduml

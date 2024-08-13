@@ -1,0 +1,157 @@
+@startuml packages
+set namespaceSeparator none
+package "layerforge.cli" as layerforge.cli {
+}
+package "layerforge.domain" as layerforge.domain {
+}
+package "layerforge.domain.shapes" as layerforge.domain.shapes {
+}
+package "layerforge.domain.shapes.arrow" as layerforge.domain.shapes.arrow {
+}
+package "layerforge.domain.shapes.base_shape" as layerforge.domain.shapes.base_shape {
+}
+package "layerforge.domain.shapes.circle" as layerforge.domain.shapes.circle {
+}
+package "layerforge.domain.shapes.square" as layerforge.domain.shapes.square {
+}
+package "layerforge.domain.shapes.triangle" as layerforge.domain.shapes.triangle {
+}
+package "layerforge.models" as layerforge.models {
+}
+package "layerforge.models.loading" as layerforge.models.loading {
+}
+package "layerforge.models.loading.base" as layerforge.models.loading.base {
+}
+package "layerforge.models.loading.implementations" as layerforge.models.loading.implementations {
+}
+package "layerforge.models.loading.implementations.trimesh_loader" as layerforge.models.loading.implementations.trimesh_loader {
+}
+package "layerforge.models.model" as layerforge.models.model {
+}
+package "layerforge.models.model_factory" as layerforge.models.model_factory {
+}
+package "layerforge.models.reference_marks" as layerforge.models.reference_marks {
+}
+package "layerforge.models.reference_marks.reference_mark_adjuster" as layerforge.models.reference_marks.reference_mark_adjuster {
+}
+package "layerforge.models.reference_marks.reference_mark_calculator" as layerforge.models.reference_marks.reference_mark_calculator {
+}
+package "layerforge.models.reference_marks.reference_mark_manager" as layerforge.models.reference_marks.reference_mark_manager {
+}
+package "layerforge.models.slicing" as layerforge.models.slicing {
+}
+package "layerforge.models.slicing.slice" as layerforge.models.slicing.slice {
+}
+package "layerforge.models.slicing.slicer_service" as layerforge.models.slicing.slicer_service {
+}
+package "layerforge.svg" as layerforge.svg {
+}
+package "layerforge.svg.drawing" as layerforge.svg.drawing {
+}
+package "layerforge.svg.drawing.shape_factory" as layerforge.svg.drawing.shape_factory {
+}
+package "layerforge.svg.drawing.strategies" as layerforge.svg.drawing.strategies {
+}
+package "layerforge.svg.drawing.strategies.arrow_strategy" as layerforge.svg.drawing.strategies.arrow_strategy {
+}
+package "layerforge.svg.drawing.strategies.base_strategy" as layerforge.svg.drawing.strategies.base_strategy {
+}
+package "layerforge.svg.drawing.strategies.circle_strategy" as layerforge.svg.drawing.strategies.circle_strategy {
+}
+package "layerforge.svg.drawing.strategies.square_strategy" as layerforge.svg.drawing.strategies.square_strategy {
+}
+package "layerforge.svg.drawing.strategies.triangle_strategy" as layerforge.svg.drawing.strategies.triangle_strategy {
+}
+package "layerforge.svg.drawing.strategy_context" as layerforge.svg.drawing.strategy_context {
+}
+package "layerforge.svg.slice_svg_drawer" as layerforge.svg.slice_svg_drawer {
+}
+package "layerforge.svg.svg_generator" as layerforge.svg.svg_generator {
+}
+package "layerforge.utils" as layerforge.utils {
+}
+package "layerforge.utils.file_operations" as layerforge.utils.file_operations {
+}
+package "layerforge.utils.geometry" as layerforge.utils.geometry {
+}
+package "layerforge.utils.loader_initialization" as layerforge.utils.loader_initialization {
+}
+package "layerforge.utils.shape_strategies" as layerforge.utils.shape_strategies {
+}
+package "layerforge.writers" as layerforge.writers {
+}
+package "layerforge.writers.svg_writer" as layerforge.writers.svg_writer {
+}
+layerforge.cli --> layerforge.models
+layerforge.cli --> layerforge.models.loading
+layerforge.cli --> layerforge.svg
+layerforge.cli --> layerforge.svg.drawing
+layerforge.cli --> layerforge.utils
+layerforge.cli --> layerforge.writers
+layerforge.domain.shapes --> layerforge.domain.shapes.arrow
+layerforge.domain.shapes --> layerforge.domain.shapes.circle
+layerforge.domain.shapes --> layerforge.domain.shapes.square
+layerforge.domain.shapes --> layerforge.domain.shapes.triangle
+layerforge.domain.shapes.arrow --> layerforge.domain.shapes.base_shape
+layerforge.domain.shapes.circle --> layerforge.domain.shapes.base_shape
+layerforge.domain.shapes.square --> layerforge.domain.shapes.base_shape
+layerforge.domain.shapes.triangle --> layerforge.domain.shapes.base_shape
+layerforge.models --> layerforge.models.loading.base
+layerforge.models --> layerforge.models.model
+layerforge.models --> layerforge.models.model_factory
+layerforge.models --> layerforge.models.slicing.slice
+layerforge.models --> layerforge.models.slicing.slicer_service
+layerforge.models.loading --> layerforge.models.loading.implementations.trimesh_loader
+layerforge.models.loading.implementations --> layerforge.models.loading.implementations.trimesh_loader
+layerforge.models.loading.implementations.trimesh_loader --> layerforge.models.loading.base
+layerforge.models.model_factory --> layerforge.models.loading.base
+layerforge.models.model_factory --> layerforge.models.model
+layerforge.models.reference_marks --> layerforge.models.reference_marks.reference_mark_adjuster
+layerforge.models.reference_marks --> layerforge.models.reference_marks.reference_mark_calculator
+layerforge.models.reference_marks --> layerforge.models.reference_marks.reference_mark_manager
+layerforge.models.reference_marks.reference_mark_manager --> layerforge.utils
+layerforge.models.slicing --> layerforge.models.slicing.slice
+layerforge.models.slicing.slice --> layerforge.models.reference_marks
+layerforge.models.slicing.slice --> layerforge.utils
+layerforge.models.slicing.slicer_service --> layerforge.models
+layerforge.models.slicing.slicer_service --> layerforge.models.reference_marks
+layerforge.svg --> layerforge.svg.slice_svg_drawer
+layerforge.svg --> layerforge.svg.svg_generator
+layerforge.svg.drawing --> layerforge.svg.drawing.strategy_context
+layerforge.svg.drawing.shape_factory --> layerforge.domain.shapes
+layerforge.svg.drawing.strategies --> layerforge.svg.drawing.strategies.arrow_strategy
+layerforge.svg.drawing.strategies --> layerforge.svg.drawing.strategies.circle_strategy
+layerforge.svg.drawing.strategies --> layerforge.svg.drawing.strategies.square_strategy
+layerforge.svg.drawing.strategies --> layerforge.svg.drawing.strategies.triangle_strategy
+layerforge.svg.drawing.strategies.arrow_strategy --> layerforge.domain.shapes
+layerforge.svg.drawing.strategies.arrow_strategy --> layerforge.svg.drawing.strategies.base_strategy
+layerforge.svg.drawing.strategies.base_strategy --> layerforge.domain.shapes.base_shape
+layerforge.svg.drawing.strategies.circle_strategy --> layerforge.domain.shapes
+layerforge.svg.drawing.strategies.circle_strategy --> layerforge.svg.drawing.strategies.base_strategy
+layerforge.svg.drawing.strategies.square_strategy --> layerforge.domain.shapes
+layerforge.svg.drawing.strategies.square_strategy --> layerforge.svg.drawing.strategies.base_strategy
+layerforge.svg.drawing.strategies.triangle_strategy --> layerforge.domain.shapes
+layerforge.svg.drawing.strategies.triangle_strategy --> layerforge.svg.drawing.strategies.base_strategy
+layerforge.svg.drawing.strategy_context --> layerforge.domain.shapes.base_shape
+layerforge.svg.slice_svg_drawer --> layerforge.models.slicing
+layerforge.svg.slice_svg_drawer --> layerforge.svg.drawing.shape_factory
+layerforge.svg.slice_svg_drawer --> layerforge.svg.drawing.strategy_context
+layerforge.svg.svg_generator --> layerforge.models.slicing
+layerforge.svg.svg_generator --> layerforge.svg.drawing
+layerforge.svg.svg_generator --> layerforge.svg.slice_svg_drawer
+layerforge.svg.svg_generator --> layerforge.writers.svg_writer
+layerforge.utils --> layerforge.utils.geometry
+layerforge.utils --> layerforge.utils.loader_initialization
+layerforge.utils --> layerforge.utils.shape_strategies
+layerforge.utils.loader_initialization --> layerforge.models.loading
+layerforge.utils.loader_initialization --> layerforge.models.loading.implementations.trimesh_loader
+layerforge.utils.shape_strategies --> layerforge.svg.drawing.strategies.arrow_strategy
+layerforge.utils.shape_strategies --> layerforge.svg.drawing.strategies.circle_strategy
+layerforge.utils.shape_strategies --> layerforge.svg.drawing.strategies.square_strategy
+layerforge.utils.shape_strategies --> layerforge.svg.drawing.strategies.triangle_strategy
+layerforge.writers --> layerforge.writers.svg_writer
+layerforge.writers.svg_writer --> layerforge.utils.file_operations
+layerforge.models.reference_marks.reference_mark_calculator ..> layerforge.models.slicing.slice
+layerforge.svg.drawing.strategy_context ..> layerforge.svg.drawing.strategies.base_strategy
+layerforge.utils.shape_strategies ..> layerforge.svg.drawing
+@enduml

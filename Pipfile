@@ -5,9 +5,13 @@ name = "pypi"
 
 [packages]
 layerforge = {editable = true, path = "."}
+py2puml = "*"
+pylint = "*"
 
 [dev-packages]
 poetry-core = "*"
+py2puml = "*"
+pylint = "*"
 
 [requires]
 python_version = "3.12"

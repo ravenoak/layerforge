@@ -67,9 +67,11 @@ class Slice:
         -------
         None
         """
-        potential_marks = ReferenceMarkCalculator.get_potential_marks(self)
-        for centroid in potential_marks:
-            x, y = centroid
+        existing_positions = [(m.x, m.y) for m in self.mark_manager.marks]
+        potential_marks = ReferenceMarkCalculator.get_stable_marks(
+            self, existing_positions
+        )
+        for x, y in potential_marks:
             existing_mark = self.mark_manager.find_mark_by_position(x, y)
             if existing_mark:
                 self.ref_marks.append(

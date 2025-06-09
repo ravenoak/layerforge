@@ -1,3 +1,4 @@
+from .reference_mark import ReferenceMark
 from .reference_mark_adjuster import ReferenceMarkAdjuster
 from .reference_mark_calculator import ReferenceMarkCalculator
 from .reference_mark_manager import ReferenceMarkManager

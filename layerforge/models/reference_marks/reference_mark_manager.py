@@ -1,5 +1,7 @@
 from typing import List, Optional
 
+from shapely.geometry import Point, Polygon
+
 from layerforge.utils import calculate_distance
 from .reference_mark import ReferenceMark
 
@@ -32,3 +34,11 @@ class ReferenceMarkManager:
             mark.size = size
         else:
             self.marks.append(ReferenceMark(x=x, y=y, shape=shape, size=size))
+
+    def find_mark_in_polygon(self, polygon: Polygon, min_distance: float = 10.0) -> Optional[ReferenceMark]:
+        """Return a stored mark inside ``polygon`` respecting ``min_distance``."""
+        for mark in self.marks:
+            pt = Point(mark.x, mark.y)
+            if polygon.contains(pt) and polygon.boundary.distance(pt) >= min_distance:
+                return mark
+        return None

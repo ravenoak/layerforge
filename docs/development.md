@@ -53,8 +53,8 @@
         3. Create a List of `Polygon`s representing the 2D contours of the slice.
 5. For each slice, process the slice:
     1. Calculate Reference Marks:
-        1. Retrieve potential reference marks based on the centroids of the slice's contours.
-        2. Use the ReferenceMarkManager to find the closest existing mark within a tolerance or create a new mark if none is sufficiently close, ensuring:
+        1. Evaluate candidate points using a geometric stability metric derived from GDOP.
+        2. Use the ReferenceMarkManager to inherit marks from adjacent slices when possible or create new marks that maximise stability, ensuring:
            * Marks are inherited from adjacent slices where possible.
            * New marks are assigned a unique shape if not inherited.
            * Marks do not overlap and are contained within the model's contours.

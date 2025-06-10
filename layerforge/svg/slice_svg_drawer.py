@@ -53,8 +53,7 @@ class SliceSVGDrawer:
                 angle=mark.angle,
                 color=mark.color,
             )
-            if shape_instance:
-                shape_context.draw(dwg, shape_instance)
+            shape_context.draw(dwg, shape_instance)
 
     @staticmethod
     def draw_slice(dwg: Drawing, slice_obj: Slice, shape_context: StrategyContext) -> None:

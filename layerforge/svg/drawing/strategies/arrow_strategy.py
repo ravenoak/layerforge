@@ -19,15 +19,32 @@ class ArrowDrawingStrategy(ShapeDrawingStrategy):
         arrow : Arrow
             The Arrow shape to draw.
         """
-        # TODO: Add some of this as attributes to the Arrow class
-        angle = 90  # TODO: Determine if a direction should be added to the arrow
-        end = (arrow.x + arrow.size * math.cos(angle),
-               arrow.y + arrow.size * math.sin(angle))
-        # TODO: Get stroke and fill from the shape or config
+        angle = arrow.direction
+        if abs(angle) > 2 * math.pi:
+            angle = math.radians(angle)
+
+        end = (
+            arrow.x + arrow.size * math.cos(angle),
+            arrow.y + arrow.size * math.sin(angle),
+        )
+
+        head = arrow.size * 0.2
+
         dwg.add(dwg.line((arrow.x, arrow.y), end, stroke='black'))
-        dwg.add(dwg.polygon(
-            [end,
-             (end[0] - 10 * math.cos(angle + math.pi / 6), end[1] - 10 * math.sin(angle + math.pi / 6)),
-             (end[0] - 10 * math.cos(angle - math.pi / 6),
-              end[1] - 10 * math.sin(angle - math.pi / 6))],
-            fill='none', stroke='black'))
+        dwg.add(
+            dwg.polygon(
+                [
+                    end,
+                    (
+                        end[0] - head * math.cos(angle + math.pi / 6),
+                        end[1] - head * math.sin(angle + math.pi / 6),
+                    ),
+                    (
+                        end[0] - head * math.cos(angle - math.pi / 6),
+                        end[1] - head * math.sin(angle - math.pi / 6),
+                    ),
+                ],
+                fill="none",
+                stroke="black",
+            )
+        )

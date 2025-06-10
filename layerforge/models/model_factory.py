@@ -45,12 +45,12 @@ class ModelFactory:
         """
         mesh = self.mesh_loader.load_mesh(model_file)
         # TODO: Add a check for List[Trimesh]/List[Geometry] and throw an error if it is not a single mesh.
-        mesh = self._scale_mesh(mesh, scale_factor, target_height)
-        origin = self._calculate_origin(mesh)
+        mesh = ModelFactory._scale_mesh(mesh, scale_factor, target_height)
+        origin = ModelFactory._calculate_origin(mesh)
         return Model(mesh, layer_height, origin)
 
-    # TODO: Investigate if _scale_mesh needs to be converted to a static method or the class refactored.
-    def _scale_mesh(self, mesh: Trimesh, scale_factor: float = None, target_height: float = None) -> Trimesh:
+    @staticmethod
+    def _scale_mesh(mesh: Trimesh, scale_factor: float = None, target_height: float = None) -> Trimesh:
         """Scale the mesh based on the scale factor or target height.
 
         Parameters
@@ -82,8 +82,8 @@ class ModelFactory:
             mesh.apply_scale(scale_factor)
         return mesh
 
-    # TODO: Investigate if _calculate_origin needs to be converted to a static method or the class refactored.
-    def _calculate_origin(self, mesh: Trimesh) -> tuple:
+    @staticmethod
+    def _calculate_origin(mesh: Trimesh) -> tuple:
         """Calculate the (x,y) origin of the mesh.
 
         Parameters

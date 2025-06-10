@@ -47,6 +47,13 @@ layerforge --stl-file model.stl --layer-height 3.0 --output-folder output
 
 Optional flags let you scale the model and control marker placement. Use `layerforge --help` for all options.
 
+## Checking the Version
+
+Use Python to display the installed package version:
+```bash
+python -c "import layerforge; print(layerforge.__version__)"
+```
+
 ## Features
 
 - Slice STL models into individual layers.

@@ -25,11 +25,21 @@ spec.loader.exec_module(module)  # type: ignore
 ReferenceMarkAdjuster = module.ReferenceMarkAdjuster
 ReferenceMark = module.ReferenceMark
 
+module_name_config = "layerforge.models.reference_marks.config"
+spec_config = importlib.util.spec_from_file_location(
+    module_name_config, ROOT / "layerforge/models/reference_marks/config.py"
+)
+module_config = importlib.util.module_from_spec(spec_config)
+sys.modules[module_name_config] = module_config
+spec_config.loader.exec_module(module_config)  # type: ignore
+ReferenceMarkConfig = module_config.ReferenceMarkConfig
+
 
 def test_centroid_inside_kept():
     square = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)])
     marks = [ReferenceMark(50, 50, 'circle', 3)]
-    adjusted = ReferenceMarkAdjuster.adjust_marks(marks, [square], min_distance=10)
+    config = ReferenceMarkConfig(min_distance=10)
+    adjusted = ReferenceMarkAdjuster.adjust_marks(marks, [square], config=config)
     assert adjusted == marks
 
 
@@ -40,5 +50,6 @@ def test_marks_near_boundary_removed():
         ReferenceMark(105, 50, 'square', 3), # outside near boundary
         ReferenceMark(95, 95, 'circle', 3),  # inside near boundary
     ]
-    adjusted = ReferenceMarkAdjuster.adjust_marks(marks, [square], min_distance=10)
+    config = ReferenceMarkConfig(min_distance=10)
+    adjusted = ReferenceMarkAdjuster.adjust_marks(marks, [square], config=config)
     assert adjusted == []

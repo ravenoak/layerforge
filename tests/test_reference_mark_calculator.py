@@ -42,6 +42,17 @@ pkg_ref.ReferenceMarkManager = None
 pkg_ref.ReferenceMarkCalculator = None
 pkg_ref.ReferenceMark = None
 pkg_ref.ReferenceMarkAdjuster = None
+pkg_ref.ReferenceMarkConfig = None
+
+module_name_config = "layerforge.models.reference_marks.config"
+spec_config = importlib.util.spec_from_file_location(
+    module_name_config, ROOT / "layerforge/models/reference_marks/config.py"
+)
+module_config = importlib.util.module_from_spec(spec_config)
+sys.modules[module_name_config] = module_config
+spec_config.loader.exec_module(module_config)  # type: ignore
+ReferenceMarkConfig = module_config.ReferenceMarkConfig
+pkg_ref.ReferenceMarkConfig = ReferenceMarkConfig
 
 sys.modules[module_name_slice] = module_slice
 
@@ -93,7 +104,8 @@ def test_inherit_mark_within_polygon():
     square = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)])
     manager = ReferenceMarkManager()
     manager.add_or_update_mark(50, 50, "circle", 3)
-    sl = Slice(0, 0.0, [square], origin=(0, 0), mark_manager=manager)
+    cfg = ReferenceMarkConfig(min_distance=10)
+    sl = Slice(0, 0.0, [square], origin=(0, 0), mark_manager=manager, config=cfg)
     sl.process_reference_marks()
     assert len(sl.ref_marks) == 1
     assert sl.ref_marks[0].x == 50
@@ -103,7 +115,8 @@ def test_inherit_mark_within_polygon():
 def test_generate_mark_respects_boundary():
     square = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)])
     manager = ReferenceMarkManager()
-    sl = Slice(1, 0.0, [square], origin=(0, 0), mark_manager=manager)
+    cfg = ReferenceMarkConfig(min_distance=10)
+    sl = Slice(1, 0.0, [square], origin=(0, 0), mark_manager=manager, config=cfg)
     sl.process_reference_marks()
     assert len(sl.ref_marks) == 1
     pt = Point(sl.ref_marks[0].x, sl.ref_marks[0].y)

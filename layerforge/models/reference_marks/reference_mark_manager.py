@@ -2,6 +2,8 @@ from typing import List, Optional
 
 from shapely.geometry import Point, Polygon
 
+from .config import ReferenceMarkConfig
+
 from layerforge.utils import calculate_distance
 from .reference_mark import ReferenceMark
 
@@ -15,11 +17,14 @@ class ReferenceMarkManager:
         Collected reference marks for the model.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, config: ReferenceMarkConfig | None = None) -> None:
         self.marks: List[ReferenceMark] = []
+        self.config = config or ReferenceMarkConfig()
 
-    def find_mark_by_position(self, x: float, y: float, tolerance: float = 10) -> Optional[ReferenceMark]:
+    def find_mark_by_position(self, x: float, y: float, tolerance: float | None = None) -> Optional[ReferenceMark]:
         """Return the mark at ``(x, y)`` if within ``tolerance`` distance."""
+        if tolerance is None:
+            tolerance = self.config.tolerance
         for mark in self.marks:
             distance = calculate_distance(mark.x, mark.y, x, y)
             if distance <= tolerance:
@@ -35,8 +40,10 @@ class ReferenceMarkManager:
         else:
             self.marks.append(ReferenceMark(x=x, y=y, shape=shape, size=size))
 
-    def find_mark_in_polygon(self, polygon: Polygon, min_distance: float = 10.0) -> Optional[ReferenceMark]:
+    def find_mark_in_polygon(self, polygon: Polygon, min_distance: float | None = None) -> Optional[ReferenceMark]:
         """Return a stored mark inside ``polygon`` respecting ``min_distance``."""
+        if min_distance is None:
+            min_distance = self.config.min_distance
         for mark in self.marks:
             pt = Point(mark.x, mark.y)
             if polygon.contains(pt) and polygon.boundary.distance(pt) >= min_distance:

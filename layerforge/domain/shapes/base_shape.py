@@ -18,6 +18,8 @@ class BaseShape(ABC):
     x: float
     y: float
     size: float
+    angle: float = 0.0
+    color: str | None = None
 
     @abstractmethod
     def type(self) -> str:

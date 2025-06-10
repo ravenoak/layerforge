@@ -1,3 +1,4 @@
+import math
 from svgwrite import Drawing
 
 from layerforge.domain.shapes import Circle
@@ -21,5 +22,11 @@ class CircleDrawingStrategy(ShapeDrawingStrategy):
         -------
         None
         """
-        # TODO: Get stroke and fill from the shape or config
-        dwg.add(dwg.circle(center=(circle.x, circle.y), r=circle.radius, stroke='red', fill='none'))
+        color = circle.color or 'red'
+        # rotation has no visible effect for circles but is kept for consistency
+        element = dwg.circle(
+            center=(circle.x, circle.y), r=circle.radius, stroke=color, fill='none'
+        )
+        if circle.angle:
+            element.rotate(math.degrees(circle.angle), center=(circle.x, circle.y))
+        dwg.add(element)

@@ -1,3 +1,4 @@
+import math
 from svgwrite import Drawing
 
 from layerforge.domain.shapes import Square
@@ -21,7 +22,13 @@ class SquareDrawingStrategy(ShapeDrawingStrategy):
         -------
         None
         """
-        # TODO: Get stroke and fill from the shape or config
-        # TODO: Add some of this as attributes to the Square class
-        dwg.add(dwg.rect(insert=(square.x - square.size / 2, square.y - square.size / 2),
-                         size=(square.size, square.size), stroke='blue', fill='none'))
+        color = square.color or 'blue'
+        element = dwg.rect(
+            insert=(square.x - square.size / 2, square.y - square.size / 2),
+            size=(square.size, square.size),
+            stroke=color,
+            fill='none',
+        )
+        if square.angle:
+            element.rotate(math.degrees(square.angle), center=(square.x, square.y))
+        dwg.add(element)

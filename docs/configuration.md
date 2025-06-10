@@ -8,9 +8,11 @@ configuration options or the equivalent CLI arguments:
 - `tolerance` – distance used when matching an existing mark.
 - `min_distance` – minimum distance a mark must maintain from contours and other marks.
 - `available_shapes` – list of shapes that will be cycled through when creating new marks.
+- `angle` – default orientation angle for generated marks in degrees.
+- `color` – outline color used when drawing marks.
 
-These correspond to the CLI flags `--mark-tolerance`, `--mark-min-distance` and
-`--available-shapes` respectively.
+These correspond to the CLI flags `--mark-tolerance`, `--mark-min-distance`,
+`--available-shapes`, `--mark-angle` and `--mark-color` respectively.
 
 ### Workflow
 

@@ -9,6 +9,7 @@ nav:
   - Home: index.md
   - "Getting Started": getting_started.md
   - Features: features.md
+  - "Reference Mark Algorithm": reference_mark_algorithm.md
   - Configuration: configuration.md
   - Development: development.md
   - "Technologies Used": technologies_used.md

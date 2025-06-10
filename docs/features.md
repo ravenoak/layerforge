@@ -21,3 +21,6 @@ marks so the slices can be realigned during reassembly.
 This process results in clear reference markers that maintain alignment between
 layers without interfering with the slice geometry.
 
+See [Reference Mark Algorithm](reference_mark_algorithm.md) for a deeper look at
+the metric and adjustment steps.
+

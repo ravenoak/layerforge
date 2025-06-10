@@ -4,6 +4,7 @@ import types
 from pathlib import Path
 
 import pytest
+pytest.importorskip("shapely")
 from shapely.geometry import Polygon, Point
 
 ROOT = Path(__file__).resolve().parents[1]

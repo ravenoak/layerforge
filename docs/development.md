@@ -69,3 +69,10 @@
         3. Annotate the slice with its number within the contour area.
 6. Output:
     1. Save the generated SVG files to the specified output directory, with each file representing a slice of the original 3D model.
+
+## Running the Tests
+
+The test suite depends on optional libraries such as `shapely` and `trimesh`. Each
+test module calls `pytest.importorskip` for these imports so that tests are
+skipped if the dependencies are unavailable. Install these packages to execute
+the entire suite.

@@ -7,6 +7,8 @@ from .base_shape import BaseShape
 class Arrow(BaseShape):
     """An arrow shape for reference marks."""
 
+    direction: float = 0.0
+
     def type(self) -> str:
         """Return the type of the shape. Always 'arrow' for this class.
 

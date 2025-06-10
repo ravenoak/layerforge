@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, List, Tuple
 from shapely.geometry import Point, Polygon
 
 from layerforge.utils import calculate_distance
+from .config import ReferenceMarkConfig
 
 if TYPE_CHECKING:
     from layerforge.models.slicing.slice import Slice
@@ -46,9 +47,11 @@ class ReferenceMarkCalculator:
     def get_stable_marks(
         layer: Slice,
         existing_marks: List[Tuple[float, float]],
-        min_distance: float = 10.0,
+        config: ReferenceMarkConfig | None = None,
     ) -> List[Tuple[float, float]]:
-        """Return stable mark positions for ``layer``."""
+        """Return stable mark positions for ``layer`` respecting ``config.min_distance``."""
+        cfg = config or ReferenceMarkConfig()
+        min_distance = cfg.min_distance
         selected: List[Tuple[float, float]] = []
         for poly in layer.contours:
             # Try to inherit an existing mark that is inside the polygon

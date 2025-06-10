@@ -3,6 +3,7 @@ from typing import List
 from shapely.geometry import Point, Polygon
 
 from .reference_mark import ReferenceMark
+from .config import ReferenceMarkConfig
 
 
 class ReferenceMarkAdjuster:
@@ -12,9 +13,11 @@ class ReferenceMarkAdjuster:
     def adjust_marks(
         marks: List[ReferenceMark],
         contours: List[Polygon],
-        min_distance: float = 10.0,
+        config: ReferenceMarkConfig | None = None,
     ) -> List[ReferenceMark]:
-        """Return a filtered list of ``marks`` respecting ``min_distance``."""
+        """Return a filtered list of ``marks`` respecting ``config.min_distance``."""
+        cfg = config or ReferenceMarkConfig()
+        min_distance = cfg.min_distance
         adjusted_marks: List[ReferenceMark] = []
         for mark in marks:
             mark_point = Point(mark.x, mark.y)

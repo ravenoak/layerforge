@@ -8,6 +8,7 @@ from layerforge.models.reference_marks import (
     ReferenceMarkAdjuster,
     ReferenceMarkCalculator,
     ReferenceMarkManager,
+    ReferenceMarkConfig,
 )
 from layerforge.utils import calculate_distance
 
@@ -31,8 +32,15 @@ class Slice:
         The reference mark manager for the slice.
     """
 
-    def __init__(self, index: int, position: float, contours: List[Polygon], origin: tuple,
-                 mark_manager: ReferenceMarkManager):
+    def __init__(
+        self,
+        index: int,
+        position: float,
+        contours: List[Polygon],
+        origin: tuple,
+        mark_manager: ReferenceMarkManager,
+        config: ReferenceMarkConfig | None = None,
+    ):
         """Initialize the slice.
 
         Parameters
@@ -51,6 +59,7 @@ class Slice:
         self.contours = contours
         self.index = index
         self.mark_manager = mark_manager
+        self.config = config or ReferenceMarkConfig()
         self.origin = origin
         self.position = position
 
@@ -69,10 +78,12 @@ class Slice:
         """
         existing_positions = [(m.x, m.y) for m in self.mark_manager.marks]
         potential_marks = ReferenceMarkCalculator.get_stable_marks(
-            self, existing_positions
+            self, existing_positions, config=self.config
         )
         for x, y in potential_marks:
-            existing_mark = self.mark_manager.find_mark_by_position(x, y)
+            existing_mark = self.mark_manager.find_mark_by_position(
+                x, y, tolerance=self.config.tolerance
+            )
             if existing_mark:
                 self.ref_marks.append(
                     ReferenceMark(x=x, y=y, shape=existing_mark.shape, size=existing_mark.size)
@@ -100,7 +111,9 @@ class Slice:
         """
         logging.debug(f"model_contours type: {type(self.contours)}, content: {self.contours}")
         try:
-            self.ref_marks = ReferenceMarkAdjuster.adjust_marks(self.ref_marks, self.contours)
+            self.ref_marks = ReferenceMarkAdjuster.adjust_marks(
+                self.ref_marks, self.contours, config=self.config
+            )
         except ValueError as e:
             logging.error(f"Error in adjusting marks for slice {self.index}: {e}")
 
@@ -112,12 +125,12 @@ class Slice:
         str
             A unique shape for the reference mark.
         """
-        available_shapes = ['circle', 'square', 'triangle', 'arrow']
+        available_shapes = self.config.available_shapes
         used_shapes = {mark.shape for mark in self.mark_manager.marks}
         for shape in available_shapes:
             if shape not in used_shapes:
                 return shape
-        return 'arrow'
+        return available_shapes[0]
 
     def _calculate_mark_size(self, x: float, y: float) -> float:
         """Calculate the size of a mark based on distance from origin.

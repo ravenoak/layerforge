@@ -89,3 +89,14 @@ class ReferenceMarkCalculator:
             if best_pt:
                 selected.append(best_pt)
         return selected
+
+    @staticmethod
+    def get_potential_marks(
+        layer: "Slice",
+        existing_marks: List[Tuple[float, float]],
+        config: ReferenceMarkConfig | None = None,
+    ) -> List[Tuple[float, float]]:
+        """Compatibility alias for :meth:`get_stable_marks`."""
+        return ReferenceMarkCalculator.get_stable_marks(
+            layer, existing_marks, config=config
+        )

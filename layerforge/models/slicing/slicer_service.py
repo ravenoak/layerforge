@@ -1,4 +1,5 @@
 from typing import List
+import math
 
 from layerforge.models import Slice, Model
 from layerforge.models.reference_marks import ReferenceMarkManager, ReferenceMarkConfig
@@ -22,7 +23,13 @@ class SlicerService:
         list
             A list of the positions of the slices
         """
-        return [i * layer_height for i in range(int(total_height / layer_height) + 1)]
+        num_slices = max(1, math.ceil(total_height / layer_height))
+        positions = [i * layer_height for i in range(num_slices)]
+        if not positions or positions[-1] < total_height:
+            positions.append(total_height)
+        else:
+            positions[-1] = total_height
+        return positions
 
     @staticmethod
     def slice_model(

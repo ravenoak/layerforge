@@ -2,7 +2,7 @@ import sys
 
 import click
 
-from layerforge.models import Model, ModelFactory, SlicerService
+from layerforge.models import ModelFactory, SlicerService
 from layerforge.models.reference_marks import ReferenceMarkConfig
 from layerforge.models.loading import LoaderFactory
 from layerforge.svg import SVGGenerator
@@ -12,27 +12,61 @@ from layerforge.writers import SVGFileWriter
 
 
 def process_model(
-    model: Model,
+    *,
+    stl_file: str,
+    layer_height: float,
     output_folder: str,
-    shape_context: StrategyContext,
-    config: ReferenceMarkConfig,
+    scale_factor: float | None = None,
+    target_height: float | None = None,
+    mark_tolerance: float = 10.0,
+    mark_min_distance: float = 10.0,
+    available_shapes: str = "circle,square,triangle,arrow",
 ) -> None:
     """Process the model and generate SVG slices.
 
     Parameters
     ----------
-    model : Model
-        The model to process.
+    stl_file : str
+        Path to the STL model to slice.
+    layer_height : float
+        Height of each generated layer.
     output_folder : str
-        The output folder for SVG files.
-    shape_context : StrategyContext
-        The context for the shape strategies.
+        Directory where SVG slices will be written.
+    scale_factor : float, optional
+        Uniform scale factor to apply to the model.
+    target_height : float, optional
+        Desired overall height of the model.  Mutually exclusive with
+        ``scale_factor``.
+    mark_tolerance : float
+        Distance used when matching existing marks.
+    mark_min_distance : float
+        Minimum distance from contours and between marks.
+    available_shapes : str
+        Comma separated list of shapes used for new marks.
 
     Returns
     -------
     None
     """
-    # TODO: Refactor this to either include the rest of the logic that is in the CLI function, or completely rewrite it.
+    if scale_factor and target_height:
+        click.echo("Only one of scale_factor or target_height can be provided.")
+        sys.exit(1)
+
+    shape_context = StrategyContext()
+    register_shape_strategies(shape_context)
+    initialize_loaders()
+    mesh_loader = LoaderFactory.get_loader("trimesh")
+    model_factory = ModelFactory(mesh_loader)
+    model = model_factory.create_model(
+        stl_file, layer_height, scale_factor, target_height
+    )
+
+    config = ReferenceMarkConfig(
+        tolerance=mark_tolerance,
+        min_distance=mark_min_distance,
+        available_shapes=[s.strip() for s in available_shapes.split(",") if s.strip()],
+    )
+
     slices = SlicerService.slice_model(model, config=config)
     svg_writer = SVGFileWriter()
     svg_generator = SVGGenerator(output_folder, svg_writer, shape_context)
@@ -80,24 +114,17 @@ def cli(
     -------
     None
     """
-    if scale_factor and target_height:
-        print("Only one of scale_factor or target_height can be provided.")
-        sys.exit(1)
 
-    shape_context = StrategyContext()
-    register_shape_strategies(shape_context)
-    initialize_loaders()
-    mesh_loader = LoaderFactory.get_loader("trimesh")
-    model_factory = ModelFactory(mesh_loader)
-    model = model_factory.create_model(stl_file, layer_height, scale_factor, target_height)
-
-    config = ReferenceMarkConfig(
-        tolerance=mark_tolerance,
-        min_distance=mark_min_distance,
-        available_shapes=[s.strip() for s in available_shapes.split(',') if s.strip()],
+    process_model(
+        stl_file=stl_file,
+        layer_height=layer_height,
+        output_folder=output_folder,
+        scale_factor=scale_factor,
+        target_height=target_height,
+        mark_tolerance=mark_tolerance,
+        mark_min_distance=mark_min_distance,
+        available_shapes=available_shapes,
     )
-
-    process_model(model, output_folder, shape_context, config)
 
 
 if __name__ == '__main__':

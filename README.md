@@ -20,9 +20,36 @@ A 3D Model Slicing and SVG Generation Application
 
 ## Installation
 
+1. Ensure Python 3.12 or newer is installed.
+2. Create and activate a virtual environment:
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate
+   ```
+3. Install LayerForge and its dependencies:
+   ```bash
+   pip install -e .
+   ```
+   Alternatively, run `pip install -r requirements.txt` if you only need the runtime dependencies.
+
 ## Usage
 
+Run the CLI to slice an STL model and produce SVGs:
+
+```bash
+layerforge --stl-file model.stl --layer-height 3.0 --output-folder output
+```
+
+Optional flags let you scale the model and control marker placement. Use `layerforge --help` for all options.
+
 ## Features
+
+- Slice STL models into individual layers.
+- Generate SVG files with contours, slice numbers and reference marks.
+- Reference marks are chosen using a geometric stability metric inspired by GDOP.
+- Marks inherit shape and position between adjacent slices and are adjusted to avoid overlaps.
+- Supports multiple mark shapes (circle, square, triangle, arrow) for easy identification.
+- Pyoxidizer packaging enables simple cross-platform distribution.
 
 ## Configuration
 
@@ -31,6 +58,9 @@ The CLI exposes parameters for tuning reference mark generation:
 - `--mark-tolerance` – distance used when matching an existing mark. Defaults to `10.0`.
 - `--mark-min-distance` – minimum distance from contours and between marks. Defaults to `10.0`.
 - `--available-shapes` – comma separated list of shapes to cycle through when creating marks. Defaults to `circle,square,triangle,arrow`.
+
+See [docs/configuration.md](docs/configuration.md) for full details on how these
+options influence mark placement.
 
 ## Contributing
 

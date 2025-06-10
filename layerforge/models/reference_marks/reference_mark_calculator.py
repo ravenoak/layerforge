@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, List, Tuple
 
 from shapely.geometry import Point, Polygon
+import random
 
 from layerforge.utils import calculate_distance
 from .config import ReferenceMarkConfig
@@ -31,16 +32,29 @@ class ReferenceMarkCalculator:
 
     @staticmethod
     def _sample_points(poly: Polygon, samples: int = 4) -> List[Tuple[float, float]]:
-        """Return ``samples`` candidate points inside ``poly``."""
+        """Return ``samples`` candidate points inside ``poly``.
+
+        The centroid is always returned and additional points are randomly
+        sampled within the bounding box until ``samples`` unique points that are
+        contained within ``poly`` are found.
+        """
         pts = [(poly.centroid.x, poly.centroid.y)]
         minx, miny, maxx, maxy = poly.bounds
-        # Generate additional random points within the polygon
-        for _ in range(samples - 1):
-            x = float(minx + (maxx - minx) * 0.25)
-            y = float(miny + (maxy - miny) * 0.25)
+
+        # Keep sampling until we have the desired number of unique points. Limit
+        # the number of attempts to avoid an infinite loop for degenerate
+        # polygons.
+        attempts = 0
+        max_attempts = samples * 10
+        while len(pts) < samples and attempts < max_attempts:
+            attempts += 1
+            x = random.uniform(minx, maxx)
+            y = random.uniform(miny, maxy)
             candidate = Point(x, y)
             if poly.contains(candidate):
-                pts.append((candidate.x, candidate.y))
+                cand_tuple = (candidate.x, candidate.y)
+                if cand_tuple not in pts:
+                    pts.append(cand_tuple)
         return pts
 
     @staticmethod

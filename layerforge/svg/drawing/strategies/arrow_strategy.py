@@ -19,7 +19,7 @@ class ArrowDrawingStrategy(ShapeDrawingStrategy):
         arrow : Arrow
             The Arrow shape to draw.
         """
-        angle = arrow.direction
+        angle = arrow.angle
         if abs(angle) > 2 * math.pi:
             angle = math.radians(angle)
 
@@ -30,7 +30,8 @@ class ArrowDrawingStrategy(ShapeDrawingStrategy):
 
         head = arrow.size * 0.2
 
-        dwg.add(dwg.line((arrow.x, arrow.y), end, stroke='black'))
+        stroke_color = arrow.color or 'black'
+        dwg.add(dwg.line((arrow.x, arrow.y), end, stroke=stroke_color))
         dwg.add(
             dwg.polygon(
                 [
@@ -45,6 +46,6 @@ class ArrowDrawingStrategy(ShapeDrawingStrategy):
                     ),
                 ],
                 fill="none",
-                stroke="black",
+                stroke=stroke_color,
             )
         )

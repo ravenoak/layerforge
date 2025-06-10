@@ -1,3 +1,4 @@
+import math
 from svgwrite import Drawing
 
 from layerforge.domain.shapes import Triangle
@@ -21,5 +22,15 @@ class TriangleDrawingStrategy(ShapeDrawingStrategy):
         -------
         None
         """
-        # TODO: Get stroke and fill from the shape or config
-        dwg.add(dwg.polygon(triangle.vertices, stroke='green', fill='none'))
+        color = triangle.color or 'green'
+        verts = triangle.vertices
+        if triangle.angle:
+            verts = []
+            cx, cy = triangle.x, triangle.y
+            for x, y in triangle.vertices:
+                dx, dy = x - cx, y - cy
+                r = math.hypot(dx, dy)
+                theta = math.atan2(dy, dx) + triangle.angle
+                verts.append((cx + r * math.cos(theta), cy + r * math.sin(theta)))
+
+        dwg.add(dwg.polygon(verts, stroke=color, fill='none'))

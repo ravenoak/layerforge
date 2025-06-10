@@ -10,3 +10,5 @@ class ReferenceMarkConfig:
     available_shapes: List[str] = field(
         default_factory=lambda: ["circle", "square", "triangle", "arrow"]
     )
+    angle: float = 0.0
+    color: str | None = None

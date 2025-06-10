@@ -45,7 +45,14 @@ class SliceSVGDrawer:
         None
         """
         for mark in ref_marks:
-            shape_instance = ShapeFactory.get_shape(mark[2], *mark[:2], size=mark[3])
+            shape_instance = ShapeFactory.get_shape(
+                mark.shape,
+                mark.x,
+                mark.y,
+                size=mark.size,
+                angle=mark.angle,
+                color=mark.color,
+            )
             if shape_instance:
                 shape_context.draw(dwg, shape_instance)
 

@@ -33,6 +33,8 @@ def test_cli_delegates_to_process_model(monkeypatch):
     assert called["scale_factor"] == 2.0
     assert called["target_height"] is None
     assert called["available_shapes"] == "circle,square,triangle,arrow"
+    assert called["mark_angle"] == 0.0
+    assert called["mark_color"] is None
 
 
 def test_cli_conflicting_options(monkeypatch):

@@ -63,6 +63,8 @@ The CLI exposes parameters for tuning reference mark generation:
 - `--mark-tolerance` – distance used when matching an existing mark. Defaults to `10.0`.
 - `--mark-min-distance` – minimum distance from contours and between marks. Defaults to `10.0`.
 - `--available-shapes` – comma separated list of shapes to cycle through when creating marks. Defaults to `circle,square,triangle,arrow`.
+- `--mark-angle` – default orientation angle for generated marks in degrees.
+- `--mark-color` – outline color for reference marks.
 
 See [docs/configuration.md](docs/configuration.md) for full details on how these
 options influence mark placement.

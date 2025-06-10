@@ -31,14 +31,18 @@ class ReferenceMarkManager:
                 return mark
         return None
 
-    def add_or_update_mark(self, x: float, y: float, shape: str, size: float) -> None:
+    def add_or_update_mark(
+        self, x: float, y: float, shape: str, size: float, *, angle: float = 0.0, color: str | None = None
+    ) -> None:
         """Add a new mark or update an existing one."""
         mark = self.find_mark_by_position(x, y)
         if mark:
             mark.shape = shape
             mark.size = size
         else:
-            self.marks.append(ReferenceMark(x=x, y=y, shape=shape, size=size))
+            self.marks.append(
+                ReferenceMark(x=x, y=y, shape=shape, size=size, angle=angle, color=color)
+            )
 
     def find_mark_in_polygon(self, polygon: Polygon, min_distance: float | None = None) -> Optional[ReferenceMark]:
         """Return a stored mark inside ``polygon`` respecting ``min_distance``."""

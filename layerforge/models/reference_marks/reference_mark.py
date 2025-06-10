@@ -8,3 +8,5 @@ class ReferenceMark:
     y: float
     shape: str
     size: float
+    angle: float = 0.0
+    color: str | None = None

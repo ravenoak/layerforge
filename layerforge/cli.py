@@ -1,4 +1,5 @@
 import sys
+import math
 
 import click
 
@@ -21,6 +22,8 @@ def process_model(
     mark_tolerance: float = 10.0,
     mark_min_distance: float = 10.0,
     available_shapes: str = "circle,square,triangle,arrow",
+    mark_angle: float = 0.0,
+    mark_color: str | None = None,
 ) -> None:
     """Process the model and generate SVG slices.
 
@@ -43,6 +46,10 @@ def process_model(
         Minimum distance from contours and between marks.
     available_shapes : str
         Comma separated list of shapes used for new marks.
+    mark_angle : float
+        Default orientation angle for marks in degrees.
+    mark_color : str, optional
+        Default color for mark outlines.
 
     Returns
     -------
@@ -65,6 +72,8 @@ def process_model(
         tolerance=mark_tolerance,
         min_distance=mark_min_distance,
         available_shapes=[s.strip() for s in available_shapes.split(",") if s.strip()],
+        angle=math.radians(mark_angle),
+        color=mark_color,
     )
 
     slices = SlicerService.slice_model(model, config=config)
@@ -82,6 +91,8 @@ def process_model(
 @click.option('--mark-tolerance', default=10.0, type=float, help='Tolerance when matching existing marks.')
 @click.option('--mark-min-distance', default=10.0, type=float, help='Minimum distance from contours and between marks.')
 @click.option('--available-shapes', default='circle,square,triangle,arrow', help='Comma separated list of mark shapes.')
+@click.option('--mark-angle', default=0.0, type=float, help='Default mark orientation in degrees.')
+@click.option('--mark-color', default=None, help='Outline color for marks.')
 def cli(
     stl_file: str,
     layer_height: float,
@@ -91,6 +102,8 @@ def cli(
     mark_tolerance: float,
     mark_min_distance: float,
     available_shapes: str,
+    mark_angle: float,
+    mark_color: str,
 ) -> None:
     """Entry point for the CLI.
 
@@ -124,6 +137,8 @@ def cli(
         mark_tolerance=mark_tolerance,
         mark_min_distance=mark_min_distance,
         available_shapes=available_shapes,
+        mark_angle=mark_angle,
+        mark_color=mark_color,
     )
 
 

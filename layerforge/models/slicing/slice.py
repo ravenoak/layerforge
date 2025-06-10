@@ -86,13 +86,36 @@ class Slice:
             )
             if existing_mark:
                 self.ref_marks.append(
-                    ReferenceMark(x=x, y=y, shape=existing_mark.shape, size=existing_mark.size)
+                    ReferenceMark(
+                        x=x,
+                        y=y,
+                        shape=existing_mark.shape,
+                        size=existing_mark.size,
+                        angle=self.config.angle,
+                        color=self.config.color,
+                    )
                 )
             else:
                 new_shape = self._select_unique_shape()
                 new_size = self._calculate_mark_size(x, y)
-                self.mark_manager.add_or_update_mark(x, y, new_shape, new_size)
-                self.ref_marks.append(ReferenceMark(x=x, y=y, shape=new_shape, size=new_size))
+                self.mark_manager.add_or_update_mark(
+                    x,
+                    y,
+                    new_shape,
+                    new_size,
+                    angle=self.config.angle,
+                    color=self.config.color,
+                )
+                self.ref_marks.append(
+                    ReferenceMark(
+                        x=x,
+                        y=y,
+                        shape=new_shape,
+                        size=new_size,
+                        angle=self.config.angle,
+                        color=self.config.color,
+                    )
+                )
 
     def adjust_marks(self) -> None:
         """Adjust reference marks for the slice.

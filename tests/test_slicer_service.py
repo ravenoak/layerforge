@@ -1,4 +1,5 @@
 import pytest
+pytest.importorskip("trimesh")
 
 from layerforge.models.slicing.slicer_service import SlicerService
 

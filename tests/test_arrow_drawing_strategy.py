@@ -1,4 +1,7 @@
 import math
+import pytest
+pytest.importorskip("svgwrite")
+pytest.importorskip("shapely")
 import svgwrite
 from layerforge.svg.drawing.strategies.arrow_strategy import ArrowDrawingStrategy
 from layerforge.domain.shapes import Arrow

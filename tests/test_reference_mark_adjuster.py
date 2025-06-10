@@ -1,4 +1,5 @@
 import pytest
+pytest.importorskip("shapely")
 from shapely.geometry import Polygon
 
 import importlib.util

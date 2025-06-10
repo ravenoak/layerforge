@@ -21,16 +21,21 @@ A 3D Model Slicing and SVG Generation Application
 ## Installation
 
 1. Ensure Python 3.12 or newer is installed.
-2. Create and activate a virtual environment:
+2. Install the GEOS library (required by `shapely`).
+3. Create and activate a virtual environment:
    ```bash
    python -m venv .venv
    source .venv/bin/activate
    ```
-3. Install LayerForge and its dependencies:
+4. Install LayerForge and its dependencies:
    ```bash
    pip install -e .
    ```
    Alternatively, run `pip install -r requirements.txt` if you only need the runtime dependencies.
+5. Install development dependencies for running the tests:
+   ```bash
+   pip install -r requirements-dev.txt
+   ```
 
 ## Usage
 

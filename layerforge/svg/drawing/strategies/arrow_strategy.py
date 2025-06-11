@@ -1,6 +1,8 @@
 import math
 
-from svgwrite import Drawing
+from layerforge.utils.optional_dependencies import require_module
+
+Drawing = require_module("svgwrite", "ArrowDrawingStrategy").Drawing
 
 from layerforge.domain.shapes import Arrow
 from .base_strategy import ShapeDrawingStrategy

@@ -1,5 +1,7 @@
 import math
-from svgwrite import Drawing
+from layerforge.utils.optional_dependencies import require_module
+
+Drawing = require_module("svgwrite", "CircleDrawingStrategy").Drawing
 
 from layerforge.domain.shapes import Circle
 from .base_strategy import ShapeDrawingStrategy

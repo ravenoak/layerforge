@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 
-from svgwrite import Drawing
+from layerforge.utils.optional_dependencies import require_module
+
+Drawing = require_module("svgwrite", "SVGWriter").Drawing
 
 from layerforge.utils.file_operations import ensure_directory_exists, generate_file_name
 

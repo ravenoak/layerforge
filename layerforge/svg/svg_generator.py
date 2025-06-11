@@ -1,6 +1,8 @@
 from typing import List
 
-import svgwrite
+from layerforge.utils.optional_dependencies import require_module
+
+svgwrite = require_module("svgwrite", "SVGGenerator")
 
 from layerforge.models.slicing import Slice
 from layerforge.svg.drawing import StrategyContext

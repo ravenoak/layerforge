@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 
-from svgwrite import Drawing
+from layerforge.utils.optional_dependencies import require_module
+
+Drawing = require_module("svgwrite", "ShapeDrawingStrategy").Drawing
 
 from layerforge.domain.shapes.base_shape import BaseShape
 

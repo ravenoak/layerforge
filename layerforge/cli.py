@@ -1,6 +1,11 @@
 import sys
 import math
 
+
+class ConflictingOptionsError(ValueError):
+    """Raised when mutually exclusive CLI options are provided."""
+
+
 import click
 
 from layerforge.models import ModelFactory, SlicerService
@@ -57,8 +62,9 @@ def process_model(
     None
     """
     if scale_factor and target_height:
-        click.echo("Only one of scale_factor or target_height can be provided.")
-        sys.exit(1)
+        raise ConflictingOptionsError(
+            "Only one of scale_factor or target_height can be provided."
+        )
 
     shape_context = StrategyContext()
     register_shape_strategies(shape_context)
@@ -84,43 +90,52 @@ def process_model(
 
 
 @click.command()
-@click.option('--stl-file', prompt='STL file path', help='The path to the STL file.')
-@click.option('--layer-height', default=3.0, help='The layer height.')
-@click.option('--output-folder', default='output', help='The output folder for SVG files.')
-@click.option('--scale-factor', default=None, type=float, help='The scale factor to apply to the model.')
-@click.option('--target-height', default=None, type=float, help='The target height for the model.')
+@click.option("--stl-file", prompt="STL file path", help="The path to the STL file.")
+@click.option("--layer-height", default=3.0, help="The layer height.")
 @click.option(
-    '--mark-tolerance',
+    "--output-folder", default="output", help="The output folder for SVG files."
+)
+@click.option(
+    "--scale-factor",
+    default=None,
+    type=float,
+    help="The scale factor to apply to the model.",
+)
+@click.option(
+    "--target-height", default=None, type=float, help="The target height for the model."
+)
+@click.option(
+    "--mark-tolerance",
     default=10.0,
     type=float,
-    help='Tolerance when matching existing marks. '
-    'See docs/reference_mark_algorithm.md#parameter-effects.'
+    help="Tolerance when matching existing marks. "
+    "See docs/reference_mark_algorithm.md#parameter-effects.",
 )
 @click.option(
-    '--mark-min-distance',
+    "--mark-min-distance",
     default=10.0,
     type=float,
-    help='Minimum distance from contours and between marks. '
-    'See docs/reference_mark_algorithm.md#parameter-effects.'
+    help="Minimum distance from contours and between marks. "
+    "See docs/reference_mark_algorithm.md#parameter-effects.",
 )
 @click.option(
-    '--available-shapes',
-    default='circle,square,triangle,arrow',
-    help='Comma separated list of mark shapes. '
-    'See docs/reference_mark_algorithm.md#parameter-effects.'
+    "--available-shapes",
+    default="circle,square,triangle,arrow",
+    help="Comma separated list of mark shapes. "
+    "See docs/reference_mark_algorithm.md#parameter-effects.",
 )
 @click.option(
-    '--mark-angle',
+    "--mark-angle",
     default=0.0,
     type=float,
-    help='Default mark orientation in degrees. '
-    'See docs/reference_mark_algorithm.md#parameter-effects.'
+    help="Default mark orientation in degrees. "
+    "See docs/reference_mark_algorithm.md#parameter-effects.",
 )
 @click.option(
-    '--mark-color',
+    "--mark-color",
     default=None,
-    help='Outline color for marks. '
-    'See docs/reference_mark_algorithm.md#parameter-effects.'
+    help="Outline color for marks. "
+    "See docs/reference_mark_algorithm.md#parameter-effects.",
 )
 def cli(
     stl_file: str,
@@ -157,19 +172,23 @@ def cli(
     None
     """
 
-    process_model(
-        stl_file=stl_file,
-        layer_height=layer_height,
-        output_folder=output_folder,
-        scale_factor=scale_factor,
-        target_height=target_height,
-        mark_tolerance=mark_tolerance,
-        mark_min_distance=mark_min_distance,
-        available_shapes=available_shapes,
-        mark_angle=mark_angle,
-        mark_color=mark_color,
-    )
+    try:
+        process_model(
+            stl_file=stl_file,
+            layer_height=layer_height,
+            output_folder=output_folder,
+            scale_factor=scale_factor,
+            target_height=target_height,
+            mark_tolerance=mark_tolerance,
+            mark_min_distance=mark_min_distance,
+            available_shapes=available_shapes,
+            mark_angle=mark_angle,
+            mark_color=mark_color,
+        )
+    except ConflictingOptionsError as exc:
+        click.echo(str(exc))
+        raise SystemExit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()

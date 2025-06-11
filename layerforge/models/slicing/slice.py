@@ -97,8 +97,8 @@ class Slice:
                         y=y,
                         shape=existing_mark.shape,
                         size=existing_mark.size,
-                        angle=self.config.angle,
-                        color=self.config.color,
+                        angle=existing_mark.angle,
+                        color=existing_mark.color,
                     )
                 )
             else:

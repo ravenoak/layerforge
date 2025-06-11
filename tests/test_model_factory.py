@@ -1,4 +1,5 @@
 import pytest
+
 pytest.importorskip("trimesh")
 
 import trimesh
@@ -38,3 +39,18 @@ def test_calculate_origin():
     mesh.apply_translation([1, 2, 3])
     origin = ModelFactory._calculate_origin(mesh)
     assert pytest.approx(origin) == (1.0, 2.0)
+
+
+class ListLoader(MeshLoader):
+    def load_mesh(self, model_file: str):
+        return [
+            trimesh.creation.box(extents=(1, 1, 1)),
+            trimesh.creation.box(extents=(2, 2, 2)),
+        ]
+
+
+def test_create_model_with_multiple_meshes_raises():
+    loader = ListLoader()
+    factory = ModelFactory(loader)
+    with pytest.raises(ValueError):
+        factory.create_model("dummy.stl", layer_height=1.0)

@@ -23,8 +23,13 @@ class ModelFactory:
         """
         self.mesh_loader = mesh_loader
 
-    def create_model(self, model_file: str, layer_height: float, scale_factor: float = None,
-                     target_height: float = None) -> Model:
+    def create_model(
+        self,
+        model_file: str,
+        layer_height: float,
+        scale_factor: float = None,
+        target_height: float = None,
+    ) -> Model:
         """Create a Model object from an STL file.
 
         Parameters
@@ -44,13 +49,18 @@ class ModelFactory:
             The Model object created from the STL file.
         """
         mesh = self.mesh_loader.load_mesh(model_file)
-        # TODO: Add a check for List[Trimesh]/List[Geometry] and throw an error if it is not a single mesh.
+        if isinstance(mesh, list):
+            raise ValueError(
+                f"Expected a single mesh from '{model_file}', got {len(mesh)} meshes"
+            )
         mesh = ModelFactory._scale_mesh(mesh, scale_factor, target_height)
         origin = ModelFactory._calculate_origin(mesh)
         return Model(mesh, layer_height, origin)
 
     @staticmethod
-    def _scale_mesh(mesh: Trimesh, scale_factor: float = None, target_height: float = None) -> Trimesh:
+    def _scale_mesh(
+        mesh: Trimesh, scale_factor: float = None, target_height: float = None
+    ) -> Trimesh:
         """Scale the mesh based on the scale factor or target height.
 
         Parameters
@@ -73,7 +83,9 @@ class ModelFactory:
             If both scale_factor and target_height are provided.
         """
         if scale_factor and target_height:
-            raise ValueError("Only one of scale_factor or target_height can be provided.")
+            raise ValueError(
+                "Only one of scale_factor or target_height can be provided."
+            )
         if scale_factor:
             mesh.apply_scale(scale_factor)
         elif target_height:

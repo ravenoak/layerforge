@@ -93,6 +93,9 @@ for diagrams and tuning tips on how these options influence mark placement.
 
 ## Contributing
 
+Contributions are welcome! Please read our [Code of Conduct](CODE_OF_CONDUCT.md)
+before participating in this project.
+
 ## License
 
 This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0) License

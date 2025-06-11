@@ -3,7 +3,7 @@ pytest.importorskip("svgwrite")
 pytest.importorskip("shapely")
 
 import svgwrite
-from shapely.geometry import box
+from shapely.geometry import box, Point
 
 from layerforge.models.reference_marks import ReferenceMark, ReferenceMarkManager, ReferenceMarkConfig
 from layerforge.models.slicing.slice import Slice
@@ -44,6 +44,18 @@ def _has_shape(dwg: svgwrite.Drawing, cls: type, stroke: str | None = None) -> b
     return False
 
 
+def _text_positions(dwg: svgwrite.Drawing) -> list[tuple[float, float]]:
+    """Return the (x, y) positions of text elements in ``dwg``."""
+    coords: list[tuple[float, float]] = []
+    for el in dwg.elements:
+        if isinstance(el, svgwrite.text.Text):
+            attr = getattr(el, "attribs", {})
+            x = float(attr.get("x"))
+            y = float(attr.get("y"))
+            coords.append((x, y))
+    return coords
+
+
 def test_draw_slice_adds_expected_shapes():
     ctx = StrategyContext()
     register_shape_strategies(ctx)
@@ -80,3 +92,17 @@ def test_svg_generator_writes_files_and_captures(tmp_path):
     assert _has_shape(writer.saved[0], svgwrite.shapes.Circle)
     assert _has_shape(writer.saved[1], svgwrite.shapes.Rect)
     assert _has_shape(writer.saved[2], svgwrite.shapes.Polygon, "green")
+
+
+def test_label_inside_slice_polygon():
+    ctx = StrategyContext()
+    register_shape_strategies(ctx)
+    slice_obj = _create_slice(0, "circle")
+    dwg = svgwrite.Drawing()
+    SliceSVGDrawer.draw_slice(dwg, slice_obj, ctx)
+
+    positions = _text_positions(dwg)
+    assert positions
+    poly = slice_obj.contours[0]
+    for x, y in positions:
+        assert poly.contains(Point(x, y))

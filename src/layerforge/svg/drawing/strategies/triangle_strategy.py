@@ -1,6 +1,6 @@
 from svgwrite import Drawing
 
-from layerforge.domain.shapes import Triangle
+from src.layerforge.domain.shapes import Triangle
 from .base_strategy import ShapeDrawingStrategy
 
 

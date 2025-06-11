@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-layerforge = {editable = true, path = "."}
+layerforge = {editable = true, path = "./src"}
 
 [dev-packages]
 poetry-core = "*"

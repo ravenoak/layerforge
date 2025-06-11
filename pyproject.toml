@@ -4,13 +4,13 @@ version = "0.1.0"
 description = "A 3D Model Slicing and SVG Generation Application"
 authors = ["Caitlyn O'Hanna <caitlyn.ohanna@gmail.com>"]
 readme = "README.md"
-packages = [{include = "layerforge"}]
+packages = [{include = "layerforge", from = "src"}]
 
 [tool.poetry.dependencies]
 Rtree = "^1.2"
 click = "^8.1"
 networkx = "^3.3"
-numpy = "^2.0"
+#numpy = "^2.0"
 python = "^3.12"
 scipy = "^1.14"
 shapely = "^2.0"

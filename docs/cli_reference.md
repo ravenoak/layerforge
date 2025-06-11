@@ -1,6 +1,8 @@
 # CLI Reference
 
-::: mkdocs-click
+<!--
+### mkdocs-click
     :module: layerforge.cli
     :command: cli
     :prog_name: layerforge
+-->

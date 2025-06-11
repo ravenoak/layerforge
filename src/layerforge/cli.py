@@ -2,12 +2,12 @@ import sys
 
 import click
 
-from layerforge.models import Model, ModelFactory, SlicerService
-from layerforge.models.loading import LoaderFactory
-from layerforge.svg import SVGGenerator
-from layerforge.svg.drawing import StrategyContext
-from layerforge.utils import initialize_loaders, register_shape_strategies
-from layerforge.writers import SVGFileWriter
+from src.layerforge.models import Model, ModelFactory, SlicerService
+from src.layerforge.models.loading import LoaderFactory
+from src.layerforge.svg import SVGGenerator
+from src.layerforge.svg.drawing import StrategyContext
+from src.layerforge.utils import initialize_loaders, register_shape_strategies
+from src.layerforge.writers import SVGFileWriter
 
 
 def process_model(model: Model, output_folder: str, shape_context: StrategyContext) -> None:

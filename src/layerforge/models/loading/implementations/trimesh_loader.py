@@ -2,7 +2,7 @@ from typing import List, Union
 
 import trimesh
 
-from layerforge.models.loading.base import MeshLoader
+from src.layerforge.models.loading.base import MeshLoader
 
 
 class TrimeshLoader(MeshLoader):

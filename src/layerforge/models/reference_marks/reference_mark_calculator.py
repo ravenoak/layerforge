@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from layerforge.models.slicing.slice import Slice
+    from src.layerforge.models.slicing.slice import Slice
 
 
 class ReferenceMarkCalculator:

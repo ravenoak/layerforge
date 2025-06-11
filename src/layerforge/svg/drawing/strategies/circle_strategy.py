@@ -1,6 +1,6 @@
 from svgwrite import Drawing
 
-from layerforge.domain.shapes import Circle
+from src.layerforge.domain.shapes import Circle
 from .base_strategy import ShapeDrawingStrategy
 
 

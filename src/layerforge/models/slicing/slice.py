@@ -3,10 +3,10 @@ from typing import List
 
 from shapely.geometry import Polygon
 
-from layerforge.models.reference_marks import ReferenceMarkAdjuster
-from layerforge.models.reference_marks import ReferenceMarkCalculator
-from layerforge.models.reference_marks import ReferenceMarkManager
-from layerforge.utils import calculate_distance
+from src.layerforge.models.reference_marks import ReferenceMarkAdjuster
+from src.layerforge.models.reference_marks import ReferenceMarkCalculator
+from src.layerforge.models.reference_marks import ReferenceMarkManager
+from src.layerforge.utils import calculate_distance
 
 
 class Slice:

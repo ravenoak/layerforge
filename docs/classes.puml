@@ -1,0 +1,150 @@
+@startuml
+package "layerforge.app" {
+  package "services" {
+    class SlicerService {
+      - slicer: ISlicer
+      - reference_mark_manager: ReferenceMarkManager
+      + slice_model(model: Model) -> List[Slice]
+    }
+
+    class SVGGeneratorService {
+      - output_writer: IOutputWriter
+      + generate_svgs(slices: List[Slice], output_folder: str) -> None
+    }
+  }
+
+  package "exceptions" {
+    class SlicingError
+    class SVGGenerationError
+  }
+}
+
+package "layerforge.config" {
+  package "settings" {
+    class AppConfig {
+      - scale_factor: float
+      - layer_height: float
+      - output_folder: str
+      + load_config() -> AppConfig
+    }
+  }
+
+  package "logging" {
+    class LoggingConfig {
+      + setup_logging() -> None
+    }
+  }
+}
+
+package "layerforge.core" {
+  package "model" {
+    class Model {
+      - vertices: List[Tuple[float, float, float]]
+      - scale_factor: float
+      - layer_height: float
+      + scale_model(scale_factor: float) -> None
+      + calculate_origin() -> Tuple[float, float, float]
+    }
+  }
+
+  package "slice" {
+    class Slice {
+      - z_position: float
+      - contours: List[Polygon]
+      - reference_marks: List[ReferenceMark]
+      - slice_number: int
+      + add_reference_mark(mark: ReferenceMark) -> None
+      + calculate_contours() -> List[Polygon]
+    }
+  }
+
+  package "reference_mark" {
+    class ReferenceMark {
+      - shape: str
+      - position: Tuple[float, float]
+      - size: float
+      + calculate_position(slice: Slice) -> Tuple[float, float]
+    }
+  }
+
+  package "services" {
+    class ReferenceMarkManager {
+      - existing_marks: List[ReferenceMark]
+      + place_mark(slice: Slice) -> ReferenceMark
+      + adjust_mark_position(mark: ReferenceMark) -> None
+    }
+  }
+
+  package "exceptions" {
+    class ModelError
+    class SliceError
+  }
+}
+
+package "layerforge.infrastructure" {
+  package "model_loader" {
+    class ModelLoader {
+      - file_path: str
+      + load_model() -> Model
+    }
+  }
+
+  package "slicer" {
+    class Slicer {
+      - layer_height: float
+      + slice_model(model: Model) -> List[Slice]
+    }
+  }
+
+  package "svg_writer" {
+    class SVGFileWriter {
+      - output_folder: str
+      + write_svg(slice: Slice) -> None
+    }
+  }
+
+  package "reference_mark_generator" {
+    class ReferenceMarkGenerator {
+      - shape_context: StrategyContext
+      + generate_mark(slice: Slice) -> ReferenceMark
+    }
+  }
+}
+
+package "layerforge.interfaces" {
+  package "model_loader" {
+    interface IModelLoader {
+      + load_model(file_path: str) -> Model
+    }
+  }
+
+  package "slicer" {
+    interface ISlicer {
+      + slice_model(model: Model) -> List[Slice]
+    }
+  }
+
+  package "output_writer" {
+    interface IOutputWriter {
+      + write_svg(slice: Slice, output_folder: str) -> None
+    }
+  }
+
+  package "reference_mark_generator" {
+    interface IReferenceMarkGenerator {
+      + generate_mark(slice: Slice) -> ReferenceMark
+    }
+  }
+}
+
+SlicerService --> ISlicer
+SlicerService --> ReferenceMarkManager
+SVGGeneratorService --> IOutputWriter
+ReferenceMarkManager --> ReferenceMark
+ReferenceMarkManager --> Slice
+ReferenceMarkGenerator --> IReferenceMarkGenerator
+ModelLoader --> IModelLoader
+Slicer --> ISlicer
+SVGFileWriter --> IOutputWriter
+ReferenceMarkGenerator --> IReferenceMarkGenerator
+@enduml

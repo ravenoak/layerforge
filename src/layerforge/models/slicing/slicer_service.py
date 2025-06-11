@@ -1,7 +1,7 @@
 from typing import List
 
-from layerforge.models import Slice, Model
-from layerforge.models.reference_marks import ReferenceMarkManager
+from src.layerforge.models import Slice, Model
+from src.layerforge.models.reference_marks import ReferenceMarkManager
 
 
 class SlicerService:

@@ -2,10 +2,10 @@ from typing import List
 
 import svgwrite
 
-from layerforge.models.slicing import Slice
-from layerforge.svg.drawing import StrategyContext
-from layerforge.svg.slice_svg_drawer import SliceSVGDrawer
-from layerforge.writers.svg_writer import SVGWriter
+from src.layerforge.models.slicing import Slice
+from src.layerforge.svg.drawing import StrategyContext
+from src.layerforge.svg.slice_svg_drawer import SliceSVGDrawer
+from src.layerforge.writers.svg_writer import SVGWriter
 
 
 class SVGGenerator:

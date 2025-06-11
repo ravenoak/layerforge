@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from .strategies.base_strategy import ShapeDrawingStrategy
 
 from svgwrite import Drawing
-from layerforge.domain.shapes.base_shape import BaseShape
+from src.layerforge.domain.shapes.base_shape import BaseShape
 
 
 class StrategyContext:

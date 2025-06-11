@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from svgwrite import Drawing
 
-from layerforge.domain.shapes.base_shape import BaseShape
+from src.layerforge.domain.shapes.base_shape import BaseShape
 
 
 class ShapeDrawingStrategy(ABC):

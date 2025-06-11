@@ -1,4 +1,4 @@
-from layerforge.domain.shapes import Circle, Square, Triangle, Arrow
+from src.layerforge.domain.shapes import Circle, Square, Triangle, Arrow
 
 
 class ShapeFactory:

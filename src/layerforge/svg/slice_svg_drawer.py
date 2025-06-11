@@ -1,9 +1,9 @@
 from shapely.geometry import Polygon
 from svgwrite import Drawing
 
-from layerforge.models.slicing import Slice
-from layerforge.svg.drawing.shape_factory import ShapeFactory
-from layerforge.svg.drawing.strategy_context import StrategyContext
+from src.layerforge.models.slicing import Slice
+from src.layerforge.svg.drawing.shape_factory import ShapeFactory
+from src.layerforge.svg.drawing.strategy_context import StrategyContext
 
 
 class SliceSVGDrawer:

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from svgwrite import Drawing
 
-from layerforge.utils.file_operations import ensure_directory_exists, generate_file_name
+from src.layerforge.utils.file_operations import ensure_directory_exists, generate_file_name
 
 
 

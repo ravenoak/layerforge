@@ -1,9 +1,13 @@
 import logging
-from typing import List
+from typing import List, TYPE_CHECKING
 
 from layerforge.utils.optional_dependencies import require_module
 
-Polygon = require_module("shapely.geometry", "Slice").Polygon
+if TYPE_CHECKING:  # pragma: no cover
+    from shapely.geometry import Polygon as ShpPolygon
+    Polygon = ShpPolygon
+else:
+    Polygon = require_module("shapely.geometry", "Slice").Polygon
 
 from layerforge.models.reference_marks import (
     ReferenceMark,
@@ -38,8 +42,8 @@ class Slice:
         self,
         index: int,
         position: float,
-        contours: List[Polygon],
-        origin: tuple,
+        contours: list[Polygon],
+        origin: tuple[float, float],
         mark_manager: ReferenceMarkManager,
         config: ReferenceMarkConfig | None = None,
     ):

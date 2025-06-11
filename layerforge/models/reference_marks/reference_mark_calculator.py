@@ -4,9 +4,14 @@ from typing import TYPE_CHECKING, List, Tuple
 
 from layerforge.utils.optional_dependencies import require_module
 
-_shapely = require_module("shapely.geometry", "ReferenceMarkCalculator")
-Point = _shapely.Point
-Polygon = _shapely.Polygon
+if TYPE_CHECKING:
+    from shapely.geometry import Point as ShpPoint, Polygon as ShpPolygon
+    Point = ShpPoint
+    Polygon = ShpPolygon
+else:
+    _shapely = require_module("shapely.geometry", "ReferenceMarkCalculator")
+    Point = _shapely.Point
+    Polygon = _shapely.Polygon
 import random
 
 from layerforge.utils import calculate_distance

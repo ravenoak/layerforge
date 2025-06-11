@@ -1,7 +1,12 @@
 import math
+from typing import TYPE_CHECKING
+
 from layerforge.utils.optional_dependencies import require_module
 
-Drawing = require_module("svgwrite", "CircleDrawingStrategy").Drawing
+if TYPE_CHECKING:
+    from svgwrite import Drawing
+else:
+    Drawing = require_module("svgwrite", "CircleDrawingStrategy").Drawing  # type: ignore
 
 from layerforge.domain.shapes import Circle
 from .base_strategy import ShapeDrawingStrategy

@@ -1,7 +1,8 @@
 from importlib import import_module
+from typing import Any
 
 
-def require_module(module: str, feature: str):
+def require_module(module: str, feature: str) -> Any:
     """Import ``module`` or raise an informative :class:`ImportError`."""
     try:
         return import_module(module)

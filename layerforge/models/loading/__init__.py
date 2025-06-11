@@ -2,6 +2,9 @@ __all__ = ["LoaderFactory", "Mesh", "TrimeshLoader"]
 
 from .mesh import Mesh
 from .implementations.trimesh_loader import TrimeshLoader
+from .base import MeshLoader
+
+
 
 
 class LoaderFactory:
@@ -15,7 +18,7 @@ class LoaderFactory:
         A dictionary of loaders, where the key is the name of the loader
         and the value is the loader class.
     """
-    loaders = {}
+    loaders: dict[str, type["MeshLoader"]] = {}
 
     @classmethod
     def register_loader(cls, name: str, loader_cls: type) -> None:

@@ -1,8 +1,12 @@
 import math
+from typing import TYPE_CHECKING
 
 from layerforge.utils.optional_dependencies import require_module
 
-Drawing = require_module("svgwrite", "ArrowDrawingStrategy").Drawing
+if TYPE_CHECKING:
+    from svgwrite import Drawing
+else:
+    Drawing = require_module("svgwrite", "ArrowDrawingStrategy").Drawing  # type: ignore
 
 from layerforge.domain.shapes import Arrow
 from .base_strategy import ShapeDrawingStrategy
@@ -11,7 +15,7 @@ from .base_strategy import ShapeDrawingStrategy
 class ArrowDrawingStrategy(ShapeDrawingStrategy):
     """Drawing strategy for Arrow shapes."""
 
-    def draw(self, dwg: Drawing, arrow: Arrow):
+    def draw(self, dwg: Drawing, arrow: Arrow) -> None:
         """Draws an Arrow shape on the given Drawing object.
 
         Parameters

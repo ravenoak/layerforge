@@ -1,9 +1,10 @@
 """Factory utilities for creating shape instances."""
 
 from layerforge.domain.shapes import Arrow, Circle, Square, Triangle
+from layerforge.domain.shapes.base_shape import BaseShape
 
 # Registry mapping shape names to their implementing classes
-_SHAPE_REGISTRY: dict[str, type] = {
+_SHAPE_REGISTRY: dict[str, type[BaseShape]] = {
     "circle": Circle,
     "square": Square,
     "triangle": Triangle,
@@ -19,7 +20,7 @@ def register_shape(name: str, cls: type) -> None:
 class ShapeFactory:
     """Factory class for creating shapes."""
     @staticmethod
-    def get_shape(shape_type: str, *args, **kwargs) -> object:
+    def get_shape(shape_type: str, *args, **kwargs) -> BaseShape:
         """Return an instance of the shape registered under ``shape_type``.
 
         Raises

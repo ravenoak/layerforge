@@ -1,8 +1,13 @@
 from abc import ABC, abstractmethod
 
+from typing import TYPE_CHECKING
+
 from layerforge.utils.optional_dependencies import require_module
 
-Drawing = require_module("svgwrite", "ShapeDrawingStrategy").Drawing
+if TYPE_CHECKING:  # pragma: no cover - import only for type checking
+    from svgwrite import Drawing
+else:  # pragma: no cover - imported lazily for runtime
+    Drawing = require_module("svgwrite", "ShapeDrawingStrategy").Drawing  # type: ignore
 
 from layerforge.domain.shapes.base_shape import BaseShape
 

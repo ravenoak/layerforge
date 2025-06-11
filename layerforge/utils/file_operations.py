@@ -1,7 +1,7 @@
 import pathlib
 
 
-def ensure_directory_exists(directory: str):
+def ensure_directory_exists(directory: str) -> None:
     """Ensure the specified directory exists.
 
     Creates the directory if it does not exist.
@@ -22,7 +22,7 @@ def ensure_directory_exists(directory: str):
     pathlib.Path(directory).mkdir(parents=True, exist_ok=True)
 
 
-def generate_file_name(directory: str, index: int, extension: str):
+def generate_file_name(directory: str, index: int, extension: str) -> str:
     """Generate a standardized file name.
 
     Parameters

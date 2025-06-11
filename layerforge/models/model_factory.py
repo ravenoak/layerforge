@@ -26,8 +26,8 @@ class ModelFactory:
         self,
         model_file: str,
         layer_height: float,
-        scale_factor: float = None,
-        target_height: float = None,
+        scale_factor: float | None = None,
+        target_height: float | None = None,
     ) -> Model:
         """Create a Model object from an STL file.
 
@@ -58,7 +58,7 @@ class ModelFactory:
 
     @staticmethod
     def _scale_mesh(
-        mesh: Mesh, scale_factor: float = None, target_height: float = None
+        mesh: Mesh, scale_factor: float | None = None, target_height: float | None = None
     ) -> Mesh:
         """Scale the mesh based on the scale factor or target height.
 
@@ -81,20 +81,20 @@ class ModelFactory:
         ValueError
             If both scale_factor and target_height are provided.
         """
-        if scale_factor and target_height:
+        if scale_factor is not None and target_height is not None:
             raise ValueError(
                 "Only one of scale_factor or target_height can be provided."
             )
-        if scale_factor:
+        if scale_factor is not None:
             mesh.apply_scale(scale_factor)
-        elif target_height:
+        elif target_height is not None:
             current_height = mesh.bounds[1][2] - mesh.bounds[0][2]
             scale_factor = target_height / current_height
             mesh.apply_scale(scale_factor)
         return mesh
 
     @staticmethod
-    def _calculate_origin(mesh: Mesh) -> tuple:
+    def _calculate_origin(mesh: Mesh) -> tuple[float, float]:
         """Calculate the (x,y) origin of the mesh.
 
         Parameters

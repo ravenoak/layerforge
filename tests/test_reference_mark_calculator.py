@@ -44,6 +44,7 @@ pkg_ref.ReferenceMarkCalculator = None
 pkg_ref.ReferenceMark = None
 pkg_ref.ReferenceMarkAdjuster = None
 pkg_ref.ReferenceMarkConfig = None
+pkg_ref.ReferenceMarkService = None
 
 module_name_config = "layerforge.models.reference_marks.config"
 spec_config = importlib.util.spec_from_file_location(
@@ -77,6 +78,16 @@ spec_calc.loader.exec_module(module_calc)  # type: ignore
 ReferenceMarkCalculator = module_calc.ReferenceMarkCalculator
 pkg_ref.ReferenceMarkCalculator = ReferenceMarkCalculator
 
+module_name_service = "layerforge.models.reference_marks.reference_mark_service"
+spec_service = importlib.util.spec_from_file_location(
+    module_name_service, ROOT / "layerforge/models/reference_marks/reference_mark_service.py"
+)
+module_service = importlib.util.module_from_spec(spec_service)
+sys.modules[module_name_service] = module_service
+spec_service.loader.exec_module(module_service)  # type: ignore
+ReferenceMarkService = module_service.ReferenceMarkService
+pkg_ref.ReferenceMarkService = ReferenceMarkService
+
 module_name_mark = "layerforge.models.reference_marks.reference_mark"
 spec_mark = importlib.util.spec_from_file_location(
     module_name_mark, ROOT / "layerforge/models/reference_marks/reference_mark.py"
@@ -107,7 +118,7 @@ def test_inherit_mark_within_polygon():
     manager.add_or_update_mark(50, 50, "circle", 3)
     cfg = ReferenceMarkConfig(min_distance=10)
     sl = Slice(0, 0.0, [square], origin=(0, 0), mark_manager=manager, config=cfg)
-    sl.process_reference_marks()
+    ReferenceMarkService.process_slice(sl)
     assert len(sl.ref_marks) == 1
     assert sl.ref_marks[0].x == 50
     assert sl.ref_marks[0].y == 50
@@ -118,7 +129,7 @@ def test_generate_mark_respects_boundary():
     manager = ReferenceMarkManager()
     cfg = ReferenceMarkConfig(min_distance=10)
     sl = Slice(1, 0.0, [square], origin=(0, 0), mark_manager=manager, config=cfg)
-    sl.process_reference_marks()
+    ReferenceMarkService.process_slice(sl)
     assert len(sl.ref_marks) == 1
     pt = Point(sl.ref_marks[0].x, sl.ref_marks[0].y)
     assert square.contains(pt)

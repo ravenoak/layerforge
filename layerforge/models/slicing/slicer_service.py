@@ -2,7 +2,11 @@ from typing import List
 import math
 
 from layerforge.models import Slice, Model
-from layerforge.models.reference_marks import ReferenceMarkManager, ReferenceMarkConfig
+from layerforge.models.reference_marks import (
+    ReferenceMarkManager,
+    ReferenceMarkConfig,
+    ReferenceMarkService,
+)
 
 
 class SlicerService:
@@ -63,8 +67,7 @@ class SlicerService:
                 mark_manager=mark_manager,
                 config=cfg,
             )
-            # TODO: Investigate if this is the best place to process the reference marks
-            slice_.process_reference_marks()
-            slice_.adjust_marks()
+            # Process and adjust reference marks outside of the slicing logic
+            ReferenceMarkService.process_slice(slice_)
             slices.append(slice_)
         return slices

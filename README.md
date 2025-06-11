@@ -33,6 +33,10 @@ A 3D Model Slicing and SVG Generation Application
    pip install -e .
    ```
    Alternatively, run `pip install -r requirements.txt` if you only need the runtime dependencies.
+   To ensure all optional features are available use:
+   ```bash
+   pip install -e .[full]
+   ```
 5. Install development dependencies for running the tests:
    ```bash
    pip install -r requirements-dev.txt

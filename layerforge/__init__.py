@@ -19,7 +19,7 @@ def _load_version() -> str:
         try:
             with pyproject.open("rb") as f:
                 data = tomllib.load(f)
-            return data["tool"]["poetry"]["version"]
+            return str(data["tool"]["poetry"]["version"])
         except Exception:
             pass
     try:

@@ -1,15 +1,15 @@
-from typing import List, TYPE_CHECKING
+from typing import List, TYPE_CHECKING, TypeAlias
 
 from layerforge.utils.optional_dependencies import require_module
 
 if TYPE_CHECKING:  # pragma: no cover
     from shapely.geometry import Point as ShpPoint, Polygon as ShpPolygon
-    Point = ShpPoint
-    Polygon = ShpPolygon
+    Point: TypeAlias = ShpPoint
+    Polygon: TypeAlias = ShpPolygon
 else:
     _shapely = require_module("shapely.geometry", "ReferenceMarkAdjuster")
-    Point = _shapely.Point
-    Polygon = _shapely.Polygon
+    Point: TypeAlias = _shapely.Point
+    Polygon: TypeAlias = _shapely.Polygon
 
 from .reference_mark import ReferenceMark
 from .config import ReferenceMarkConfig

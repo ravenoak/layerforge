@@ -1,34 +1,26 @@
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeAlias
 
 from layerforge.utils.optional_dependencies import require_module
 
 if TYPE_CHECKING:
-    from svgwrite import Drawing
+    from svgwrite import Drawing as SvgDrawing
+    Drawing: TypeAlias = SvgDrawing
 else:
-    Drawing = require_module("svgwrite", "CircleDrawingStrategy").Drawing  # type: ignore
+    Drawing: TypeAlias = require_module("svgwrite", "CircleDrawingStrategy").Drawing  # type: ignore
 
 from layerforge.domain.shapes import Circle
+from layerforge.domain.shapes.base_shape import BaseShape
 from .base_strategy import ShapeDrawingStrategy
+from typing import cast
 
 
 class CircleDrawingStrategy(ShapeDrawingStrategy):
     """Drawing strategy for Circle shapes."""
 
-    def draw(self, dwg: Drawing, circle: Circle) -> None:
-        """Draws a Circle shape on the given Drawing object.
-
-        Parameters
-        ----------
-        dwg : Drawing
-            The Drawing object to draw the shape on.
-        circle : Circle
-            The Circle shape to draw.
-
-        Returns
-        -------
-        None
-        """
+    def draw(self, dwg: Drawing, shape: BaseShape) -> None:
+        """Draw a :class:`Circle` shape on ``dwg``."""
+        circle = cast(Circle, shape)
         color = circle.color or 'red'
         # rotation has no visible effect for circles but is kept for consistency
         element = dwg.circle(

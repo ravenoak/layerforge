@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeAlias
 
 if TYPE_CHECKING:
-    from svgwrite import Drawing
+    from svgwrite import Drawing as SvgDrawing
     from .strategies.base_strategy import ShapeDrawingStrategy
+    Drawing: TypeAlias = SvgDrawing
 else:
     from layerforge.utils.optional_dependencies import require_module
-    Drawing = require_module("svgwrite", "StrategyContext").Drawing  # type: ignore
+    Drawing: TypeAlias = require_module("svgwrite", "StrategyContext").Drawing  # type: ignore
 from layerforge.domain.shapes.base_shape import BaseShape
 
 
@@ -20,8 +21,8 @@ class StrategyContext:
         A dictionary of strategies with shape type as key and strategy as value.
     """
 
-    def __init__(self):
-        self._strategies = {}
+    def __init__(self) -> None:
+        self._strategies: dict[str, ShapeDrawingStrategy] = {}
 
     def register_strategy(self, shape_type: str, strategy: ShapeDrawingStrategy) -> None:
         """Registers a drawing strategy for a specific shape type.

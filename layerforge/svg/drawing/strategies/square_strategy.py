@@ -1,34 +1,26 @@
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeAlias
 
 from layerforge.utils.optional_dependencies import require_module
 
 if TYPE_CHECKING:
-    from svgwrite import Drawing
+    from svgwrite import Drawing as SvgDrawing
+    Drawing: TypeAlias = SvgDrawing
 else:
-    Drawing = require_module("svgwrite", "SquareDrawingStrategy").Drawing  # type: ignore
+    Drawing: TypeAlias = require_module("svgwrite", "SquareDrawingStrategy").Drawing  # type: ignore
 
 from layerforge.domain.shapes import Square
+from layerforge.domain.shapes.base_shape import BaseShape
 from .base_strategy import ShapeDrawingStrategy
+from typing import cast
 
 
 class SquareDrawingStrategy(ShapeDrawingStrategy):
     """Drawing strategy for Square shapes."""
 
-    def draw(self, dwg: Drawing, square: Square) -> None:
-        """Draws a Square shape on the given Drawing object.
-
-        Parameters
-        ----------
-        dwg : Drawing
-            The Drawing object to draw the shape on.
-        square : Square
-            The Square shape to draw.
-
-        Returns
-        -------
-        None
-        """
+    def draw(self, dwg: Drawing, shape: BaseShape) -> None:
+        """Draw a :class:`Square` shape on ``dwg``."""
+        square = cast(Square, shape)
         color = square.color or 'blue'
         element = dwg.rect(
             insert=(square.x - square.size / 2, square.y - square.size / 2),

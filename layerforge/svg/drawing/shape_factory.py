@@ -2,6 +2,7 @@
 
 from layerforge.domain.shapes import Arrow, Circle, Square, Triangle
 from layerforge.domain.shapes.base_shape import BaseShape
+from typing import Any, cast
 
 # Registry mapping shape names to their implementing classes
 _SHAPE_REGISTRY: dict[str, type[BaseShape]] = {
@@ -12,7 +13,7 @@ _SHAPE_REGISTRY: dict[str, type[BaseShape]] = {
 }
 
 
-def register_shape(name: str, cls: type) -> None:
+def register_shape(name: str, cls: type[BaseShape]) -> None:
     """Register ``cls`` under ``name`` in the factory registry."""
     _SHAPE_REGISTRY[name] = cls
 
@@ -20,7 +21,9 @@ def register_shape(name: str, cls: type) -> None:
 class ShapeFactory:
     """Factory class for creating shapes."""
     @staticmethod
-    def get_shape(shape_type: str, *args, **kwargs) -> BaseShape:
+    def get_shape(
+        shape_type: str, *args: object, **kwargs: object
+    ) -> BaseShape:
         """Return an instance of the shape registered under ``shape_type``.
 
         Raises
@@ -35,4 +38,4 @@ class ShapeFactory:
             raise ValueError(
                 f"Unknown shape type: {shape_type}. Available shapes: {available}"
             )
-        return shape_cls(*args, **kwargs)
+        return cast(BaseShape, cast(Any, shape_cls)(*args, **kwargs))

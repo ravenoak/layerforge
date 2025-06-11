@@ -1,19 +1,19 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeAlias, cast
 
 from layerforge.utils.optional_dependencies import require_module
 
 if TYPE_CHECKING:  # pragma: no cover - for type checking only
     from shapely.geometry import Point as ShpPoint, Polygon as ShpPolygon
     from svgwrite import Drawing as SvgDrawing
-    Point = ShpPoint
-    Polygon = ShpPolygon
-    Drawing = SvgDrawing
+    Point: TypeAlias = ShpPoint
+    Polygon: TypeAlias = ShpPolygon
+    Drawing: TypeAlias = SvgDrawing
 else:  # pragma: no cover - lazy imports
     _shapely = require_module("shapely.geometry", "SliceSVGDrawer")
     _svgwrite = require_module("svgwrite", "SliceSVGDrawer")
-    Point = _shapely.Point
-    Polygon = _shapely.Polygon
-    Drawing = _svgwrite.Drawing
+    Point: TypeAlias = _shapely.Point
+    Polygon: TypeAlias = _shapely.Polygon
+    Drawing: TypeAlias = _svgwrite.Drawing
 
 from layerforge.models.slicing import Slice
 from layerforge.models.reference_marks import ReferenceMark

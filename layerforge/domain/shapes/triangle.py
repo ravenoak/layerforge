@@ -18,7 +18,7 @@ class Triangle(BaseShape):
         return 'triangle'
 
     @property
-    def vertices(self) -> list:
+    def vertices(self) -> list[tuple[float, float]]:
         """Return the vertices of the triangle.
 
         Returns

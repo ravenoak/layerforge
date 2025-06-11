@@ -89,11 +89,39 @@ def process_model(
 @click.option('--output-folder', default='output', help='The output folder for SVG files.')
 @click.option('--scale-factor', default=None, type=float, help='The scale factor to apply to the model.')
 @click.option('--target-height', default=None, type=float, help='The target height for the model.')
-@click.option('--mark-tolerance', default=10.0, type=float, help='Tolerance when matching existing marks.')
-@click.option('--mark-min-distance', default=10.0, type=float, help='Minimum distance from contours and between marks.')
-@click.option('--available-shapes', default='circle,square,triangle,arrow', help='Comma separated list of mark shapes.')
-@click.option('--mark-angle', default=0.0, type=float, help='Default mark orientation in degrees.')
-@click.option('--mark-color', default=None, help='Outline color for marks.')
+@click.option(
+    '--mark-tolerance',
+    default=10.0,
+    type=float,
+    help='Tolerance when matching existing marks. '
+    'See docs/reference_mark_algorithm.md#parameter-effects.'
+)
+@click.option(
+    '--mark-min-distance',
+    default=10.0,
+    type=float,
+    help='Minimum distance from contours and between marks. '
+    'See docs/reference_mark_algorithm.md#parameter-effects.'
+)
+@click.option(
+    '--available-shapes',
+    default='circle,square,triangle,arrow',
+    help='Comma separated list of mark shapes. '
+    'See docs/reference_mark_algorithm.md#parameter-effects.'
+)
+@click.option(
+    '--mark-angle',
+    default=0.0,
+    type=float,
+    help='Default mark orientation in degrees. '
+    'See docs/reference_mark_algorithm.md#parameter-effects.'
+)
+@click.option(
+    '--mark-color',
+    default=None,
+    help='Outline color for marks. '
+    'See docs/reference_mark_algorithm.md#parameter-effects.'
+)
 def cli(
     stl_file: str,
     layer_height: float,

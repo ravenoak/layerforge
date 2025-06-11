@@ -84,8 +84,8 @@ The CLI exposes parameters for tuning reference mark generation:
 - `--mark-angle` – default orientation angle for generated marks in degrees.
 - `--mark-color` – outline color for reference marks.
 
-See [docs/configuration.md](docs/configuration.md) for full details on how these
-options influence mark placement.
+See [docs/reference_mark_algorithm.md#parameter-effects](docs/reference_mark_algorithm.md#parameter-effects)
+for diagrams and tuning tips on how these options influence mark placement.
 
 ## Contributing
 

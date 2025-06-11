@@ -64,3 +64,63 @@ class ReferenceMarkAdjuster:
 The final mark set thus respects minimum distances while preserving inherited
 shapes whenever possible.
 
+## Parameter Effects
+
+The parameters controlling mark placement can be tuned to suit different model
+sizes. The following diagrams illustrate how each option influences the final
+reference marks.
+
+### `tolerance`
+
+Marks from a previous slice are reused when they fall within the tolerance
+radius of a candidate position.
+
+```mermaid
+flowchart LR
+    A((Stored mark)) -- within tolerance --> B[Reuse]
+    A -- beyond tolerance --> C[New mark]
+```
+
+### `min_distance`
+
+Marks must stay at least this far from contours **and** other marks.
+
+```mermaid
+flowchart LR
+    C[Contour]
+    M1((Mark1)) -- min_distance --> C
+    M1 ---|min_distance| M2((Mark2))
+```
+
+### `available_shapes`
+
+When a new mark is required the shapes are cycled in order.
+
+```mermaid
+flowchart LR
+    S1[Circle] --> S2[Square] --> S3[Triangle] --> S4[Arrow] --> S1
+```
+
+### `angle`
+
+Controls the orientation of newly generated marks.
+
+```mermaid
+flowchart LR
+    A[Default orientation] -- angle --> B[Rotated]
+```
+
+### `color`
+
+Sets the stroke color used when drawing marks. It does not affect placement but
+may improve visibility in the output SVGs.
+
+#### Tips for Different Model Scales
+
+- **Small models (<10&nbsp;cm)** – use a `min_distance` around 2&ndash;5 units and
+  a lower `tolerance` to prevent clutter.
+- **Medium models (10&ndash;30&nbsp;cm)** – the defaults (10 units) usually work
+  well.
+- **Large models (>30&nbsp;cm)** – increase both `min_distance` and `tolerance`
+  proportionally (15&ndash;25 units) so marks remain distinct.
+

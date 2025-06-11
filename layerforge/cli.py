@@ -8,7 +8,8 @@ from layerforge.models.reference_marks import ReferenceMarkConfig
 from layerforge.models.loading import LoaderFactory
 from layerforge.svg import SVGGenerator
 from layerforge.svg.drawing import StrategyContext
-from layerforge.utils import initialize_loaders, register_shape_strategies
+from layerforge.utils import register_shape_strategies
+from layerforge.utils.loader_initialization import initialize_loaders
 from layerforge.writers import SVGFileWriter
 
 

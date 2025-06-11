@@ -3,7 +3,7 @@ from typing import List, Tuple
 from layerforge.utils.optional_dependencies import require_module
 
 Polygon = require_module("shapely.geometry", "Model").Polygon
-Trimesh = require_module("trimesh", "Model").Trimesh
+from .loading.mesh import Mesh
 
 
 class Model:
@@ -11,7 +11,7 @@ class Model:
 
     Attributes
     ----------
-    mesh : trimesh.base.Geometry
+    mesh : Mesh
         The 3D mesh of the model.
     layer_height : float
         The height of each layer that is sliced from the model.
@@ -19,12 +19,12 @@ class Model:
         The origin of the model.
     """
 
-    def __init__(self, mesh: Trimesh, layer_height: float, origin: tuple):
+    def __init__(self, mesh: Mesh, layer_height: float, origin: tuple):
         """Initialize the Model.
 
         Parameters
         ----------
-        mesh : Trimesh
+        mesh : Mesh
             The 3D mesh of the model.
         layer_height : float
             The height of each layer that is sliced from the model.

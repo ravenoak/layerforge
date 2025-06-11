@@ -1,4 +1,4 @@
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, Point
 from svgwrite import Drawing
 
 from layerforge.models.slicing import Slice
@@ -56,7 +56,34 @@ class SliceSVGDrawer:
             shape_context.draw(dwg, shape_instance)
 
     @staticmethod
-    def draw_slice(dwg: Drawing, slice_obj: Slice, shape_context: StrategyContext) -> None:
+    def _label_position(contour: Polygon, padding: tuple[float, float] | float | None) -> tuple[float, float]:
+        """Return a label position for ``contour`` respecting ``padding``."""
+        try:
+            pt = contour.centroid
+            x, y = pt.x, pt.y
+            if not contour.contains(pt):
+                minx, miny, maxx, maxy = contour.bounds
+                x = (minx + maxx) / 2
+                y = (miny + maxy) / 2
+        except Exception:
+            x, y = 10, 20
+
+        if padding is not None:
+            if isinstance(padding, (list, tuple)):
+                x += padding[0]
+                y += padding[1]
+            else:
+                x += padding
+                y += padding
+        return x, y
+
+    @staticmethod
+    def draw_slice(
+        dwg: Drawing,
+        slice_obj: Slice,
+        shape_context: StrategyContext,
+        padding: tuple[float, float] | float | None = None,
+    ) -> None:
         """Draws a slice.
 
         Parameters
@@ -67,6 +94,8 @@ class SliceSVGDrawer:
             The slice to draw.
         shape_context : StrategyContext
             The shape drawing context.
+        padding : tuple | float | None, optional
+            Extra offset applied to label positions.
 
         Returns
         -------
@@ -77,5 +106,6 @@ class SliceSVGDrawer:
 
         SliceSVGDrawer.draw_reference_marks(dwg, slice_obj.ref_marks, shape_context)
 
-        # TODO: Ensure text is inside the individual slice
-        dwg.add(dwg.text(f"Slice {slice_obj.index}", insert=(10, 20), fill='black'))
+        for contour in slice_obj.contours:
+            x, y = SliceSVGDrawer._label_position(contour, padding)
+            dwg.add(dwg.text(f"Slice {slice_obj.index}", insert=(x, y), fill='black'))

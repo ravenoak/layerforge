@@ -1,13 +1,22 @@
+from typing import TYPE_CHECKING
+
 from layerforge.utils.optional_dependencies import require_module
 
-_shapely = require_module("shapely.geometry", "SliceSVGDrawer")
-_svgwrite = require_module("svgwrite", "SliceSVGDrawer")
-
-Polygon = _shapely.Polygon
-Point = _shapely.Point
-Drawing = _svgwrite.Drawing
+if TYPE_CHECKING:  # pragma: no cover - for type checking only
+    from shapely.geometry import Point as ShpPoint, Polygon as ShpPolygon
+    from svgwrite import Drawing as SvgDrawing
+    Point = ShpPoint
+    Polygon = ShpPolygon
+    Drawing = SvgDrawing
+else:  # pragma: no cover - lazy imports
+    _shapely = require_module("shapely.geometry", "SliceSVGDrawer")
+    _svgwrite = require_module("svgwrite", "SliceSVGDrawer")
+    Point = _shapely.Point
+    Polygon = _shapely.Polygon
+    Drawing = _svgwrite.Drawing
 
 from layerforge.models.slicing import Slice
+from layerforge.models.reference_marks import ReferenceMark
 from layerforge.svg.drawing.shape_factory import ShapeFactory
 from layerforge.svg.drawing.strategy_context import StrategyContext
 
@@ -34,7 +43,9 @@ class SliceSVGDrawer:
         dwg.add(dwg.polygon(points, fill='none', stroke='black'))
 
     @staticmethod
-    def draw_reference_marks(dwg: Drawing, ref_marks: list, shape_context: StrategyContext) -> None:
+    def draw_reference_marks(
+        dwg: Drawing, ref_marks: list[ReferenceMark], shape_context: StrategyContext
+    ) -> None:
         """Draws reference marks.
 
         Parameters

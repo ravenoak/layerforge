@@ -19,12 +19,12 @@ class Mesh:
         self.geometry.apply_translation(translation)
 
     @property
-    def bounds(self):
+    def bounds(self) -> Any:
         return self.geometry.bounds
 
     @property
-    def extents(self):
+    def extents(self) -> Any:
         return self.geometry.extents
 
-    def section(self, plane_origin, plane_normal):
+    def section(self, plane_origin: Sequence[float], plane_normal: Sequence[float]) -> Any:
         return self.geometry.section(plane_origin=plane_origin, plane_normal=plane_normal)

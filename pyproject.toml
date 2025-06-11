@@ -55,3 +55,7 @@ layerforge = "layerforge.cli:cli"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.mypy]
+python_version = "3.12"
+strict = true
+ignore_missing_imports = true

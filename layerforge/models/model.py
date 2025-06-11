@@ -1,8 +1,12 @@
-from typing import List, Tuple
+from typing import List, TYPE_CHECKING
 
 from layerforge.utils.optional_dependencies import require_module
 
-Polygon = require_module("shapely.geometry", "Model").Polygon
+if TYPE_CHECKING:  # pragma: no cover
+    from shapely.geometry import Polygon as ShpPolygon
+    Polygon = ShpPolygon
+else:
+    Polygon = require_module("shapely.geometry", "Model").Polygon
 from .loading.mesh import Mesh
 
 
@@ -19,7 +23,7 @@ class Model:
         The origin of the model.
     """
 
-    def __init__(self, mesh: Mesh, layer_height: float, origin: tuple):
+    def __init__(self, mesh: Mesh, layer_height: float, origin: tuple[float, float]):
         """Initialize the Model.
 
         Parameters
@@ -47,7 +51,7 @@ class Model:
         height = max_bound[2] - min_bound[2]
         return height
 
-    def calculate_slice_contours(self, position) -> List[Polygon]:
+    def calculate_slice_contours(self, position: float) -> list[Polygon]:
         """Calculate the slice contours at a given position.
 
         Parameters

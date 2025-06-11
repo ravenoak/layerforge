@@ -126,13 +126,13 @@ def cli(
     stl_file: str,
     layer_height: float,
     output_folder: str,
-    scale_factor: float,
-    target_height: float,
+    scale_factor: float | None,
+    target_height: float | None,
     mark_tolerance: float,
     mark_min_distance: float,
     available_shapes: str,
     mark_angle: float,
-    mark_color: str,
+    mark_color: str | None,
 ) -> None:
     """Entry point for the CLI.
 

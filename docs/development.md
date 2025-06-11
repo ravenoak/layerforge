@@ -14,7 +14,7 @@
     - Slice the model into layers of a specified thickness.
 
 4. **Reference Marks**:
-    - Reference marks should be placed at the centroid of each slice, where appropriate.
+    - Reference marks are placed using a stability metric that chooses points far from one another and from the contours.
     - Reference marks should be inherited from adjacent slices where possible, including the shape of the mark.
     - New reference marks should be a different shape when added to a slice where they are not inherited.
     - New reference marks must be introduced to a layer that does have a reference mark inherited from an adjacent slice, to ensure there is continuity in the reassembly process.

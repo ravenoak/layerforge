@@ -130,3 +130,22 @@ def test_cli_invalid_layer_height(monkeypatch):
     )
     assert result.exit_code != 0
     assert "Invalid value for --layer-height" in result.output
+
+
+def test_cli_missing_stl_file_error(tmp_path):
+    """Missing STL path should result in a non-zero exit code."""
+    runner = CliRunner()
+    out_dir = tmp_path / "out"
+    result = runner.invoke(
+        cli,
+        [
+            "--stl-file",
+            str(tmp_path / "missing.stl"),
+            "--layer-height",
+            "1.0",
+            "--output-folder",
+            str(out_dir),
+        ],
+    )
+    assert result.exit_code != 0
+    assert result.exception is not None

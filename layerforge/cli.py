@@ -159,6 +159,7 @@ def cli(
 
     This function wraps all the logic for processing an STL file and
     generating SVG slices while accepting commandline arguments.
+    See ``README.md`` for example usage.
 
     Parameters
     ----------

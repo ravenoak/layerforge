@@ -47,6 +47,10 @@ class ReferenceMarkCalculator:
         sampled within the bounding box until ``samples`` unique points that are
         contained within ``poly`` are found.
         """
+        if not poly.is_valid:
+            rounded = [(round(x, 6), round(y, 6)) for x, y in poly.exterior.coords]
+            poly = Polygon(rounded).buffer(0)
+
         pts = [(poly.centroid.x, poly.centroid.y)]
         minx, miny, maxx, maxy = poly.bounds
 
@@ -60,7 +64,11 @@ class ReferenceMarkCalculator:
             x = random.uniform(minx, maxx)
             y = random.uniform(miny, maxy)
             candidate = Point(x, y)
-            if poly.contains(candidate):
+            try:
+                inside = poly.contains(candidate)
+            except Exception:
+                inside = False
+            if inside:
                 cand_tuple = (candidate.x, candidate.y)
                 if cand_tuple not in pts:
                     pts.append(cand_tuple)

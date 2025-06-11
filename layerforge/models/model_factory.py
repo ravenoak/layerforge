@@ -1,6 +1,5 @@
-from trimesh import Trimesh
-
 from .loading.base import MeshLoader
+from .loading.mesh import Mesh
 from .model import Model
 
 
@@ -59,13 +58,13 @@ class ModelFactory:
 
     @staticmethod
     def _scale_mesh(
-        mesh: Trimesh, scale_factor: float = None, target_height: float = None
-    ) -> Trimesh:
+        mesh: Mesh, scale_factor: float = None, target_height: float = None
+    ) -> Mesh:
         """Scale the mesh based on the scale factor or target height.
 
         Parameters
         ----------
-        mesh : Trimesh
+        mesh : Mesh
             The mesh to scale.
         scale_factor : float, optional
             The scale factor to apply to the mesh.
@@ -74,7 +73,7 @@ class ModelFactory:
 
         Returns
         -------
-        Trimesh
+        Mesh
             The scaled mesh.
 
         Raises
@@ -95,12 +94,12 @@ class ModelFactory:
         return mesh
 
     @staticmethod
-    def _calculate_origin(mesh: Trimesh) -> tuple:
+    def _calculate_origin(mesh: Mesh) -> tuple:
         """Calculate the (x,y) origin of the mesh.
 
         Parameters
         ----------
-        mesh : Trimesh
+        mesh : Mesh
             The mesh for which to calculate the origin.
 
         Returns

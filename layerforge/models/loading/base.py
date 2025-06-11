@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
 
+from .mesh import Mesh
+
 
 class MeshLoader(ABC):
     """Base class for loading mesh files"""
     @abstractmethod
-    def load_mesh(self, model_file: str) -> object:
+    def load_mesh(self, model_file: str) -> Mesh:
         """Load a mesh file
 
         Parameters
@@ -14,7 +16,7 @@ class MeshLoader(ABC):
 
         Returns
         -------
-        object
-            The loaded mesh. Type depends on the implementation.
+        Mesh
+            The loaded mesh.
         """
         pass

@@ -70,6 +70,13 @@
 6. Output:
     1. Save the generated SVG files to the specified output directory, with each file representing a slice of the original 3D model.
 
+## Expected Workflow
+
+1. Build a :class:`Model` using :class:`ModelFactory` and the desired mesh loader.
+2. Call :meth:`SlicerService.slice_model` to produce a list of :class:`Slice` objects.
+3. Use :class:`ReferenceMarkService` to process each slice so reference marks are calculated and adjusted.
+4. Pass the processed slices to :class:`SVGGenerator` (via the CLI or directly) to write SVG files.
+
 ## Running the Tests
 
 The test suite depends on optional libraries such as `shapely` and `trimesh`. Each

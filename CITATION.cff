@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "LayerForge"
+version: "0.1.0"
+authors:
+  - family-names: O'Hanna
+    given-names: Caitlyn
+    email: caitlyn.ohanna@gmail.com
+type: software
+license: "CC-BY-NC-4.0"
+repository-code: "https://github.com/ravenoak/layerforge"

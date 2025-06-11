@@ -114,3 +114,19 @@ def test_cli_end_to_end_generates_svgs(tmp_path):
 
     assert result.exit_code == 0, result.output
     assert sorted(out_dir.glob("slice_*.svg")), "no svg files generated"
+
+def test_cli_invalid_layer_height(monkeypatch):
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        [
+            "--stl-file",
+            "model.stl",
+            "--layer-height",
+            "0",
+            "--output-folder",
+            "out",
+        ],
+    )
+    assert result.exit_code != 0
+    assert "Invalid value for --layer-height" in result.output

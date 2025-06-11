@@ -1,6 +1,7 @@
 # LayerForge
 
 [![Build Documentation using MkDocs](https://github.com/ravenoak/layerforge/actions/workflows/docs.yaml/badge.svg)](https://github.com/ravenoak/layerforge/actions/workflows/docs.yaml)
+[![Run Tests](https://github.com/ravenoak/layerforge/actions/workflows/tests.yaml/badge.svg)](https://github.com/ravenoak/layerforge/actions/workflows/tests.yaml)
 
 ## Description
 

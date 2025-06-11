@@ -5,7 +5,7 @@ from layerforge.utils.optional_dependencies import require_module
 trimesh = require_module("trimesh", "TrimeshLoader")
 
 from layerforge.models.loading.base import MeshLoader
-from layerforge.models.loading.mesh import Mesh
+from layerforge.models.loading.mesh import TrimeshMesh, Mesh
 
 
 class TrimeshLoader(MeshLoader):
@@ -30,4 +30,4 @@ class TrimeshLoader(MeshLoader):
             raise ValueError(
                 f"File '{model_file}' contains {len(mesh)} geometries; only a single mesh is supported."
             )
-        return Mesh(mesh)
+        return TrimeshMesh(mesh)

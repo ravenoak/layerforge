@@ -27,7 +27,9 @@ class ReferenceMarkCalculator:
     The calculator evaluates candidate points inside each polygon and selects
     those that maximize a simple geometric stability metric. The metric used is
     inspired by GDOP (Geometric Dilution of Precision) and rewards points that
-    are well spread out.
+    are well spread out.  Marks therefore rarely lie exactly at the centroid of
+    the contour; rather, candidates are sampled and the most stable arrangement
+    is chosen.
     """
 
     @staticmethod

@@ -1,6 +1,6 @@
-__all__ = ["LoaderFactory", "Mesh", "TrimeshLoader"]
+__all__ = ["LoaderFactory", "Mesh", "TrimeshMesh", "TrimeshLoader"]
 
-from .mesh import Mesh
+from .mesh import Mesh, TrimeshMesh
 from .implementations.trimesh_loader import TrimeshLoader
 from .base import MeshLoader
 

@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Tuple
+from typing import TYPE_CHECKING, List, Tuple, TypeAlias
 
 from layerforge.utils.optional_dependencies import require_module
 
 if TYPE_CHECKING:
     from shapely.geometry import Point as ShpPoint, Polygon as ShpPolygon
-    Point = ShpPoint
-    Polygon = ShpPolygon
+    Point: TypeAlias = ShpPoint
+    Polygon: TypeAlias = ShpPolygon
 else:
     _shapely = require_module("shapely.geometry", "ReferenceMarkCalculator")
-    Point = _shapely.Point
-    Polygon = _shapely.Polygon
+    Point: TypeAlias = _shapely.Point
+    Polygon: TypeAlias = _shapely.Polygon
 import random
 
 from layerforge.utils import calculate_distance

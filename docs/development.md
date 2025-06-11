@@ -84,6 +84,28 @@ test module calls `pytest.importorskip` for these imports so that tests are
 skipped if the dependencies are unavailable. Install these packages to execute
 the entire suite.
 
+```
+pip install -r requirements-dev.txt
+```
+
+## Optional Dependencies
+
+In addition to the core requirements, installing `scipy` and `networkx` enables
+advanced slicing features in `trimesh` and prevents common runtime errors.
+
+```bash
+pip install scipy networkx
+```
+
+## Common Error Messages
+
+- `ModuleNotFoundError: No module named 'shapely'` – optional geometry
+  libraries are missing.
+- `ModuleNotFoundError: No module named 'networkx'` – some slicing routines in
+  `trimesh` rely on NetworkX.
+- `pyoxidizer: error: Python interpreter too old` – ensure Python 3.12+ is used
+  when building the executable.
+
 ## Building a Standalone Executable
 
 LayerForge uses [PyOxidizer](https://github.com/indygreg/PyOxidizer) to bundle the application and its dependencies into a single binary. As mentioned in the [README](../README.md#features), "Pyoxidizer packaging enables simple cross-platform distribution."
@@ -104,6 +126,15 @@ pyoxidizer build
 ```
 
 The resulting executable will be placed under `build/`.
+
+For quick testing you can run the generated binary directly:
+
+```bash
+./build/layerforge --help
+```
+
+This produces a self-contained executable that embeds Python and all
+project dependencies.
 
 ### Troubleshooting
 

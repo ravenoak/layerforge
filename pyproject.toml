@@ -16,7 +16,19 @@ scipy = "^1.14"
 shapely = "^2.0"
 svgwrite = "^1.4"
 trimesh = "^4.4"
+pydantic = "^2.6"
 
+[tool.poetry.extras]
+full = [
+    "Rtree",
+    "networkx",
+    "numpy",
+    "scipy",
+    "shapely",
+    "svgwrite",
+    "trimesh",
+    "pydantic",
+]
 [tool.poetry.group.docs]
 optional = true
 
@@ -30,9 +42,16 @@ mkdocs-click = "*"
 mkdocs-literate-nav = "*"
 mkdocs-section-index = "*"
 
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+hypothesis = "*"
+
 [tool.poetry.scripts]
 layerforge = "layerforge.cli:cli"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+

@@ -62,9 +62,14 @@ class Model:
         """
         plane_normal = [0, 0, 1]
         plane_origin = [0, 0, position]
-        layer = self.mesh.section(plane_origin=plane_origin, plane_normal=plane_normal)
+        layer = self.mesh.section(
+            plane_origin=plane_origin, plane_normal=plane_normal
+        )
         if layer is not None:
-            slice_2d, _ = layer.to_planar()
+            if hasattr(layer, "to_2D"):
+                slice_2d = layer.to_2D()
+            else:
+                slice_2d, _ = layer.to_planar()
             contours = slice_2d.polygons_closed
             return [Polygon(contour) for contour in contours]
         return []

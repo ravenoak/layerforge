@@ -65,6 +65,13 @@ def process_model(
             "Only one of scale_factor or target_height can be provided."
         )
 
+    if layer_height <= 0:
+        raise click.BadParameter("must be > 0", param_hint="--layer-height")
+    if scale_factor is not None and scale_factor <= 0:
+        raise click.BadParameter("must be > 0", param_hint="--scale-factor")
+    if target_height is not None and target_height <= 0:
+        raise click.BadParameter("must be > 0", param_hint="--target-height")
+
     shape_context = StrategyContext()
     register_shape_strategies(shape_context)
     initialize_loaders()

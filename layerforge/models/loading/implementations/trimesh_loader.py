@@ -1,6 +1,8 @@
 from typing import List, Union
 
-import trimesh
+from layerforge.utils.optional_dependencies import require_module
+
+trimesh = require_module("trimesh", "TrimeshLoader")
 
 from layerforge.models.loading.base import MeshLoader
 

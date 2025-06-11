@@ -1,6 +1,10 @@
 from typing import List, Optional
 
-from shapely.geometry import Point, Polygon
+from layerforge.utils.optional_dependencies import require_module
+
+_shapely = require_module("shapely.geometry", "ReferenceMarkManager")
+Point = _shapely.Point
+Polygon = _shapely.Polygon
 
 from .config import ReferenceMarkConfig
 

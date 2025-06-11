@@ -1,5 +1,11 @@
-from shapely.geometry import Polygon, Point
-from svgwrite import Drawing
+from layerforge.utils.optional_dependencies import require_module
+
+_shapely = require_module("shapely.geometry", "SliceSVGDrawer")
+_svgwrite = require_module("svgwrite", "SliceSVGDrawer")
+
+Polygon = _shapely.Polygon
+Point = _shapely.Point
+Drawing = _svgwrite.Drawing
 
 from layerforge.models.slicing import Slice
 from layerforge.svg.drawing.shape_factory import ShapeFactory

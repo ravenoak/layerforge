@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List, Tuple
 
-from shapely.geometry import Point, Polygon
+from layerforge.utils.optional_dependencies import require_module
+
+_shapely = require_module("shapely.geometry", "ReferenceMarkCalculator")
+Point = _shapely.Point
+Polygon = _shapely.Polygon
 import random
 
 from layerforge.utils import calculate_distance

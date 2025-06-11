@@ -1,7 +1,9 @@
 from typing import List, Tuple
 
-from shapely.geometry import Polygon
-from trimesh import Trimesh
+from layerforge.utils.optional_dependencies import require_module
+
+Polygon = require_module("shapely.geometry", "Model").Polygon
+Trimesh = require_module("trimesh", "Model").Trimesh
 
 
 class Model:

@@ -9,6 +9,7 @@ A 3D Model Slicing and SVG Generation Application
 ## Table of Contents
 
 - [Installation](#installation)
+- [Dependencies](#dependencies)
 - [Usage](#usage)
 - [Features](#features)
 - [Configuration](#configuration)
@@ -36,6 +37,16 @@ A 3D Model Slicing and SVG Generation Application
    ```bash
    pip install -r requirements-dev.txt
    ```
+
+## Dependencies
+
+The following Python packages are required at runtime:
+
+- `trimesh` – mesh loading and manipulation
+- `svgwrite` – generating SVG files
+- `shapely` – geometric computations
+
+These packages are installed automatically when installing LayerForge.
 
 ## Usage
 

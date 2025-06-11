@@ -1,7 +1,9 @@
 import logging
 from typing import List
 
-from shapely.geometry import Polygon
+from layerforge.utils.optional_dependencies import require_module
+
+Polygon = require_module("shapely.geometry", "Slice").Polygon
 
 from layerforge.models.reference_marks import (
     ReferenceMark,

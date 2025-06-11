@@ -48,6 +48,8 @@ class ReferenceMarkManager:
         if mark:
             mark.shape = shape
             mark.size = size
+            mark.angle = angle
+            mark.color = color
         else:
             self.marks.append(
                 ReferenceMark(x=x, y=y, shape=shape, size=size, angle=angle, color=color)

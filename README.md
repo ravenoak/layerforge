@@ -74,7 +74,7 @@ python -c "import layerforge; print(layerforge.__version__)"
 - Slice STL models into individual layers.
 - Generate SVG files with contours, slice numbers and reference marks.
 - Reference marks are chosen using a geometric stability metric inspired by GDOP.
-- Marks inherit shape and position between adjacent slices and are adjusted to avoid overlaps.
+- Marks inherit shape, position, angle and color between adjacent slices and are adjusted to avoid overlaps.
 - Supports multiple mark shapes (circle, square, triangle, arrow) for easy identification.
 - Pyoxidizer packaging enables simple cross-platform distribution.
 

@@ -2,7 +2,7 @@ import pytest
 
 pytest.importorskip("trimesh")
 pytest.importorskip("shapely")
-from layerforge.models.reference_marks import ReferenceMarkManager, ReferenceMark
+from layerforge.models.reference_marks import ReferenceMarkManager
 
 
 def test_add_and_update_mark():

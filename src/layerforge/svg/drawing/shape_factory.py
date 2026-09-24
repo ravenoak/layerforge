@@ -1,8 +1,9 @@
 """Factory utilities for creating shape instances."""
 
+from typing import Any, cast
+
 from layerforge.domain.shapes import Arrow, Circle, Square, Triangle
 from layerforge.domain.shapes.base_shape import BaseShape
-from typing import Any, cast
 
 # Registry mapping shape names to their implementing classes
 _SHAPE_REGISTRY: dict[str, type[BaseShape]] = {

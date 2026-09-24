@@ -1,5 +1,5 @@
 import logging
-from typing import List, TYPE_CHECKING, TypeAlias
+from typing import TYPE_CHECKING, TypeAlias
 
 from layerforge.utils.optional_dependencies import require_module
 
@@ -14,8 +14,8 @@ from layerforge.models.reference_marks import (
     ReferenceMark,
     ReferenceMarkAdjuster,
     ReferenceMarkCalculator,
-    ReferenceMarkManager,
     ReferenceMarkConfig,
+    ReferenceMarkManager,
 )
 from layerforge.utils import calculate_distance
 
@@ -70,7 +70,7 @@ class Slice:
         self.origin = origin
         self.position = position
 
-        self.ref_marks: List[ReferenceMark] = []
+        self.ref_marks: list[ReferenceMark] = []
 
     def process_reference_marks(self) -> None:
         """Process reference marks for the slice.

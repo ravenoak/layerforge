@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-
 from typing import TYPE_CHECKING, TypeAlias
 
 from layerforge.utils.optional_dependencies import require_module

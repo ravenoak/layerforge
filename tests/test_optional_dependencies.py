@@ -1,4 +1,5 @@
 import types
+
 import pytest
 
 from layerforge.utils.optional_dependencies import require_module

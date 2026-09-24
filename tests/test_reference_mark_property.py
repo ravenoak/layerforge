@@ -1,13 +1,14 @@
 import random
 
 import pytest
-from hypothesis import given, strategies as st, assume
-from shapely.geometry import Polygon, Point
+from hypothesis import assume, given
+from hypothesis import strategies as st
+from shapely.geometry import Point, Polygon
 
 from layerforge.models.reference_marks import (
     ReferenceMarkCalculator,
-    ReferenceMarkManager,
     ReferenceMarkConfig,
+    ReferenceMarkManager,
 )
 from layerforge.models.slicing.slice import Slice
 from layerforge.utils import calculate_distance

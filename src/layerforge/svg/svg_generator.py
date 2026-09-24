@@ -1,4 +1,3 @@
-from typing import List
 
 from layerforge.utils.optional_dependencies import require_module
 
@@ -39,7 +38,7 @@ class SVGGenerator:
         self.svg_writer = svg_writer
         self.shape_context = shape_context
 
-    def generate_svgs(self, slices: List[Slice]) -> None:
+    def generate_svgs(self, slices: list[Slice]) -> None:
         """Generates SVGs for slices.
 
         Parameters

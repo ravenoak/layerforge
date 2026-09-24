@@ -9,7 +9,6 @@ pytest.importorskip("shapely")
 
 from layerforge.cli import process_model
 
-
 NS = {"svg": "http://www.w3.org/2000/svg"}
 
 

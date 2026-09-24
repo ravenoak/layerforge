@@ -1,1 +1,1 @@
-from .svg_writer import SVGWriter, SVGFileWriter
+from .svg_writer import SVGFileWriter, SVGWriter

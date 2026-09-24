@@ -10,10 +10,12 @@ if TYPE_CHECKING:
 else:
     Drawing: TypeAlias = require_module("svgwrite", "SquareDrawingStrategy").Drawing  # type: ignore
 
+from typing import cast
+
 from layerforge.domain.shapes import Square
 from layerforge.domain.shapes.base_shape import BaseShape
+
 from .base_strategy import ShapeDrawingStrategy
-from typing import cast
 
 
 class SquareDrawingStrategy(ShapeDrawingStrategy):

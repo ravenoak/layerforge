@@ -1,5 +1,5 @@
-from click.testing import CliRunner
 import pytest
+from click.testing import CliRunner
 
 from layerforge import cli as cli_module
 

@@ -1,4 +1,5 @@
-from typing import List, TYPE_CHECKING, TypeAlias, Sequence, cast
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, TypeAlias, cast
 
 from layerforge.utils.optional_dependencies import require_module
 

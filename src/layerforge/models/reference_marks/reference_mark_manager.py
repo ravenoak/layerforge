@@ -1,9 +1,10 @@
-from typing import List, Optional, TYPE_CHECKING, TypeAlias
+from typing import TYPE_CHECKING, TypeAlias
 
 from layerforge.utils.optional_dependencies import require_module
 
 if TYPE_CHECKING:  # pragma: no cover
-    from shapely.geometry import Point as ShpPoint, Polygon as ShpPolygon
+    from shapely.geometry import Point as ShpPoint
+    from shapely.geometry import Polygon as ShpPolygon
 
     Point: TypeAlias = ShpPoint
     Polygon: TypeAlias = ShpPolygon
@@ -12,9 +13,9 @@ else:
     Point: TypeAlias = _shapely.Point
     Polygon: TypeAlias = _shapely.Polygon
 
-from .config import ReferenceMarkConfig
-
 from layerforge.utils import calculate_distance
+
+from .config import ReferenceMarkConfig
 from .reference_mark import ReferenceMark
 
 
@@ -28,12 +29,12 @@ class ReferenceMarkManager:
     """
 
     def __init__(self, config: ReferenceMarkConfig | None = None) -> None:
-        self.marks: List[ReferenceMark] = []
+        self.marks: list[ReferenceMark] = []
         self.config = config or ReferenceMarkConfig()
 
     def find_mark_by_position(
         self, x: float, y: float, tolerance: float | None = None
-    ) -> Optional[ReferenceMark]:
+    ) -> ReferenceMark | None:
         """Return the mark at ``(x, y)`` if within ``tolerance`` distance."""
         if tolerance is None:
             tolerance = self.config.tolerance
@@ -67,7 +68,7 @@ class ReferenceMarkManager:
 
     def find_mark_in_polygon(
         self, polygon: Polygon, min_distance: float | None = None
-    ) -> Optional[ReferenceMark]:
+    ) -> ReferenceMark | None:
         """Return a stored mark inside ``polygon`` respecting ``min_distance``."""
         if min_distance is None:
             min_distance = self.config.min_distance

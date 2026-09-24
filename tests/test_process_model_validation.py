@@ -1,5 +1,5 @@
-import pytest
 import click
+import pytest
 
 from layerforge.cli import process_model
 

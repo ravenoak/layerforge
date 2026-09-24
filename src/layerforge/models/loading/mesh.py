@@ -3,15 +3,16 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Sequence
+from typing import Any
 
 
 class Mesh(ABC):
     """Interface describing the operations required by :class:`Model`."""
 
     @abstractmethod
-    def copy(self) -> "Mesh":
+    def copy(self) -> Mesh:
         """Return a copy of the mesh."""
 
     @abstractmethod
@@ -43,7 +44,7 @@ class TrimeshMesh(Mesh):
 
     geometry: Any
 
-    def copy(self) -> "TrimeshMesh":
+    def copy(self) -> TrimeshMesh:
         return TrimeshMesh(self.geometry.copy())
 
     def apply_scale(self, scale: float) -> None:
@@ -70,7 +71,7 @@ class Mesh:
 
     geometry: Any
 
-    def copy(self) -> "Mesh":
+    def copy(self) -> Mesh:
         """Return a copy of the mesh."""
         return Mesh(self.geometry.copy())
 

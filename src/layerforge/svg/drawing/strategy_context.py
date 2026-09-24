@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, TypeAlias
 
 if TYPE_CHECKING:
     from svgwrite import Drawing as SvgDrawing
+
     from .strategies.base_strategy import ShapeDrawingStrategy
 
     Drawing: TypeAlias = SvgDrawing

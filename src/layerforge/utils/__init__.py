@@ -1,6 +1,6 @@
 from .geometry import calculate_distance
-from .shape_strategies import register_shape_strategies
 from .optional_dependencies import require_module
+from .shape_strategies import register_shape_strategies
 
 __all__ = [
     "calculate_distance",

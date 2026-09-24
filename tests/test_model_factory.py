@@ -2,9 +2,10 @@ import pytest
 
 pytest.importorskip("trimesh")
 import trimesh
-from layerforge.models.model_factory import ModelFactory
+
 from layerforge.models.loading.base import MeshLoader
 from layerforge.models.loading.mesh import TrimeshMesh as Mesh
+from layerforge.models.model_factory import ModelFactory
 
 
 class DummyLoader(MeshLoader):

@@ -4,19 +4,19 @@ pytest.importorskip("svgwrite")
 pytest.importorskip("shapely")
 
 import svgwrite
-from shapely.geometry import box, Point
+from shapely.geometry import Point, box
 
 from layerforge.models.reference_marks import (
     ReferenceMark,
-    ReferenceMarkManager,
     ReferenceMarkConfig,
+    ReferenceMarkManager,
 )
 from layerforge.models.slicing.slice import Slice
+from layerforge.svg.drawing.strategy_context import StrategyContext
 from layerforge.svg.slice_svg_drawer import SliceSVGDrawer
 from layerforge.svg.svg_generator import SVGGenerator
-from layerforge.writers.svg_writer import SVGFileWriter, SVGWriter
-from layerforge.svg.drawing.strategy_context import StrategyContext
 from layerforge.utils.shape_strategies import register_shape_strategies
+from layerforge.writers.svg_writer import SVGFileWriter
 
 
 class CaptureWriter(SVGFileWriter):

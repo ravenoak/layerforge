@@ -8,8 +8,8 @@ class ConflictingOptionsError(ValueError):
 import click
 
 from layerforge.models import ModelFactory, SlicerService
-from layerforge.models.reference_marks import ReferenceMarkConfig
 from layerforge.models.loading import LoaderFactory
+from layerforge.models.reference_marks import ReferenceMarkConfig
 from layerforge.svg import SVGGenerator
 from layerforge.svg.drawing import StrategyContext
 from layerforge.utils import register_shape_strategies

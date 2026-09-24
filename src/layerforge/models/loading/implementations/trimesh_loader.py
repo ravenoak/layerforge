@@ -1,11 +1,10 @@
-from typing import List
 
 from layerforge.utils.optional_dependencies import require_module
 
 trimesh = require_module("trimesh", "TrimeshLoader")
 
 from layerforge.models.loading.base import MeshLoader
-from layerforge.models.loading.mesh import TrimeshMesh, Mesh
+from layerforge.models.loading.mesh import Mesh, TrimeshMesh
 
 
 class TrimeshLoader(MeshLoader):

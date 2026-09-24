@@ -1,10 +1,9 @@
-from typing import List
 import math
 
-from layerforge.models import Slice, Model
+from layerforge.models import Model, Slice
 from layerforge.models.reference_marks import (
-    ReferenceMarkManager,
     ReferenceMarkConfig,
+    ReferenceMarkManager,
     ReferenceMarkService,
 )
 

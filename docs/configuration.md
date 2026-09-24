@@ -27,3 +27,7 @@ These correspond to the CLI flags `--mark-tolerance`, `--mark-min-distance`,
 
 By adjusting ``tolerance`` and ``min_distance`` you can control how closely marks
 match between slices and how near they may appear to each other.
+
+## Planned options
+
+The target adds `--units`, `--mark-size`, `--number-height`, `--allow-unaligned`, `--cut-color` and `--engrave-color`. It changes the defaults and meaning of `--mark-min-distance` and `--mark-tolerance`, and removes `--mark-color`. See [Alignment requirements](alignment_requirements.md#command-line-changes).

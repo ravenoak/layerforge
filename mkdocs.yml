@@ -10,6 +10,7 @@ nav:
   - "Getting Started": getting_started.md
   - Features: features.md
   - Requirements: requirements.md
+  - "Alignment Requirements": alignment_requirements.md
   - Architecture: architecture.md
   - "Reference Mark Algorithm": reference_mark_algorithm.md
   - Configuration: configuration.md

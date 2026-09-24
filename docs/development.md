@@ -13,7 +13,8 @@ allium check specs/layerforge.allium
 ## Pseudocode
 
 This is the intended design. Where the code differs, see the known gaps on the
-[Requirements](requirements.md#known-gaps) page.
+[Requirements](requirements.md#known-gaps) page. The requirements behind the
+mark steps are on the [Alignment requirements](alignment_requirements.md) page.
 
 1. Load the 3D Model:
     1. Read an STL file to load the model into the application.
@@ -31,19 +32,20 @@ This is the intended design. Where the code differs, see the known gaps on the
 5. For each slice, process the slice:
     1. Calculate Reference Marks:
         1. Evaluate candidate points using a geometric stability metric derived from GDOP.
-        2. Use the ReferenceMarkManager to inherit marks from adjacent slices when possible or create new marks that maximise stability, ensuring:
-           * Marks are inherited from adjacent slices where possible.
-           * New marks are assigned a unique shape if not inherited.
-           * Marks do not overlap and are contained within the model's contours.
-           * Marks are not placed on the model's edges.
-           * The distance between marks is appropriate for the model's scale.
-           * The size of the marks is proportional to the model's scale, ensuring visibility.
+        2. Choose marks so that each piece can be aligned in exactly one way with each piece it overlaps in the layer above and below, ensuring:
+           * Marks are holes, chosen inside the overlap of two adjacent outlines, so each shared mark is a hole in both layers.
+           * A mark is reused while it stays valid in the next layer and retired when it does not.
+           * Shapes are chosen to remove rotational symmetry: a piece with one mark gets a shape with a direction, and two marks differ in shape.
+           * The whole hole lies inside the piece, clear of edges, other holes and the number.
+           * The size of the marks follows the sheet thickness (the layer height). It does not follow the model's scale.
+           * The distance between marks is large enough to fix rotation with the precision needed.
     2. Adjust Reference Marks:
         1. Adjust the positions of the reference marks to avoid overlaps, using the ReferenceMarkAdjuster.
-    3. Generate SVG File:
-        1. Draw the slice contours.
-        2. Add the adjusted reference marks.
-        3. Annotate the slice with its number within the contour area.
+    3. Check alignment:
+        1. Before any file is written, check that every piece can be aligned in exactly one way. If not, stop with an error that names the slice and piece.
+    4. Generate SVG File:
+        1. Draw the slice contours and the reference marks as cut lines.
+        2. Engrave the slice number inside each piece, clear of the marks.
 6. Output:
     1. Save the generated SVG files to the specified output directory, with each file representing a slice of the original 3D model.
 

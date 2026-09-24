@@ -11,6 +11,7 @@
 --
 -- Rule names carry the requirement IDs from docs/requirements.md.
 -- Behavior that differs from intent is listed under Open Questions (G-n).
+-- The target for alignment (TR-n) is in specs/alignment.allium.
 
 ------------------------------------------------------------
 -- External Entities
@@ -420,3 +421,9 @@ surface Command {
 -- G-17 The SVG has no physical size.
 -- G-18 The slice label can cross an outline.
 -- G-19 The default min_distance ignores the model size.
+-- G-20 Shapes have no common definition; the arrow cannot be cut as a hole.
+-- G-21 Clearance and spacing use the mark centre, not the whole hole.
+-- G-22 A mark near a stored mark takes its shape but not its coordinates.
+-- G-23 The output suits a screen, not a laser.
+-- G-4 to G-7, G-15, G-17 to G-19 and G-20 to G-23 have targets in
+-- docs/alignment_requirements.md (TR-1 to TR-15).

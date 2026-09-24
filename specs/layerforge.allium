@@ -319,8 +319,8 @@ rule FR22_AdjustMarks {
                 not exists mark
     @guidance
         -- The earlier mark of a close pair stays. Marks dropped here stay in
-        -- the run's registry. A slice can end with no marks and no warning
-        -- (G-13).
+        -- the run's registry. A slice can end with a contour that has no
+        -- mark. One warning is logged for the slice; it is still written.
 }
 
 -- SVG output (FR-24 to FR-27) ---------------------------------------------
@@ -407,4 +407,3 @@ surface Command {
 -- G-5  Shapes do not cycle once all are used.
 -- G-6  Mark size is fixed at 3 to 5, not proportional to the model.
 -- G-7  Marks are inherited from any earlier slice, not only neighbours.
--- G-13 Marks that fit nowhere are dropped without a warning.

@@ -94,3 +94,21 @@ def test_cli_missing_file_fails_without_output(tmp_path: Path) -> None:
     result = _run_cli("--stl-file", str(tmp_path / "missing.stl"), "--output-folder", str(out))
     assert result.returncode != 0
     assert not list(out.glob("*.svg"))
+
+
+def test_cli_warns_when_no_mark_fits(box_stl: Path, tmp_path: Path) -> None:
+    """A 10 mm cube is too small for the default 10 mm mark clearance."""
+    out = tmp_path / "out"
+    result = _run_cli(
+        "--stl-file",
+        str(box_stl),
+        "--layer-height",
+        str(LAYER_HEIGHT),
+        "--output-folder",
+        str(out),
+        "--target-height",
+        "10",
+    )
+    assert result.returncode == 0, result.stderr
+    assert "--mark-min-distance" in result.stderr
+    assert len(list(out.glob("slice_*.svg"))) == 2

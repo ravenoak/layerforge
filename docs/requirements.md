@@ -57,7 +57,7 @@ LayerForge slices a 3D mesh into horizontal layers. It writes one SVG file per l
 | FR-19 | Marks are shared across all slices in one run. A chosen point that lies within `tolerance` of an earlier mark inherits its shape, size, angle and color. | `models/slicing/slice.py::process_reference_marks`, `models/reference_marks/reference_mark_manager.py` | `test_slice_mark_inheritance`, `test_slice_process_reference_marks`, `test_reference_mark_manager` |
 | FR-20 | A new mark takes the first configured shape that no mark uses yet. If all are in use, it takes the first configured shape. Its angle and color come from the options. | `models/slicing/slice.py::_select_unique_shape` | `test_slice_process_reference_marks` |
 | FR-21 | A new mark's size is `int(distance from the model origin / 10)`, limited to 3 through 5. | `models/slicing/slice.py::_calculate_mark_size` | `test_slice_mark_size` |
-| FR-22 | After marks are chosen, any mark closer than `min_distance` to a contour boundary, or to a mark already kept, is dropped. The earlier mark stays. | `models/reference_marks/reference_mark_adjuster.py` | `test_reference_mark_adjuster`, `test_reference_mark_adjuster_extra` |
+| FR-22 | After marks are chosen, any mark closer than `min_distance` to a contour boundary, or to a mark already kept, is dropped. The earlier mark stays. If a slice then has a contour with no mark, one warning is logged for the slice (`No reference mark fits N of M contours in slice I. Try a smaller --mark-min-distance.`). The slice is still written. | `models/reference_marks/reference_mark_adjuster.py` | `test_reference_mark_adjuster`, `test_reference_mark_adjuster_extra`, `test_slice_process_reference_marks`, `test_end_to_end` |
 | FR-23 | The mark settings are checked when created: `available_shapes` must not be empty, and `tolerance` and `min_distance` must not be negative. Violations raise `ValueError`. | `models/reference_marks/config.py` | `test_reference_mark_config` |
 
 ### SVG output
@@ -82,7 +82,7 @@ LayerForge slices a 3D mesh into horizontal layers. It writes one SVG file per l
 | NFR-5 | Bad option values fail before any work starts, with a message that names the option. Click reports usage errors with exit code 2. A conflict between options exits with 1. A missing, unreadable or empty mesh file, or a mesh with no height, stops the command with a message that names the file and exit code 1. | `cli.py`, `models/model_factory.py` |
 | NFR-6 | Documentation builds with `mkdocs build --strict` and deploys to GitHub Pages on each push to `main`. | `.github/workflows/docs.yaml` |
 | NFR-7 | The code is licensed CC BY-NC 4.0. A commercial license is offered separately. | `LICENSE`, `COMMERCIAL_LICENSE` |
-| NFR-8 | The tool logs only through the standard `logging` module and sets no log configuration. | `models/slicing/slice.py` |
+| NFR-8 | The tool logs only through the standard `logging` module and sets no log configuration. Warnings therefore reach stderr through Python's last-resort handler. | `models/slicing/slice.py` |
 
 The earlier goals to bundle all dependencies into one binary and to run without a Python install are withdrawn. They depended on PyOxidizer, which was removed because its build file was an unedited template that could not build the tool.
 
@@ -103,6 +103,5 @@ These are places where current behavior differs from the intent in the project d
 | G-5 | Shapes do not cycle (FR-20). Once all are used, every new mark is the first shape. | `_select_unique_shape` | Marks are harder to tell apart on large models. The algorithm page says shapes cycle. |
 | G-6 | Mark size is fixed at 3 to 5 units (FR-21). | `_calculate_mark_size` | It does not scale with the model, and the development notes say it should. |
 | G-7 | Marks are shared by all slices, not only neighbours (FR-19). | One `ReferenceMarkManager` per run. | A mark can be inherited from a slice far away. |
-| G-13 | Marks that fit no polygon are dropped silently (FR-17, FR-22). | `test_end_to_end` scaled cases need `--mark-min-distance 2`. | A small model with default options gets slices with no marks and no warning. |
 
 Fixing these is not part of this page. Each is a candidate for its own issue.

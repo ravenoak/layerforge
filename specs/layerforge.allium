@@ -425,5 +425,6 @@ surface Command {
 -- G-21 Clearance and spacing use the mark centre, not the whole hole.
 -- G-22 A mark near a stored mark takes its shape but not its coordinates.
 -- G-23 The output suits a screen, not a laser.
--- G-4 to G-7, G-15, G-17 to G-19 and G-20 to G-23 have targets in
--- docs/alignment_requirements.md (TR-1 to TR-15).
+-- G-24 Laser, material and mark numbers cannot be set.
+-- G-4 to G-7, G-15, G-17 to G-19 and G-20 to G-24 have targets in
+-- docs/alignment_requirements.md (TR-1 to TR-16).

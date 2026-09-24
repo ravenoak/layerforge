@@ -7,14 +7,15 @@
 --
 -- Scope: layers, pieces, reference marks (holes), shared marks between
 --   adjacent pieces, shapes and their rotational symmetry, the number of a
---   piece, the check before writing and its failure, units.
+--   piece, the check before writing and its failure, units, settings and
+--   where each one comes from.
 -- Excludes:
 --   - Mesh parsing and slicing (see layerforge.allium)
 --   - Drawing details other than the units of TR-13 and the cut/engrave
 --     convention of TR-14
 --
 -- Rule and invariant names carry the requirement IDs from
--- docs/alignment_requirements.md (TR-n). Points that are still open are
+-- docs/alignment_requirements.md (TR-1 to TR-16). Points that are still open are
 -- listed under Open Questions.
 --
 -- TR-1 (the layers can be assembled in exactly one way) is not a separate
@@ -48,8 +49,8 @@ value Failure {
 
 enum Shape { circle | square | triangle | arrow }
 
--- TR-15: only the role is modelled. Everything else about dowel holes is
--- left for the later version.
+-- TR-15: only the role is modelled. Dowel holes use the kerf setting.
+-- Everything else about dowel holes is left for the later version.
 enum MarkRole { alignment | dowel }
 
 -- TR-13
@@ -78,6 +79,7 @@ entity Stack {
     -- govern alignment.
     units: Units
     layer_height: Decimal               -- the sheet thickness
+    kerf: Decimal                       -- TR-6, TR-15
     available_shapes: Set<Shape>
     allow_unaligned: Boolean
     cut_color: String
@@ -91,15 +93,24 @@ entity Stack {
 
     layers: Layer with stack = this
 
-    -- TR-6: the defaults do not depend on the size of the model.
-    mark_size: requested_mark_size ?? layer_height
+    -- TR-6: the defaults do not depend on the size of the model. The
+    -- default mark size is the smallest size that is not a warning.
+    min_mark_size: max(
+        config.marks_min_hole_ratio * layer_height,
+        config.marks_min_hole_kerf_factor * kerf
+    )
+    mark_size: requested_mark_size ?? min_mark_size
+    has_small_mark_size: mark_size < min_mark_size
+    -- TR-5 (default follows the mark size)
     mark_min_distance: requested_mark_min_distance ?? mark_size
-    -- TR-10 (proposed default)
-    mark_tolerance: requested_mark_tolerance ?? config.tolerance_factor * mark_size
+    -- TR-10 (proposed default, follows the mark size)
+    mark_tolerance: requested_mark_tolerance
+        ?? config.marks_tolerance_factor * mark_size
     -- TR-11 (proposed default)
-    number_height: requested_number_height ?? config.default_number_height
+    number_height: requested_number_height
+        ?? convert_length(config.number_height_mm, mm, units)
     -- TR-4 (proposed default)
-    min_baseline: config.baseline_factor * mark_size
+    min_baseline: config.marks_min_baseline_factor * mark_size
     -- TR-12: black box, see the rules.
     failures: alignment_failures(this)
 
@@ -139,7 +150,9 @@ entity Mark {
 }
 
 entity AdjacentPair {
-    -- A piece in layer i and a piece in layer i+1 whose regions overlap.
+    -- A piece in layer i and a piece in layer i+1 whose regions overlap by
+    -- an area of at least checks.min_overlap_area. The default is 0, so any
+    -- overlap counts.
     lower: Piece
     upper: Piece
     shared_marks: SharedMark with pair = this
@@ -148,6 +161,12 @@ entity AdjacentPair {
     alignment_marks: shared_marks where role = alignment
     baseline: farthest_apart_distance(alignment_marks)
     has_short_baseline: alignment_marks.count >= 2 and baseline < stack.min_baseline
+
+    invariant OverlapLargeEnough {
+        regions_overlap(lower.region, upper.region)
+            and overlap_area(lower.region, upper.region)
+                >= config.checks_min_overlap_area
+    }
 }
 
 entity SharedMark {
@@ -188,22 +207,58 @@ entity LayerDrawing {
     number_stroke_width: Decimal
 }
 
+entity Setting {
+    -- TR-16. One setting as given to a run. Values are shown as text here;
+    -- their types come from the table on the requirements page.
+    key: String                         -- for example marks.size
+    command_line_value: String?
+    config_file_value: String?
+    default_value: String
+    source_file: String?                -- the config file, when it supplied the value
+    is_known_key: Boolean
+    has_valid_type: Boolean
+    is_in_range: Boolean
+
+    -- Command line first, then config file, then default.
+    value: command_line_value ?? config_file_value ?? default_value
+    is_invalid: not is_known_key or not has_valid_type or not is_in_range
+}
+
 ------------------------------------------------------------
 -- Config
 ------------------------------------------------------------
 
 config {
-    -- Values marked "proposed" in the requirements page are judgment, not
-    -- measured. Confirm them with a test cut.
-    baseline_factor: Decimal = 4.0          -- TR-4, proposed: times mark size
-    tolerance_factor: Decimal = 0.1         -- TR-10, proposed: times mark size
-    default_number_height: Decimal = 5.0    -- TR-11, proposed, in units
-    number_width_per_height: Decimal = 0.6  -- TR-11: width per character
-    hole_gap_factor: Decimal = 0.5          -- TR-5: times layer height
-    default_units: Units = mm               -- TR-13
-    default_cut_color: String = "red"       -- TR-14
-    default_engrave_color: String = "black" -- TR-14
-    cut_stroke_width_mm: Decimal = 0.01     -- TR-14, converted to the units
+    -- TR-16. Each field maps to the config-file key in its comment. Lengths
+    -- are in the chosen unit; defaults given in mm carry the suffix _mm and
+    -- are converted. Basis: sourced, proposed, existing, convention or
+    -- decision, as on the requirements page. Proposed values are judgment,
+    -- not measured. Confirm them with a test cut.
+    --
+    -- Not stored here because they follow another setting (see Stack):
+    --   marks.size          larger of min_hole_ratio x layer height and
+    --                       min_hole_kerf_factor x kerf (sourced, TR-6)
+    --   marks.min_distance  the mark size (sourced, TR-5)
+    --   marks.tolerance     marks_tolerance_factor x mark size (proposed)
+    units: Units = mm                              -- units, convention (TR-13)
+    layer_height: Decimal = 3.0                    -- layer_height, existing (TR-6)
+    kerf_mm: Decimal = 0.3                         -- kerf, proposed (TR-6, TR-15)
+    marks_min_hole_ratio: Decimal = 1              -- marks.min_hole_ratio, sourced (TR-6)
+    marks_min_hole_kerf_factor: Decimal = 1.5      -- marks.min_hole_kerf_factor, sourced (TR-6)
+    marks_min_web_ratio: Decimal = 0.5             -- marks.min_web_ratio, sourced (TR-5): times layer height
+    marks_min_baseline_factor: Decimal = 4         -- marks.min_baseline_factor, proposed (TR-4): times mark size
+    marks_tolerance_factor: Decimal = 0.1          -- marks.tolerance, proposed (TR-10): times mark size
+    marks_shapes: Set<Shape> = { circle, square, triangle, arrow }
+                                                   -- marks.shapes, existing (TR-8)
+    marks_angle: Decimal = 0                       -- marks.angle, existing (TR-7): degrees
+    number_height_mm: Decimal = 5                  -- number.height, proposed (TR-11)
+    number_width_factor: Decimal = 0.6             -- number.width_factor, proposed (TR-11): per character
+    number_font_family: String = "bold sans-serif" -- number.font_family, sourced (TR-11)
+    output_cut_color: String = "red"               -- output.cut_color, convention (TR-14)
+    output_engrave_color: String = "black"         -- output.engrave_color, convention (TR-14)
+    output_hairline_width_mm: Decimal = 0.01       -- output.hairline_width, sourced (TR-14)
+    checks_allow_unaligned: Boolean = false        -- checks.allow_unaligned, decision (TR-12)
+    checks_min_overlap_area: Decimal = 0           -- checks.min_overlap_area, decision (TR-2): any overlap counts
 }
 
 ------------------------------------------------------------
@@ -250,7 +305,15 @@ rule TR10_SnapToStoredMark {
 -- "valid in the next layer" means the mark's whole footprint lies inside
 -- the shrunken overlap of the two outlines (TR9_SharedMarkInsideShrunkenOverlap).
 
--- Checking and failure (TR-4, TR-12) --------------------------------------
+-- Checking and failure (TR-4, TR-6, TR-12) --------------------------------------
+
+rule TR6_WarnSmallMarkSize {
+    when: stack: Stack.has_small_mark_size
+    ensures: SmallMarkSizeWarned(stack: stack)
+    @guidance
+        -- A warning, not an error, because the person knows the machine. It
+        -- never changes the exit code.
+}
 
 rule TR4_WarnShortBaseline {
     when: pair: AdjacentPair.has_short_baseline
@@ -309,6 +372,19 @@ rule TR12_WriteAlignedStack {
         -- number_does_not_fit) and TR-5 not met (mark_misplaced).
 }
 
+-- Settings (TR-16) ----------------------------------------------------------
+
+rule TR16_RejectInvalidSetting {
+    when: setting: Setting.is_invalid
+    ensures:
+        SettingRejected(file: setting.source_file, key: setting.key)
+        RunStopped(exit_code: 2)
+    @guidance
+        -- Before slicing: no Stack exists yet and no file is written. The
+        -- message names the file and the key. A value from the command line
+        -- has no file.
+}
+
 ------------------------------------------------------------
 -- Invariants
 ------------------------------------------------------------
@@ -323,6 +399,8 @@ invariant TR2_EveryOverlapIsAPair {
             a.layer.stack = b.layer.stack
                 and b.layer.index = a.layer.index + 1
                 and regions_overlap(a.region, b.region)
+                and overlap_area(a.region, b.region)
+                    >= config.checks_min_overlap_area
                 implies exists AdjacentPair{lower: a, upper: b}
 }
 
@@ -365,7 +443,7 @@ invariant TR5_HolesKeepMaterialBetween {
         for b in Marks:
             a != b and a.piece = b.piece
                 implies footprint_gap(a.footprint, b.footprint)
-                    >= config.hole_gap_factor * a.piece.layer.stack.layer_height
+                    >= config.marks_min_web_ratio * a.piece.layer.stack.layer_height
 }
 
 invariant TR5_MarkClearOfNumber {
@@ -447,11 +525,11 @@ invariant TR11_NumberHeightAtLeastMinimum {
 invariant TR11_NumberFitsInsidePiece {
     -- The footprint lies wholly inside the piece, clear of the outline,
     -- holes and marks (TR5_MarkClearOfNumber covers the marks). The width
-    -- is estimated as number_width_per_height * height per character.
+    -- is estimated as number_width_factor * height per character.
     for n in Numbers:
         footprint_inside_piece(n.footprint, n.piece)
             and footprint_clear_of_holes(n.footprint, n.piece)
-            and width_of(n.footprint) >= config.number_width_per_height
+            and width_of(n.footprint) >= config.number_width_factor
                 * n.height * character_count(n.value)
 }
 
@@ -479,7 +557,7 @@ invariant TR14_CutAndEngraveConvention {
     for d in LayerDrawings:
         d.cut_color = d.layer.stack.cut_color
             and d.cut_stroke_width = convert_length(
-                config.cut_stroke_width_mm, mm, d.units
+                config.output_hairline_width_mm, mm, d.units
             )
             and not d.cut_filled
             and d.number_color = d.layer.stack.engrave_color
@@ -493,6 +571,7 @@ invariant TR14_CutAndEngraveConvention {
 
 -- The default text is a bold sans font written as <text>. Converting the
 --   number to outlines comes later.
--- A kerf setting arrives with dowel holes, not before.
+-- The default kerf of 0.3 mm is a proposal inside the sourced range of
+--   0.25 to 0.5 mm.
 -- Cut numbers (--number-mode cut) are not built. The number is always
 --   drawn to engrave.

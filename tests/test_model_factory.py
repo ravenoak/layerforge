@@ -20,7 +20,7 @@ class DummyLoader(MeshLoader):
 def test_scale_mesh_by_factor():
     mesh = Mesh(trimesh.creation.box(extents=(1, 1, 1)))
     scaled = ModelFactory._scale_mesh(mesh.copy(), scale_factor=2)
-    assert pytest.approx(scaled.geometry.extents.tolist()) == [2.0, 2.0, 2.0]
+    assert pytest.approx(scaled.extents.tolist()) == [2.0, 2.0, 2.0]
 
 
 def test_scale_mesh_by_target_height():
@@ -43,7 +43,7 @@ def test_calculate_origin():
 
 
 class ListLoader(MeshLoader):
-    def load_mesh(self, model_file: str):
+    def load_mesh(self, model_file: str):  # pyright: ignore[reportIncompatibleMethodOverride]
         return [
             Mesh(trimesh.creation.box(extents=(1, 1, 1))),
             Mesh(trimesh.creation.box(extents=(2, 2, 2))),

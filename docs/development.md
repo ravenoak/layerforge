@@ -88,6 +88,17 @@ uv run pytest
 hypothesis). Add `--group docs` to build the documentation with
 `uv run mkdocs build --strict`.
 
+## Linting and Type Checking
+
+```bash
+uv run ruff check
+uv run ruff format --check
+uv run pyright
+```
+
+pyright runs in `strict` mode on `src/` and `standard` mode on `tests/` and `scripts/`.
+CI runs all three on every pull request.
+
 ## Common Error Messages
 
 - `ModuleNotFoundError: No module named 'networkx'` or `'scipy'` – `trimesh`

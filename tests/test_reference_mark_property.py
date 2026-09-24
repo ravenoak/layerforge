@@ -1,4 +1,5 @@
 import random
+from typing import cast
 
 import pytest
 from hypothesis import assume, given
@@ -16,8 +17,9 @@ from layerforge.utils import calculate_distance
 
 @given(st.lists(st.tuples(st.floats(0, 100), st.floats(0, 100)), min_size=3, max_size=6))
 def test_marks_inside_polygon(coords):
-    poly = Polygon(coords).convex_hull
-    assume(poly.area > 0)
+    hull = Polygon(coords).convex_hull
+    assume(isinstance(hull, Polygon) and hull.area > 0)
+    poly = cast(Polygon, hull)
     cfg = ReferenceMarkConfig(min_distance=1)
     manager = ReferenceMarkManager(config=cfg)
     sl = Slice(0, 0.0, [poly], origin=(0, 0), mark_manager=manager, config=cfg)
@@ -32,7 +34,7 @@ def test_marks_inside_polygon(coords):
 
 
 def test_stability_score_permutation():
-    pts = [(0, 0), (10, 0), (0, 10)]
+    pts: list[tuple[float, float]] = [(0, 0), (10, 0), (0, 10)]
     score = ReferenceMarkCalculator._stability_score(pts)
     random.shuffle(pts)
     assert score == pytest.approx(ReferenceMarkCalculator._stability_score(pts))

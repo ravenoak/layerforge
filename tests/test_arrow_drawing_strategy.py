@@ -5,6 +5,7 @@ import pytest
 pytest.importorskip("svgwrite")
 pytest.importorskip("shapely")
 import svgwrite
+import svgwrite.shapes
 
 from layerforge.domain.shapes import Arrow
 from layerforge.svg.drawing.strategies.arrow_strategy import ArrowDrawingStrategy

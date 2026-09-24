@@ -4,6 +4,8 @@ pytest.importorskip("svgwrite")
 pytest.importorskip("shapely")
 
 import svgwrite
+import svgwrite.shapes
+import svgwrite.text
 from shapely.geometry import Point, box
 
 from layerforge.models.reference_marks import (
@@ -55,8 +57,8 @@ def _text_positions(dwg: svgwrite.Drawing) -> list[tuple[float, float]]:
     for el in dwg.elements:
         if isinstance(el, svgwrite.text.Text):
             attr = getattr(el, "attribs", {})
-            x = float(attr.get("x"))
-            y = float(attr.get("y"))
+            x = float(attr["x"])
+            y = float(attr["y"])
             coords.append((x, y))
     return coords
 

@@ -85,8 +85,7 @@ class ModelFactory:
             mesh.apply_scale(scale_factor)
         elif target_height is not None:
             current_height = mesh.bounds[1][2] - mesh.bounds[0][2]
-            scale_factor = target_height / current_height
-            mesh.apply_scale(scale_factor)
+            mesh.apply_scale(target_height / current_height)
         return mesh
 
     @staticmethod

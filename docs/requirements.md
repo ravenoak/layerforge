@@ -79,7 +79,7 @@ LayerForge slices a 3D mesh into horizontal layers. It writes one SVG file per l
 | NFR-2 | Runtime dependencies are declared in `pyproject.toml` and locked in `uv.lock`: click, pydantic, scipy, networkx, shapely, svgwrite, trimesh. Installing the package pulls in all of them. | `pyproject.toml`, `uv.lock` |
 | NFR-3 | Every pull request passes `ruff check`, `ruff format --check`, `pyright` (strict on `src/`) and the full test suite. | `.github/workflows/tests.yaml` |
 | NFR-4 | The command installs as `layerforge` with `uv tool install`, and the wheel contains every module. | `pyproject.toml` (`[project.scripts]`) |
-| NFR-5 | Bad option values fail before any work starts, with a message that names the option. Click reports usage errors with exit code 2. A conflict between options exits with 1. A missing, unreadable or empty mesh file, or a mesh with no height, stops the command with a message that names the file and exit code 1. | `cli.py`, `models/model_factory.py` |
+| NFR-5 | Bad option values fail before any work starts, with a message that names the option. Click reports usage errors with exit code 2. A conflict between options exits with 1. Negative `--mark-tolerance` and `--mark-min-distance` are the exception (G-14). A missing, unreadable or empty mesh file, or a mesh with no height, stops the command with a message that names the file and exit code 1. | `cli.py`, `models/model_factory.py` |
 | NFR-6 | Documentation builds with `mkdocs build --strict` and deploys to GitHub Pages on each push to `main`. | `.github/workflows/docs.yaml` |
 | NFR-7 | The code is licensed CC BY-NC 4.0. A commercial license is offered separately. | `LICENSE`, `COMMERCIAL_LICENSE` |
 | NFR-8 | The tool logs only through the standard `logging` module and sets no log configuration. Warnings therefore reach stderr through Python's last-resort handler. | `models/slicing/slice.py` |
@@ -99,9 +99,15 @@ These are places where current behavior differs from the intent in the project d
 
 | ID | Gap | Evidence | Effect |
 |---|---|---|---|
-| G-4 | Only one mark per polygon (FR-15). | `get_stable_marks` | One mark fixes position but not rotation. The requirement in the development notes for rotational alignment is not met. |
-| G-5 | Shapes do not cycle (FR-20). Once all are used, every new mark is the first shape. | `_select_unique_shape` | Marks are harder to tell apart on large models. The algorithm page says shapes cycle. |
-| G-6 | Mark size is fixed at 3 to 5 units (FR-21). | `_calculate_mark_size` | It does not scale with the model, and the development notes say it should. |
-| G-7 | Marks are shared by all slices, not only neighbours (FR-19). | One `ReferenceMarkManager` per run. | A mark can be inherited from a slice far away. |
+| G-4 (#60) | Only one mark per polygon (FR-15). | `get_stable_marks` | One mark fixes position but not rotation. The requirement in the development notes for rotational alignment is not met. |
+| G-5 (#61) | Shapes do not cycle (FR-20). Once all are used, every new mark is the first shape. | `_select_unique_shape` | Marks are harder to tell apart on large models. The algorithm page says shapes cycle. |
+| G-6 (#62) | Mark size is fixed at 3 to 5 units (FR-21). | `_calculate_mark_size` | It does not scale with the model, and the development notes say it should. |
+| G-7 (#63) | Marks are shared by all slices, not only neighbours (FR-19). | One `ReferenceMarkManager` per run. | A mark can be inherited from a slice far away. |
+| G-14 (#71) | Negative `--mark-tolerance` or `--mark-min-distance` is not caught up front (NFR-5, FR-23). | `cli.py::process_model` builds `ReferenceMarkConfig` after loading the mesh. | The user sees a pydantic traceback. |
+| G-15 (#72) | Mark lookup returns the first mark within tolerance, not the nearest (FR-19). | `ReferenceMarkManager.find_mark_by_position` | With two marks inside the tolerance, a point can inherit the farther one. |
+| G-16 (#73) | Overlapping shells in one mesh give false holes (FR-13). | Two 20 mm boxes, 10 mm apart in x, cut to one polygon of area 566.7 with a hole. The real region is one solid of area 600. | The even-odd rule treats an overlap as a hole. |
+| G-17 (#74) | The SVG has no physical size (FR-26). | `width` and `height` are 100%. | Layers cannot be printed 1:1. |
+| G-18 (#75) | The label can cross an outline (FR-25). | The centroid of a concave polygon can lie near an edge. | The text runs over the outline. |
+| G-19 (#76) | The default `min_distance` ignores the model size (FR-17). | A 10 mm cube gets no marks with the default 10. | Only the warning from FR-22 tells the user. Decide together with G-6. |
 
-Fixing these is not part of this page. Each is a candidate for its own issue.
+Fixing these is not part of this page. Each has its own issue, given in brackets.

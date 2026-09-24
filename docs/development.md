@@ -76,6 +76,23 @@ uv run pyright
 pyright runs in `strict` mode on `src/` and `standard` mode on `tests/` and `scripts/`.
 CI runs all three on every pull request.
 
+## Working Notes
+
+- Run the checks so that a failure is not hidden. Do not pipe them through
+  `tail` in an `&&` chain, because the pipe returns the exit code of `tail`.
+  Run `uv run ruff format` before `ruff check` and `pyright`.
+- `Trimesh.section` takes `(plane_normal, plane_origin)` when called with
+  positional arguments. Pass both by keyword.
+- `Path3D.to_2D()` without a transform re-centres every cut. Slices must use the
+  transform in `Model.calculate_slice_contours` to share one frame.
+- `trimesh.creation.extrude_polygon` needs a triangulation engine that is not
+  installed. Tests build shapes with `extrude_triangulation` or the primitives
+  in `trimesh.creation` instead.
+- To look at an SVG, render it with `rsvg-convert -w 500 -b white in.svg -o out.png`.
+  Do not use `qlmanage`, which can hang.
+- Slice positions are the middle of each layer. A cut exactly on a face of the
+  mesh comes out empty.
+
 ## Common Error Messages
 
 - `ModuleNotFoundError: No module named 'networkx'` or `'scipy'` – `trimesh`

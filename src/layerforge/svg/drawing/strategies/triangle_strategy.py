@@ -16,7 +16,7 @@ class TriangleDrawingStrategy(ShapeDrawingStrategy):
         """Draw a :class:`Triangle` shape on ``dwg``."""
         triangle = cast(Triangle, shape)
         color = triangle.color or "green"
-        verts = triangle.vertices
+        verts: list[tuple[float, float]] = list(triangle.vertices)
         if triangle.angle:
             verts = []
             cx, cy = triangle.x, triangle.y

@@ -22,7 +22,7 @@ class TrimeshLoader(MeshLoader):
         """
         # TODO: Investigate encapsulating mesh in a custom object to abstract the specific
         # library that is used.
-        mesh = trimesh.load_mesh(model_file)
+        mesh = trimesh.load_mesh(model_file)  # pyright: ignore[reportUnknownMemberType]
         if isinstance(mesh, list):
             raise ValueError(
                 f"File '{model_file}' contains {len(mesh)} geometries; "

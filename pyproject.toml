@@ -57,13 +57,7 @@ select = ["E", "F", "W", "I", "UP", "B", "SIM"]
 include = ["src", "tests", "scripts"]
 pythonVersion = "3.12"
 typeCheckingMode = "standard"
+strict = ["src"]
+extraPaths = ["src"]
 venvPath = "."
 venv = ".venv"
-
-[[tool.pyright.executionEnvironments]]
-root = "src"
-typeCheckingMode = "strict"
-
-[[tool.pyright.executionEnvironments]]
-root = "."
-extraPaths = ["src"]

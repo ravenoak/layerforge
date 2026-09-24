@@ -53,7 +53,7 @@ class SlicerService:
         slice_positions = SlicerService.calculate_slice_positions(
             model.calculate_height(), model.layer_height
         )
-        slices = []
+        slices: list[Slice] = []
         mark_manager = ReferenceMarkManager(config=cfg)
         for index, position in enumerate(slice_positions):
             contours = model.calculate_slice_contours(position)

@@ -16,8 +16,6 @@ class ArrowDrawingStrategy(ShapeDrawingStrategy):
         """Draw an :class:`Arrow` shape on ``dwg``."""
         arrow = cast(Arrow, shape)
         angle = arrow.angle
-        if abs(angle) > 2 * math.pi:
-            angle = math.radians(angle)
 
         end = (
             arrow.x + arrow.size * math.cos(angle),

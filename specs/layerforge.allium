@@ -407,7 +407,6 @@ surface Command {
 -- G-5  Shapes do not cycle once all are used.
 -- G-6  Mark size is fixed at 3 to 5, not proportional to the model.
 -- G-7  Marks are inherited from any earlier slice, not only neighbours.
--- G-8  Angle units are mixed between radians and degrees.
 -- G-10 The slice on the top face is empty for flat-topped models.
 -- G-11 Some bad inputs give a traceback instead of a clear message.
 -- G-12 The SVG has no viewBox and does not flip the y axis.

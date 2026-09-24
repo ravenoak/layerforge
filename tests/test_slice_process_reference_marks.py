@@ -1,3 +1,5 @@
+import math
+
 import pytest
 
 pytest.importorskip("shapely")
@@ -27,16 +29,16 @@ def test_new_mark_added_to_manager():
 def test_inherited_mark_keeps_angle_and_color():
     square = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)])
     manager = ReferenceMarkManager()
-    cfg1 = ReferenceMarkConfig(min_distance=10, angle=45, color="red")
+    cfg1 = ReferenceMarkConfig(min_distance=10, angle=math.pi / 4, color="red")
     sl1 = Slice(0, 0.0, [square], origin=(0, 0), mark_manager=manager, config=cfg1)
     ReferenceMarkService.process_slice(sl1)
-    assert sl1.ref_marks[0].angle == 45
+    assert sl1.ref_marks[0].angle == math.pi / 4
     assert sl1.ref_marks[0].color == "red"
 
-    cfg2 = ReferenceMarkConfig(min_distance=10, angle=90, color="blue")
+    cfg2 = ReferenceMarkConfig(min_distance=10, angle=math.pi / 2, color="blue")
     sl2 = Slice(1, 0.0, [square], origin=(0, 0), mark_manager=manager, config=cfg2)
     ReferenceMarkService.process_slice(sl2)
-    assert sl2.ref_marks[0].angle == 45
+    assert sl2.ref_marks[0].angle == math.pi / 4
     assert sl2.ref_marks[0].color == "red"
-    assert manager.marks[0].angle == 45
+    assert manager.marks[0].angle == math.pi / 4
     assert manager.marks[0].color == "red"

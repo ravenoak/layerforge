@@ -27,10 +27,22 @@ uv manages the Python version, the virtual environment, the lock file (`uv.lock`
 
 ### trimesh
 
-`trimesh` is used for loading and manipulating 3D models.
+`trimesh` is used for loading and manipulating 3D models. It needs `scipy` and
+`networkx` to cut a mesh into slices.
+
+### shapely
+
+`shapely` holds the slice outlines as polygons and answers the distance and
+containment questions that place reference marks.
+
+### pydantic
+
+`pydantic` validates the reference mark settings (`ReferenceMarkConfig`).
 
 ## Additional Libraries
 
 - `click`: Used for creating command-line interfaces.
-- `pytest`: Used for testing the application.
+- `pytest` and `hypothesis`: Used for testing the application.
+- `ruff` and `pyright`: Used for linting, formatting and type checking.
+- Allium (`allium check`): Checks the formal specification in `specs/`.
 - `mkdocstrings-python`: Used for generating documentation from docstrings.

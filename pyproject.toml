@@ -1,61 +1,44 @@
-[tool.poetry]
+[project]
 name = "layerforge"
 version = "0.1.0"
 description = "A 3D Model Slicing and SVG Generation Application"
-authors = ["Caitlyn O'Hanna <caitlyn.ohanna@gmail.com>"]
 readme = "README.md"
-packages = [{include = "layerforge"}]
-
-[tool.poetry.dependencies]
-Rtree = "^1.2"
-click = "^8.1"
-networkx = "^3.3"
-numpy = "^2.0"
-python = "^3.12"
-scipy = "^1.14"
-shapely = "^2.0"
-svgwrite = "^1.4"
-trimesh = "^4.4"
-pydantic = "^2.6"
-
-[tool.poetry.extras]
-full = [
-    "Rtree",
-    "networkx",
-    "numpy",
-    "scipy",
-    "shapely",
-    "svgwrite",
-    "trimesh",
-    "pydantic",
+requires-python = ">=3.12"
+license = "CC-BY-NC-4.0"
+license-files = ["LICENSE", "COMMERCIAL_LICENSE"]
+authors = [{ name = "Caitlyn O'Hanna", email = "caitlyn.ohanna@gmail.com" }]
+dependencies = [
+    "click>=8.3",
+    "networkx>=3.7",
+    "pydantic>=2.12",
+    "scipy>=1.18.1",
+    "shapely>=2.1",
+    "svgwrite>=1.4.3",
+    "trimesh>=5.1",
 ]
-[tool.poetry.group.docs]
-optional = true
 
-[tool.poetry.group.docs.dependencies]
-mkdocs = "*"
-mkdocs-material = "*"
-mkdocstrings-python = "*"
-mkdocs-gen-files = "*"
-mkdocs-include-markdown-plugin = "*"
-mkdocs-click = "*"
-mkdocs-literate-nav = "*"
-mkdocs-section-index = "*"
-
-[tool.poetry.group.dev]
-optional = true
-
-[tool.poetry.group.dev.dependencies]
-hypothesis = "*"
-
-[tool.poetry.scripts]
+[project.scripts]
 layerforge = "layerforge.cli:cli"
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[dependency-groups]
+dev = [
+    "hypothesis>=6.140",
+    "pytest>=9.0",
+]
+docs = [
+    "mkdocs>=1.6",
+    "mkdocs-click",
+    "mkdocs-gen-files",
+    "mkdocs-include-markdown-plugin",
+    "mkdocs-literate-nav",
+    "mkdocs-material",
+    "mkdocs-section-index",
+    "mkdocstrings-python",
+]
 
-[tool.mypy]
-python_version = "3.12"
-strict = true
-ignore_missing_imports = true
+[build-system]
+requires = ["uv_build>=0.12,<0.13"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

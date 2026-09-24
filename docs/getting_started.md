@@ -2,19 +2,14 @@
 
 ## Installation
 
-Install the package directly from the repository:
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then install the command-line tool:
 
 ```bash
-pip install -e .
+uv tool install git+https://github.com/ravenoak/layerforge
 ```
 
-Some features rely on additional libraries.  To enable the full
-functionality (and to run the test suite) also install the optional
-dependencies:
-
-```bash
-pip install shapely trimesh networkx scipy
-```
+To work on the code, clone the repository and run `uv sync`. All runtime
+dependencies, including `scipy` and `networkx`, are installed by default.
 
 ## Usage
 

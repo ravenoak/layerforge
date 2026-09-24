@@ -11,14 +11,15 @@ import mkdocs_gen_files
 nav = mkdocs_gen_files.Nav()
 
 root = Path(__file__).parent.parent
-src = root / "layerforge"
+src_root = root / "src"
+src = src_root / "layerforge"
 
 for path in sorted(root.rglob("*.py")):
     if not path.is_relative_to(src):
         continue
 
-    module_path = path.relative_to(root).with_suffix("")
-    doc_path = path.relative_to(root).with_suffix(".md")
+    module_path = path.relative_to(src_root).with_suffix("")
+    doc_path = path.relative_to(src_root).with_suffix(".md")
     full_doc_path = Path("api_reference", doc_path)
 
     parts = tuple(module_path.parts)

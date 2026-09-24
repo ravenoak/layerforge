@@ -131,3 +131,6 @@ may improve visibility in the output SVGs.
 - **Large models (>30&nbsp;cm)** – increase both `min_distance` and `tolerance`
   proportionally (15&ndash;25 units) so marks remain distinct.
 
+## Planned changes
+
+This page describes the algorithm as it is. The target adds a check that adjacent layers can be aligned in exactly one way, shapes chosen to fix rotation, marks chosen per pair of layers, and sizes that follow the sheet thickness. See [Alignment requirements](alignment_requirements.md).

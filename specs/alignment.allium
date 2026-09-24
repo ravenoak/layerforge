@@ -1,0 +1,498 @@
+-- allium: 3
+-- alignment.allium
+--
+-- STATUS: TARGET, NOT BUILT. This spec describes intended behavior. The
+-- current tool does not do any of it. What the tool does today is in
+-- layerforge.allium and docs/requirements.md.
+--
+-- Scope: layers, pieces, reference marks (holes), shared marks between
+--   adjacent pieces, shapes and their rotational symmetry, the number of a
+--   piece, the check before writing and its failure, units.
+-- Excludes:
+--   - Mesh parsing and slicing (see layerforge.allium)
+--   - Drawing details other than the units of TR-13 and the cut/engrave
+--     convention of TR-14
+--
+-- Rule and invariant names carry the requirement IDs from
+-- docs/alignment_requirements.md (TR-n). Points that are still open are
+-- listed under Open Questions.
+--
+-- TR-1 (the layers can be assembled in exactly one way) is not a separate
+-- rule. It follows from TR2 (rotation and position) and TR3 (face up),
+-- which are stated below.
+
+------------------------------------------------------------
+-- Value Types
+------------------------------------------------------------
+
+value Point {
+    x: Decimal
+    y: Decimal
+}
+
+value Outline {
+    -- A closed outline: a circle or a polygon. Geometry is computed by
+    -- black box functions.
+    points: List<Point>
+}
+
+value Failure {
+    layer: Layer
+    piece: Piece
+    reason: FailureReason
+}
+
+------------------------------------------------------------
+-- Enumerations
+------------------------------------------------------------
+
+enum Shape { circle | square | triangle | arrow }
+
+-- TR-15: only the role is modelled. Everything else about dowel holes is
+-- left for the later version.
+enum MarkRole { alignment | dowel }
+
+-- TR-13
+enum Units { mm | cm | `in` }
+
+-- TR-12: the three checks that stop a write.
+enum FailureReason { not_alignable | number_does_not_fit | mark_misplaced }
+
+------------------------------------------------------------
+-- Entities and Variants
+------------------------------------------------------------
+
+entity ShapeDefinition {
+    -- TR-7. Angle 0 points along +x and angles turn counter-clockwise.
+    -- Angles are radians in the package and degrees on the command line.
+    -- Size is the diameter of the smallest circle around the anchor that
+    -- holds the outline. The triangle is isosceles; the arrow is a closed
+    -- arrow outline.
+    shape: Shape
+    has_unlimited_symmetry: Boolean
+    symmetry_order: Integer?            -- null when the symmetry is unlimited
+}
+
+entity Stack {
+    -- One run: the layers cut from one model, with the options that
+    -- govern alignment.
+    units: Units
+    layer_height: Decimal               -- the sheet thickness
+    available_shapes: Set<Shape>
+    allow_unaligned: Boolean
+    cut_color: String
+    engrave_color: String
+    requested_mark_size: Decimal?
+    requested_mark_min_distance: Decimal?
+    requested_mark_tolerance: Decimal?
+    requested_number_height: Decimal?
+    status: sliced | written | refused
+    exit_code: Integer? when status = written | refused
+
+    layers: Layer with stack = this
+
+    -- TR-6: the defaults do not depend on the size of the model.
+    mark_size: requested_mark_size ?? layer_height
+    mark_min_distance: requested_mark_min_distance ?? mark_size
+    -- TR-10 (proposed default)
+    mark_tolerance: requested_mark_tolerance ?? config.tolerance_factor * mark_size
+    -- TR-11 (proposed default)
+    number_height: requested_number_height ?? config.default_number_height
+    -- TR-4 (proposed default)
+    min_baseline: config.baseline_factor * mark_size
+    -- TR-12: black box, see the rules.
+    failures: alignment_failures(this)
+
+    transitions status {
+        sliced -> written
+        sliced -> refused
+        terminal: written, refused
+    }
+}
+
+entity Layer {
+    -- One slice of the model, cut from one sheet. Its SVG is the view from
+    -- above (the +z side).
+    stack: Stack
+    index: Integer
+    pieces: Piece with layer = this
+}
+
+entity Piece {
+    -- One polygon of a layer, with its holes.
+    layer: Layer
+    region: Outline
+    holes: List<Outline>
+    number: Number with piece = this
+    marks: Mark with piece = this
+}
+
+entity Mark {
+    -- A reference mark: a hole cut through one piece.
+    piece: Piece
+    role: MarkRole
+    shape: Shape
+    size: Decimal
+    angle: Decimal                      -- radians
+    centre: Point
+    footprint: Outline                  -- the outline of the hole
+}
+
+entity AdjacentPair {
+    -- A piece in layer i and a piece in layer i+1 whose regions overlap.
+    lower: Piece
+    upper: Piece
+    shared_marks: SharedMark with pair = this
+
+    stack: lower.layer.stack
+    alignment_marks: shared_marks where role = alignment
+    baseline: farthest_apart_distance(alignment_marks)
+    has_short_baseline: alignment_marks.count >= 2 and baseline < stack.min_baseline
+}
+
+entity SharedMark {
+    -- A reference mark that is a hole in both pieces of an adjacent pair.
+    pair: AdjacentPair
+    lower_mark: Mark
+    upper_mark: Mark
+
+    role: lower_mark.role
+    shape: lower_mark.shape
+    size: lower_mark.size
+    angle: lower_mark.angle
+}
+
+entity Number {
+    -- TR-11. The layer number carried by a piece, not the word "Slice".
+    piece: Piece
+    value: Integer
+    height: Decimal
+    footprint: Outline
+    reads_left_to_right_from_above: Boolean
+    drawn_filled: Boolean
+}
+
+entity LayerDrawing {
+    -- TR-13, TR-14. The SVG of one layer.
+    layer: Layer
+    units: Units
+    width: Decimal
+    height: Decimal
+    view_box_width: Decimal
+    view_box_height: Decimal
+    cut_color: String
+    cut_stroke_width: Decimal
+    cut_filled: Boolean
+    number_color: String
+    number_filled: Boolean
+    number_stroke_width: Decimal
+}
+
+------------------------------------------------------------
+-- Config
+------------------------------------------------------------
+
+config {
+    -- Values marked "proposed" in the requirements page are judgment, not
+    -- measured. Confirm them with a test cut.
+    baseline_factor: Decimal = 4.0          -- TR-4, proposed: times mark size
+    tolerance_factor: Decimal = 0.1         -- TR-10, proposed: times mark size
+    default_number_height: Decimal = 5.0    -- TR-11, proposed, in units
+    number_width_per_height: Decimal = 0.6  -- TR-11: width per character
+    hole_gap_factor: Decimal = 0.5          -- TR-5: times layer height
+    default_units: Units = mm               -- TR-13
+    default_cut_color: String = "red"       -- TR-14
+    default_engrave_color: String = "black" -- TR-14
+    cut_stroke_width_mm: Decimal = 0.01     -- TR-14, converted to the units
+}
+
+------------------------------------------------------------
+-- Defaults
+------------------------------------------------------------
+
+-- TR-7: the declared rotational symmetry of each shape.
+default ShapeDefinition circle_definition = {
+    shape: circle, has_unlimited_symmetry: true, symmetry_order: null
+}
+default ShapeDefinition square_definition = {
+    shape: square, has_unlimited_symmetry: false, symmetry_order: 4
+}
+default ShapeDefinition triangle_definition = {
+    shape: triangle, has_unlimited_symmetry: false, symmetry_order: 1
+}
+default ShapeDefinition arrow_definition = {
+    shape: arrow, has_unlimited_symmetry: false, symmetry_order: 1
+}
+
+------------------------------------------------------------
+-- Rules
+------------------------------------------------------------
+
+-- Reference marks (TR-9, TR-10) -------------------------------------------
+
+rule TR10_SnapToStoredMark {
+    when: MarkPointProposed(piece, point)
+    let stack = piece.layer.stack
+    let stored = nearest_stored_mark(stack, point, stack.mark_tolerance)
+    ensures:
+        if stored != null:
+            MarkPointResolved(piece: piece, point: stored.centre)
+        else:
+            MarkPointResolved(piece: piece, point: point)
+    @guidance
+        -- The snapping radius is mark_tolerance. When two stored marks are
+        -- in range, the nearer one wins.
+}
+
+-- TR-9: a mark stays in use while it remains valid in the next layer and
+-- is retired when it leaves the outline or clearance. That is a lifecycle
+-- of a mark across layers. This spec has no such lifecycle yet, because
+-- "valid in the next layer" means the mark's whole footprint lies inside
+-- the shrunken overlap of the two outlines (TR9_SharedMarkInsideShrunkenOverlap).
+
+-- Checking and failure (TR-4, TR-12) --------------------------------------
+
+rule TR4_WarnShortBaseline {
+    when: pair: AdjacentPair.has_short_baseline
+    ensures: ShortBaselineWarned(pair: pair)
+    @guidance
+        -- A warning only. It never changes the exit code. A single shared
+        -- mark has no baseline; its own size sets the precision.
+}
+
+rule TR12_RefuseUnalignedWrite {
+    when: stack: Stack.status becomes sliced
+    requires: stack.failures.count > 0
+    requires: not stack.allow_unaligned
+    ensures:
+        for failure in stack.failures:
+            FailureReported(
+                layer: failure.layer,
+                piece: failure.piece,
+                reason: failure.reason
+            )
+        stack.exit_code = 1
+        stack.status = refused
+    @guidance
+        -- Nothing is written. Each failure goes to stderr with the slice,
+        -- the piece and the reason.
+}
+
+rule TR12_WriteWithWarnings {
+    when: stack: Stack.status becomes sliced
+    requires: stack.failures.count > 0
+    requires: stack.allow_unaligned
+    ensures:
+        for failure in stack.failures:
+            FailureWarned(
+                layer: failure.layer,
+                piece: failure.piece,
+                reason: failure.reason
+            )
+        stack.exit_code = 0
+        stack.status = written
+    @guidance
+        -- --allow-unaligned turns the errors into warnings. The files are
+        -- written.
+}
+
+rule TR12_WriteAlignedStack {
+    when: stack: Stack.status becomes sliced
+    requires: stack.failures.count = 0
+    ensures:
+        stack.exit_code = 0
+        stack.status = written
+    @guidance
+        -- alignment_failures runs after slicing and before any file is
+        -- written. It reports, for every piece: TR-2 not met
+        -- (not_alignable), the number does not fit (TR-3, TR-11:
+        -- number_does_not_fit) and TR-5 not met (mark_misplaced).
+}
+
+------------------------------------------------------------
+-- Invariants
+------------------------------------------------------------
+
+-- Alignment (TR-2, TR-3, TR-4) --------------------------------------------
+
+invariant TR2_EveryOverlapIsAPair {
+    -- The lowest and highest layers have one neighbour, so this holds for
+    -- them with one side only.
+    for a in Pieces:
+        for b in Pieces:
+            a.layer.stack = b.layer.stack
+                and b.layer.index = a.layer.index + 1
+                and regions_overlap(a.region, b.region)
+                implies exists AdjacentPair{lower: a, upper: b}
+}
+
+invariant TR2_OneWayToAlign {
+    -- Two marks are the same only if shape, size and angle match.
+    -- has_nonidentity_rotation_symmetry is a black box. It is true when
+    -- some rotation other than none maps the set of marks onto itself. It
+    -- uses the symmetry order declared for each shape (TR-7).
+    -- Dowel holes are excluded by using alignment_marks (TR-15).
+    for pair in AdjacentPairs:
+        pair.alignment_marks.count >= 1
+            and not has_nonidentity_rotation_symmetry(pair.alignment_marks)
+}
+
+invariant TR3_NumberFixesFaceUp {
+    -- The person assembling places each layer with its number readable
+    -- from above. The marks do not have to break mirror symmetry, so
+    -- nothing here asks for that.
+    for n in Numbers:
+        n.reads_left_to_right_from_above
+}
+
+-- Reference marks (TR-5 to TR-10) -----------------------------------------
+
+invariant TR5_MarkFootprintInsidePiece {
+    for m in Marks:
+        footprint_inside_piece(m.footprint, m.piece)
+}
+
+invariant TR5_MarkCentreClearOfOutlines {
+    -- Distance from the centre to every outline of the piece, holes
+    -- included.
+    for m in Marks:
+        distance_to_outlines(m.centre, m.piece)
+            >= m.piece.layer.stack.mark_min_distance
+}
+
+invariant TR5_HolesKeepMaterialBetween {
+    for a in Marks:
+        for b in Marks:
+            a != b and a.piece = b.piece
+                implies footprint_gap(a.footprint, b.footprint)
+                    >= config.hole_gap_factor * a.piece.layer.stack.layer_height
+}
+
+invariant TR5_MarkClearOfNumber {
+    for m in Marks:
+        not footprints_overlap(m.footprint, m.piece.number.footprint)
+}
+
+invariant TR6_MarkSizeFromStack {
+    for m in Marks:
+        m.role = alignment implies m.size = m.piece.layer.stack.mark_size
+}
+
+invariant TR8_ShapesFromAvailable {
+    -- The choice of shapes is guided by TR-2. Only the limit set by
+    -- --available-shapes is stated here.
+    for m in Marks:
+        m.role = alignment implies m.shape in m.piece.layer.stack.available_shapes
+}
+
+invariant TR9_SharedMarkInsideShrunkenOverlap {
+    -- Each shared mark is a hole in both pieces, inside the overlap of
+    -- their outlines shrunk by the clearance of TR-5.
+    for s in SharedMarks:
+        s.lower_mark.piece = s.pair.lower
+            and s.upper_mark.piece = s.pair.upper
+            and footprint_inside_shrunken_overlap(
+                s.lower_mark.footprint,
+                s.pair.lower,
+                s.pair.upper,
+                s.pair.stack.mark_min_distance
+            )
+}
+
+invariant TR10_SharedMarkIsOneMark {
+    -- Same coordinates in every layer that holds it. TR-8: shape, size and
+    -- angle are the same wherever the mark appears.
+    for s in SharedMarks:
+        s.lower_mark.centre = s.upper_mark.centre
+            and s.lower_mark.shape = s.upper_mark.shape
+            and s.lower_mark.size = s.upper_mark.size
+            and s.lower_mark.angle = s.upper_mark.angle
+}
+
+-- TR-9, "no alignment mark is a hole in every layer of a stack of three or
+-- more layers": defined on the page (same centre, shape, size and angle, as
+-- in TR10_SharedMarkIsOneMark) but not yet written as an invariant.
+
+-- Shapes (TR-7) -------------------------------------------------------------
+
+invariant TR7_SymmetryDeclared {
+    for d in ShapeDefinitions:
+        d.has_unlimited_symmetry implies d.symmetry_order = null
+}
+
+invariant TR7_FiniteSymmetryHasOrder {
+    for d in ShapeDefinitions:
+        not d.has_unlimited_symmetry implies d.symmetry_order != null
+}
+
+-- Number (TR-11) ------------------------------------------------------------
+
+invariant TR11_NumberDrawnFilled {
+    for n in Numbers:
+        n.drawn_filled
+}
+
+invariant TR11_NumberIsLayerNumber {
+    -- The number shown is the layer number. It starts at 0, as in the file
+    -- name slice_000.svg.
+    for n in Numbers:
+        n.value = n.piece.layer.index
+}
+
+invariant TR11_NumberHeightAtLeastMinimum {
+    for n in Numbers:
+        n.height >= n.piece.layer.stack.number_height
+}
+
+invariant TR11_NumberFitsInsidePiece {
+    -- The footprint lies wholly inside the piece, clear of the outline,
+    -- holes and marks (TR5_MarkClearOfNumber covers the marks). The width
+    -- is estimated as number_width_per_height * height per character.
+    for n in Numbers:
+        footprint_inside_piece(n.footprint, n.piece)
+            and footprint_clear_of_holes(n.footprint, n.piece)
+            and width_of(n.footprint) >= config.number_width_per_height
+                * n.height * character_count(n.value)
+}
+
+-- Units and output (TR-13, TR-14) -------------------------------------------
+
+invariant TR13_SvgSizeInUnits {
+    -- Every SVG has the same width and height, in the unit of the stack,
+    -- and a viewBox in the same numbers.
+    for d in LayerDrawings:
+        d.units = d.layer.stack.units
+            and d.view_box_width = d.width
+            and d.view_box_height = d.height
+}
+
+invariant TR13_SameSizeEverySvg {
+    for a in LayerDrawings:
+        for b in LayerDrawings:
+            a.layer.stack = b.layer.stack
+                implies a.width = b.width and a.height = b.height
+}
+
+invariant TR14_CutAndEngraveConvention {
+    -- Cut geometry (piece outlines and holes): one colour, hairline stroke,
+    -- no fill. The number: filled, no stroke, in the engrave colour.
+    for d in LayerDrawings:
+        d.cut_color = d.layer.stack.cut_color
+            and d.cut_stroke_width = convert_length(
+                config.cut_stroke_width_mm, mm, d.units
+            )
+            and not d.cut_filled
+            and d.number_color = d.layer.stack.engrave_color
+            and d.number_filled
+            and d.number_stroke_width = 0
+}
+
+------------------------------------------------------------
+-- Open Questions
+------------------------------------------------------------
+
+-- The default text is a bold sans font written as <text>. Converting the
+--   number to outlines comes later.
+-- A kerf setting arrives with dowel holes, not before.
+-- Cut numbers (--number-mode cut) are not built. The number is always
+--   drawn to engrave.

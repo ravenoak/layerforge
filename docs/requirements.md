@@ -1,12 +1,12 @@
 # Requirements
 
-This page lists what LayerForge does today, derived from the code and tests as of 2026-09. It describes current behavior, not intended behavior. Where the two differ, the difference is listed under [Known gaps](#known-gaps).
+This page lists what LayerForge does today, derived from the code and tests as of 2026-09. It describes current behavior, not intended behavior. Where the two differ, the difference is listed under [Known gaps](#known-gaps). The intended behavior for alignment, which the tool does not yet meet, is on the [Alignment requirements](alignment_requirements.md) page.
 
 The same behavior is written as a formal specification in [`specs/layerforge.allium`](https://github.com/ravenoak/layerforge/blob/main/specs/layerforge.allium). The rule names there match the IDs here.
 
 ## Purpose
 
-LayerForge slices a 3D mesh into horizontal layers. It writes one SVG file per layer. Each SVG has the layer outline, numbered reference marks, and a slice number. A person cuts the layers, stacks them, and uses the marks to align them.
+LayerForge slices a 3D mesh into horizontal layers. It writes one SVG file per layer. Each SVG has the layer outline, numbered reference marks, and a slice number. A person cuts the layers, stacks them, and uses the marks to align them. The marks are meant to be holes cut through the sheet, and the layers must be alignable in exactly one way. The tool does not check that yet (see G-4).
 
 ## How to read this page
 
@@ -99,15 +99,19 @@ These are places where current behavior differs from the intent in the project d
 
 | ID | Gap | Evidence | Effect |
 |---|---|---|---|
-| G-4 (#60) | Only one mark per polygon (FR-15). | `get_stable_marks` | One mark fixes position but not rotation. The requirement in the development notes for rotational alignment is not met. |
-| G-5 (#61) | Shapes do not cycle (FR-20). Once all are used, every new mark is the first shape. | `_select_unique_shape` | Marks are harder to tell apart on large models. The algorithm page says shapes cycle. |
-| G-6 (#62) | Mark size is fixed at 3 to 5 units (FR-21). | `_calculate_mark_size` | It does not scale with the model, and the development notes say it should. |
-| G-7 (#63) | Marks are shared by all slices, not only neighbours (FR-19). | One `ReferenceMarkManager` per run. | A mark can be inherited from a slice far away. |
+| G-4 (#60) | Only one mark per polygon (FR-15), and nothing checks that adjacent layers can be aligned in exactly one way. | `get_stable_marks`. The first mark is usually a circle, which has no direction. | One mark fixes position but not rotation. A cube or cylinder can be stacked rotated. Target: TR-1 to TR-4, TR-12. |
+| G-5 (#61) | Shapes are chosen by list order, not by need (FR-20). Once all are used, every new mark is the first shape. | `_select_unique_shape` | The first mark is a circle and cannot fix rotation. The algorithm page says shapes cycle. Target: TR-8. |
+| G-6 (#62) | Mark size comes from the distance to the model origin, clamped to 3 to 5 units (FR-21). | `_calculate_mark_size` | It does not follow the sheet thickness. The development notes say it should follow the model's scale, and the target says the sheet thickness instead. Target: TR-6. |
+| G-7 (#63) | Marks are shared by all slices, not chosen for pairs of adjacent layers (FR-19). | One `ReferenceMarkManager` per run. | A mark can be inherited from a slice far away, and nothing makes the shared marks lie in both outlines. Target: TR-9. |
 | G-14 (#71) | Negative `--mark-tolerance` or `--mark-min-distance` is not caught up front (NFR-5, FR-23). | `cli.py::process_model` builds `ReferenceMarkConfig` after loading the mesh. | The user sees a pydantic traceback. |
-| G-15 (#72) | Mark lookup returns the first mark within tolerance, not the nearest (FR-19). | `ReferenceMarkManager.find_mark_by_position` | With two marks inside the tolerance, a point can inherit the farther one. |
+| G-15 (#72) | Mark lookup returns the first mark within tolerance, not the nearest (FR-19). | `ReferenceMarkManager.find_mark_by_position` | With two marks inside the tolerance, a point can inherit the farther one. Target: TR-10. |
 | G-16 (#73) | Overlapping shells in one mesh give false holes (FR-13). | Two 20 mm boxes, 10 mm apart in x, cut to one polygon of area 566.7 with a hole. The real region is one solid of area 600. | The even-odd rule treats an overlap as a hole. |
-| G-17 (#74) | The SVG has no physical size (FR-26). | `width` and `height` are 100%. | Layers cannot be printed 1:1. |
-| G-18 (#75) | The label can cross an outline (FR-25). | The centroid of a concave polygon can lie near an edge. | The text runs over the outline. |
-| G-19 (#76) | The default `min_distance` ignores the model size (FR-17). | A 10 mm cube gets no marks with the default 10. | Only the warning from FR-22 tells the user. Decide together with G-6. |
+| G-17 (#74) | The SVG has no physical size (FR-26). | `width` and `height` are 100%. | Layers cannot be printed 1:1, and laser software may import them at the wrong size. Target: TR-13. |
+| G-18 (#75) | The label can cross an outline (FR-25). | The centroid of a concave polygon can lie near an edge. | The text runs over the outline. The first mark and the number can also sit on the same point. Target: TR-11. |
+| G-19 (#76) | The default `min_distance` ignores the model size (FR-17). | A 10 mm cube gets no marks with the default 10. | Only the warning from FR-22 tells the user. Target: TR-6. |
+| G-20 (#84) | Shapes have no common definition (FR-27). The arrow is a line and an open head, anchored at its tail. Square and circle sizes are a side and a diameter. The triangle's size is half its width. Angle 0 points along +x for the arrow and up for the triangle. | `svg/drawing/strategies/*`, `domain/shapes/*` | An arrow cannot be cut as a hole, and marks of one size are not comparable. Target: TR-7. |
+| G-21 (#85) | Clearance and spacing use the mark's centre, not its whole hole (FR-17, FR-22). | `get_stable_marks`, `ReferenceMarkAdjuster` | A large mark can touch the outline or another mark. Target: TR-5. |
+| G-22 (#82) | A new point within the tolerance of a stored mark takes its shape but keeps its own coordinates (FR-19). The default tolerance is 10 units. | `Slice.process_reference_marks` | The same mark can sit at two places in two layers, so the holes do not line up. Target: TR-10. |
+| G-23 (#83) | The output suits a screen, not a laser (FR-25, FR-27). Outlines are black, holes use a colour per shape, the root sets a stroke width of 1/200 of the drawing, and the label is 1/20 of it. | `svg/svg_generator.py`, `svg/drawing/strategies/*` | Laser software may read the strokes as areas to engrave, treat colours as different operations, and get text too small to engrave. Target: TR-11, TR-14. |
 
 Fixing these is not part of this page. Each has its own issue, given in brackets.

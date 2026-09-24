@@ -24,3 +24,6 @@ layers without interfering with the slice geometry.
 See [Reference Mark Algorithm](reference_mark_algorithm.md) for a deeper look at
 the metric and adjustment steps.
 
+## Planned changes
+
+The marks are meant to be holes that let a person stack the layers in exactly one way. That needs marks chosen per pair of adjacent layers, shapes chosen to fix rotation, and a check before any file is written. See [Alignment requirements](alignment_requirements.md). The behavior above is what the tool does today.

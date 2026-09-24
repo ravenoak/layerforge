@@ -118,7 +118,8 @@ entity Slice {
 }
 
 entity Contour {
-    -- One closed loop of a cut, as a polygon in the model's x and y coordinates.
+    -- One polygon of a cut, in the model's x and y coordinates. It may have
+    -- holes, which come from loops nested inside it.
     slice: Slice
 }
 
@@ -182,6 +183,9 @@ rule FR2_FR3_RejectNonPositiveValues {
     ensures: run.status = rejected
     @guidance
         -- Message: "Invalid value for --<option>: must be > 0". Exit code 2.
+        -- --available-shapes is checked in the same way: an empty list or an
+        -- unknown shape name gives "Invalid value for --available-shapes" and
+        -- exit code 2, before the mesh is read.
 }
 
 -- Scaling (FR-8 to FR-10) -------------------------------------------------
@@ -205,8 +209,10 @@ rule FR9_ScaleToTargetHeight {
         scale_uniformly(run.mesh, run.target_height / run.height, about: origin_of_space)
         run.status = scaled
     @guidance
-        -- A mesh with no height is rejected when it is loaded, so run.height is
-        -- always positive here.
+        -- A mesh with no geometry or no height is rejected after it is loaded
+        -- with "Cannot load '<file>': <reason>" and exit code 1, so run.height
+        -- is always positive here. A missing or unreadable file fails the same
+        -- way.
 }
 
 rule NoScaling {
@@ -251,9 +257,9 @@ rule FR13_CutSlice {
         slice.contours = closed_loops(cut(slice.run.mesh, slice.position))
         slice.status = cut
     @guidance
-        -- A plane that cuts nothing gives no contours. Every loop is one
-        -- polygon. Loops are combined by the even-odd rule, so a loop inside another
-        -- is a hole.
+        -- A plane that cuts nothing gives no contours. Loops are combined by the even-odd rule, so a loop inside
+        -- another is a hole of that polygon, and a loop inside a hole is a
+        -- polygon of its own.
 }
 
 -- Reference marks (FR-15 to FR-22) ----------------------------------------
@@ -336,7 +342,7 @@ rule FR24_WriteSvg {
         slice.status = drawn
     @guidance
         -- svg_name(i) is "slice_" plus i as three digits plus ".svg". The file
-        -- holds each contour as a black unfilled polygon, then each mark, then
+        -- holds each contour as a black unfilled polygon (plus one for each hole), then each mark, then
         -- the text "Slice N" once per contour (FR-25). Points are drawn at
         -- (x, -y), so the y axis points up as in the model (FR-26). Every file
         -- has the same viewBox, which holds the contours of all slices plus a

@@ -67,12 +67,12 @@ All rows are **planned**. "Closes" names the known gaps the row addresses, with 
 
 | ID | Requirement | Closes |
 |---|---|---|
-| TR-5 | A reference mark is a hole. Its footprint is a closed outline that lies wholly inside the piece. The centre is at least `--mark-min-distance` from every outline of the piece, holes included. The footprints of two holes are at least half the layer height apart. No footprint overlaps the number. The footprint is checked, not only the centre. | G-21 |
+| TR-5 | A reference mark is a hole. Its footprint is a closed outline that lies wholly inside the piece. The centre is at least `--mark-min-distance` from every outline of the piece, holes included. The footprints of two holes are at least half the layer height apart. No footprint overlaps the number. The footprint is checked, not only the centre. | G-21 (#85) |
 | TR-6 | The default mark size is the layer height, which is the sheet thickness. `--mark-size` sets it. The size does not depend on the model's size. The default `--mark-min-distance` is the mark size. | G-6 (#62), G-19 (#76) |
-| TR-7 | Every shape has a closed outline (a circle or a polygon), anchored at its centre. Its size is the diameter of the smallest circle around the anchor that holds the outline. Angle 0 points along +x and angles turn counter-clockwise. Angles are radians in the package and degrees on the command line. Each shape states its rotational symmetry: circle unlimited, square 4, triangle 1 (isosceles), arrow 1 (a closed arrow outline). | G-20 |
+| TR-7 | Every shape has a closed outline (a circle or a polygon), anchored at its centre. Its size is the diameter of the smallest circle around the anchor that holds the outline. Angle 0 points along +x and angles turn counter-clockwise. Angles are radians in the package and degrees on the command line. Each shape states its rotational symmetry: circle unlimited, square 4, triangle 1 (isosceles), arrow 1 (a closed arrow outline). | G-20 (#84) |
 | TR-8 | The tool chooses shapes so that TR-2 holds. A piece with room for one mark gets a shape with a direction. Two marks on a piece differ in shape, or use shapes with a direction. `--available-shapes` limits which shapes it may use. It no longer sets an order. Shape, size and angle are the same wherever a mark appears. | G-5 (#61) |
 | TR-9 | Marks are local to pairs of layers. A mark stays in use while it remains valid in the next layer and is retired when it leaves the outline or clearance. Marks for two adjacent layers are chosen inside the overlap of their outlines, shrunk by the clearance of TR-5, so each shared mark is a hole in both. Two holes in different layers are the same mark when their centre, shape, size and angle are identical (TR-10). In a stack of three or more layers, no alignment mark is a hole in every layer. Dowel holes are the exception. | G-7 (#63) |
-| TR-10 | A shared mark has identical coordinates in every layer that holds it. A new point within the snapping radius of a stored mark takes the stored coordinates. `--mark-tolerance` is that radius. The default is 0.1 × mark size (proposed). When two stored marks are in range, the nearer one wins. | G-15 (#72), G-22 |
+| TR-10 | A shared mark has identical coordinates in every layer that holds it. A new point within the snapping radius of a stored mark takes the stored coordinates. `--mark-tolerance` is that radius. The default is 0.1 × mark size (proposed). When two stored marks are in range, the nearer one wins. | G-15 (#72), G-22 (#82) |
 
 ### Number
 
@@ -91,7 +91,7 @@ All rows are **planned**. "Closes" names the known gaps the row addresses, with 
 | ID | Requirement | Closes |
 |---|---|---|
 | TR-13 | `--units` sets the unit of the mesh and of every length option: layer height, target height, mark size, distances, tolerance and number height. The choices are `mm`, `cm` and `in`. The default is `mm`. Every SVG has the same `width` and `height`, given with that unit, and a `viewBox` in the same numbers. `--scale-factor` still rescales the mesh. | G-17 (#74) |
-| TR-14 | Cut geometry (piece outlines and holes) is drawn in one colour, default red, with a hairline stroke of 0.01 mm converted to the chosen unit and no fill. The number is drawn in black, filled, with no stroke. `--cut-color` and `--engrave-color` change the colours. `--mark-color` and the per-shape default colours are removed. The root `stroke-width` and `font-size` of the current output are removed. | G-23 |
+| TR-14 | Cut geometry (piece outlines and holes) is drawn in one colour, default red, with a hairline stroke of 0.01 mm converted to the chosen unit and no fill. The number is drawn in black, filled, with no stroke. `--cut-color` and `--engrave-color` change the colours. `--mark-color` and the per-shape default colours are removed. The root `stroke-width` and `font-size` of the current output are removed. | G-23 (#83) |
 
 ### Dowel holes (later)
 

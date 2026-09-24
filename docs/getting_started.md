@@ -37,13 +37,13 @@ This generates a basic cube mesh, slices it, and writes SVG files to the
 ## CLI Example
 
 Running the CLI directly mirrors the example script.  Below is an
-illustrative session using a temporary cube mesh:
+illustrative session using a 20 mm cube. Slices are cut at 0, 5, 10, 15 and 20 mm, so it writes five files:
 
 ```text
-$ python -m layerforge.cli --stl-file cube.stl --layer-height 5 --output-folder demo_output
+$ layerforge --stl-file cube.stl --layer-height 5 --output-folder demo_output
 exit 0
 
-files [demo_output/slice_000.svg, demo_output/slice_001.svg, demo_output/slice_002.svg]
+files [demo_output/slice_000.svg, ..., demo_output/slice_004.svg]
 ```
 
 Opening the first SVG shows the slice label and contour:
@@ -58,8 +58,8 @@ Opening the first SVG shows the slice label and contour:
 
 ## Common Errors
 
-- `ModuleNotFoundError: No module named 'trimesh'` – install the optional
-  dependencies listed above.
+- `ModuleNotFoundError: No module named 'trimesh'` – the environment is missing
+  the dependencies. Run `uv sync`, or reinstall with `uv tool install`.
 - `FileNotFoundError: [Errno 2] No such file or directory` – check the
   provided `--stl-file` path.
 - `ConflictingOptionsError: Only one of scale_factor or target_height can be provided.`

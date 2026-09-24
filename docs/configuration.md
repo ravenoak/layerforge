@@ -7,8 +7,9 @@ configuration options or the equivalent CLI arguments:
 
 - `tolerance` – distance used when matching an existing mark.
 - `min_distance` – minimum distance a mark must maintain from contours and other marks.
-- `available_shapes` – list of shapes that will be cycled through when creating new marks.
-- `angle` – default orientation angle for generated marks in degrees.
+- `available_shapes` – list of shapes for new marks. A new mark takes the first shape not yet in use.
+- `angle` – default orientation angle for generated marks. The CLI flag takes
+  degrees; `ReferenceMarkConfig.angle` is in radians.
 - `color` – outline color used when drawing marks.
 
 These correspond to the CLI flags `--mark-tolerance`, `--mark-min-distance`,
@@ -18,9 +19,9 @@ These correspond to the CLI flags `--mark-tolerance`, `--mark-min-distance`,
 
 1. Candidate points are sampled within each contour and ranked using the
    stability metric implemented in ``ReferenceMarkCalculator``.
-2. Marks inherited from neighbouring slices keep their original shape so layers
+2. Marks inherited from earlier slices keep their original shape so layers
    remain easy to align.
-3. Newly created marks cycle through ``available_shapes`` and are filtered by
+3. Newly created marks take the first unused shape from ``available_shapes`` and are filtered by
    ``ReferenceMarkAdjuster`` to ensure a minimum distance from contours and other
    marks.
 

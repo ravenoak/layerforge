@@ -23,7 +23,7 @@ class ReferenceMarkCalculator:
         return score
 ```
 
-Marks are chosen iteratively. Existing marks from neighbouring layers are tried
+Marks are chosen iteratively. Marks from earlier layers are tried
 first; otherwise the best scoring candidate is selected.
 
 ## Inheriting Marks
@@ -94,11 +94,14 @@ flowchart LR
 
 ### `available_shapes`
 
-When a new mark is required the shapes are cycled in order.
+When a new mark is required it takes the first shape in the list that no mark
+uses yet. Once all shapes are in use, new marks take the first shape again.
 
 ```mermaid
 flowchart LR
-    S1[Circle] --> S2[Square] --> S3[Triangle] --> S4[Arrow] --> S1
+    N[New mark] --> U{Unused shape left?}
+    U -- yes --> F[First unused shape]
+    U -- no --> S[First shape in the list]
 ```
 
 ### `angle`

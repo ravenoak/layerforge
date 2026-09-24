@@ -1,0 +1,415 @@
+-- allium: 3
+-- layerforge.allium
+--
+-- Scope: one run of the `layerforge` command, from options to SVG files.
+-- Includes: option validation, scaling, slice positions, reference marks,
+--   SVG output.
+-- Excludes:
+--   - Mesh file parsing (trimesh owns it; a mesh is external here)
+--   - Drawing details such as stroke widths and text position fallbacks
+--   - Packaging, CI and documentation (see docs/requirements.md NFR-1 to NFR-7)
+--
+-- Rule names carry the requirement IDs from docs/requirements.md.
+-- Behavior that differs from intent is listed under Open Questions (G-n).
+
+------------------------------------------------------------
+-- External Entities
+------------------------------------------------------------
+
+external entity Mesh {
+    -- A single triangle mesh. Geometry is computed by black box functions.
+    min_z: Decimal
+    max_z: Decimal
+}
+
+------------------------------------------------------------
+-- Value Types
+------------------------------------------------------------
+
+external entity Operator {
+    -- The person running the command.
+}
+
+value Point {
+    x: Decimal
+    y: Decimal
+}
+
+value Appearance {
+    shape: String
+    size: Integer
+    angle: Decimal          -- radians
+    color: String?
+}
+
+------------------------------------------------------------
+-- Config
+------------------------------------------------------------
+
+config {
+    default_layer_height: Decimal = 3.0
+    default_tolerance: Decimal = 10.0
+    default_min_distance: Decimal = 10.0
+    default_shapes: List<String> = ["circle", "square", "triangle", "arrow"]
+    min_mark_size: Integer = 3
+    max_mark_size: Integer = 5
+    mark_size_step: Decimal = 10.0      -- distance from origin per size unit
+    candidate_points_wanted: Integer = 4
+    candidate_attempts: Integer = 40
+}
+
+------------------------------------------------------------
+-- Entities and Variants
+------------------------------------------------------------
+
+entity Run {
+    layer_height: Decimal
+    scale_factor: Decimal?
+    target_height: Decimal?
+    tolerance: Decimal
+    min_distance: Decimal
+    available_shapes: List<String>
+    angle: Decimal                      -- radians; the command takes degrees
+    color: String?
+    mesh: Mesh
+    output_folder: String
+    status: requested | rejected | scaled | sliced | written
+
+    height: mesh.max_z - mesh.min_z
+    all_drawn: slices.count > 0 and slices.all(s => s.status = drawn)
+    origin: Point?                      -- x, y centre of the scaled mesh bounding box
+    slices: Slice with run = this
+    marks: RegisteredMark with run = this   -- shared by every slice in the run
+
+    transitions status {
+        requested -> rejected
+        requested -> scaled
+        scaled -> sliced
+        sliced -> written
+        terminal: rejected, written
+    }
+}
+
+entity RegisteredMark {
+    run: Run
+    at: Point
+    appearance: Appearance
+}
+
+entity Slice {
+    run: Run
+    index: Integer
+    position: Decimal                   -- z height of the cutting plane
+    contours: Set<Contour>
+    marks: PlacedMark with slice = this
+    status: planned | cut | marked | adjusted | drawn
+
+    transitions status {
+        planned -> cut
+        cut -> marked
+        marked -> adjusted
+        adjusted -> drawn
+        terminal: drawn
+    }
+
+    invariant IndexMatchesOrder {
+        index >= 0
+    }
+}
+
+entity Contour {
+    -- One closed loop of a cut, as a polygon in the slice's own 2D frame (G-2).
+    slice: Slice
+}
+
+entity PlacedMark {
+    slice: Slice
+    contour: Contour
+    at: Point
+    appearance: Appearance
+}
+
+entity SvgFile {
+    slice: Slice
+    folder: String
+    name: String                        -- slice_NNN.svg
+}
+
+------------------------------------------------------------
+-- Rules
+------------------------------------------------------------
+
+-- Command line (FR-1 to FR-6) ---------------------------------------------
+
+rule FR1_StartRun {
+    when: LayerforgeInvoked(person, stl_file, options)
+    ensures:
+        Run.created(
+            mesh: load_single_mesh(stl_file),
+            layer_height: options.layer_height,
+            scale_factor: options.scale_factor,
+            target_height: options.target_height,
+            tolerance: options.mark_tolerance,
+            min_distance: options.mark_min_distance,
+            available_shapes: options.available_shapes,
+            angle: radians(options.mark_angle),
+            color: options.mark_color,
+            output_folder: options.output_folder,
+            status: requested
+        )
+    @guidance
+        -- The file is required (the command prompts if it is missing). A file
+        -- with more than one geometry is rejected (FR-7). Defaults are the
+        -- config values above (FR-6). Options are checked by the next rules.
+}
+
+rule FR4_RejectConflictingScaling {
+    when: run: Run.status becomes requested
+    requires: run.scale_factor != null and run.target_height != null
+    ensures: run.status = rejected
+    @guidance
+        -- Message: "Only one of scale_factor or target_height can be provided."
+        -- Exit code 1. A scale factor of 0 counts as not given here and is
+        -- caught by the next rule instead.
+}
+
+rule FR2_FR3_RejectNonPositiveValues {
+    when: run: Run.status becomes requested
+    requires:
+        run.layer_height <= 0
+        or (run.scale_factor != null and run.scale_factor <= 0)
+        or (run.target_height != null and run.target_height <= 0)
+    ensures: run.status = rejected
+    @guidance
+        -- Message: "Invalid value for --<option>: must be > 0". Exit code 2.
+}
+
+-- Scaling (FR-8 to FR-10) -------------------------------------------------
+
+rule FR8_ScaleByFactor {
+    when: run: Run.status becomes requested
+    requires: run.scale_factor != null and run.scale_factor > 0
+    requires: run.target_height = null
+    requires: run.layer_height > 0
+    ensures:
+        scale_uniformly(run.mesh, run.scale_factor, about: origin_of_space)
+        run.status = scaled
+}
+
+rule FR9_ScaleToTargetHeight {
+    when: run: Run.status becomes requested
+    requires: run.target_height != null and run.target_height > 0
+    requires: run.scale_factor = null
+    requires: run.layer_height > 0
+    ensures:
+        scale_uniformly(run.mesh, run.target_height / run.height, about: origin_of_space)
+        run.status = scaled
+    @guidance
+        -- A mesh of zero height divides by zero here (G-11).
+}
+
+rule NoScaling {
+    when: run: Run.status becomes requested
+    requires: run.scale_factor = null and run.target_height = null
+    requires: run.layer_height > 0
+    ensures: run.status = scaled
+}
+
+rule FR10_SetOrigin {
+    when: run: Run.status transitions_to scaled
+    ensures: run.origin = bounding_box_centre(run.mesh)
+    @guidance
+        -- Taken after scaling. The mesh itself is not moved.
+}
+
+-- Slicing (FR-11 to FR-14) ------------------------------------------------
+
+rule FR12_FR14_PlanSlices {
+    when: run: Run.status transitions_to scaled
+    let positions = slice_positions(run.height, run.layer_height)
+    ensures:
+        for i in positions.indices:
+            Slice.created(
+                run: run,
+                index: i,
+                position: positions[i],
+                contours: {},
+                status: planned
+            )
+        run.status = sliced
+    @guidance
+        -- slice_positions gives i * layer_height for i in 0 ..< max(1,
+        -- ceil(height / layer_height)), and the last entry is always the
+        -- height itself. Positions start at z = 0, not at the mesh minimum
+        -- (G-1).
+}
+
+rule FR13_CutSlice {
+    when: slice: Slice.status becomes planned
+    ensures:
+        slice.contours = closed_loops(cut(slice.run.mesh, slice.position))
+        slice.status = cut
+    @guidance
+        -- A plane that cuts nothing gives no contours. Every loop is one
+        -- solid polygon, holes included (G-3).
+}
+
+-- Reference marks (FR-15 to FR-22) ----------------------------------------
+
+rule FR15_FR21_PlaceMarks {
+    when: slice: Slice.status becomes cut
+    requires: slice.index = 0 or previous_slice(slice).status in {marked, adjusted, drawn}
+    ensures:
+        for contour in slice.contours:
+            let chosen = choose_mark_point(
+                contour,
+                already: slice.marks,
+                registry: slice.run.marks,
+                min_distance: slice.run.min_distance
+            )
+            if chosen != null:
+                let known = nearest_registered(slice.run.marks, chosen, slice.run.tolerance)
+                if known != null:
+                    -- FR-19: inherit appearance from the registered mark.
+                    PlacedMark.created(
+                        slice: slice,
+                        contour: contour,
+                        at: chosen,
+                        appearance: known.appearance
+                    )
+                else:
+                    -- FR-20, FR-21: new mark.
+                    let appearance = Appearance{
+                        shape: next_shape(slice.run.marks, slice.run.available_shapes),
+                        size: mark_size(distance(chosen, slice.run.origin)),
+                        angle: slice.run.angle,
+                        color: slice.run.color
+                    }
+                    RegisteredMark.created(run: slice.run, at: chosen, appearance: appearance)
+                    PlacedMark.created(
+                        slice: slice,
+                        contour: contour,
+                        at: chosen,
+                        appearance: appearance
+                    )
+        slice.status = marked
+    @guidance
+        -- choose_mark_point (FR-15 to FR-18): at most one point per contour.
+        -- An earlier registered point inside the contour is reused if it is
+        -- at least min_distance from the boundary and from marks already
+        -- placed on this slice. Otherwise the candidate with the highest
+        -- stability score wins; candidates are the centroid plus random points
+        -- inside the bounding box (G-9). The score is the sum of pairwise
+        -- distances over the candidate and the marks already placed.
+        -- next_shape gives the first shape not yet registered, else the first
+        -- shape (G-5). mark_size is int(d / mark_size_step) clamped to
+        -- min_mark_size .. max_mark_size (G-6). Registered marks are shared by
+        -- every slice, not only neighbours (G-7).
+}
+
+rule FR22_AdjustMarks {
+    when: slice: Slice.status becomes marked
+    ensures:
+        slice.status = adjusted
+        for mark in slice.marks:
+            if too_close_to_boundary(mark, slice.contours, slice.run.min_distance)
+                or too_close_to_earlier_mark(mark, slice.marks, slice.run.min_distance):
+                not exists mark
+    @guidance
+        -- The earlier mark of a close pair stays. Marks dropped here stay in
+        -- the run's registry. A slice can end with no marks and no warning
+        -- (G-13).
+}
+
+-- SVG output (FR-24 to FR-27) ---------------------------------------------
+
+rule FR24_WriteSvg {
+    when: slice: Slice.status becomes adjusted
+    ensures:
+        SvgFile.created(
+            slice: slice,
+            folder: slice.run.output_folder,
+            name: svg_name(slice.index)
+        )
+        slice.status = drawn
+    @guidance
+        -- svg_name(i) is "slice_" plus i as three digits plus ".svg". The file
+        -- holds each contour as a black unfilled polygon, then each mark, then
+        -- the text "Slice N" once per contour (FR-25). It has no viewBox and
+        -- uses the slice's own 2D frame (FR-26, G-2, G-12). Every slice
+        -- gets a file, including empty ones (G-10).
+}
+
+rule RunCompletes {
+    when: run: Run.all_drawn
+    requires: run.status = sliced
+    ensures: run.status = written
+}
+
+------------------------------------------------------------
+-- Invariants
+------------------------------------------------------------
+
+invariant FR17_MarksClearOfBoundaries {
+    for mark in PlacedMarks:
+        mark.slice.status = drawn implies
+            not too_close_to_boundary(mark, mark.slice.contours, mark.slice.run.min_distance)
+}
+
+invariant FR22_MarksClearOfEachOther {
+    for a in PlacedMarks:
+        for b in PlacedMarks:
+            a != b and a.slice = b.slice and a.slice.status = drawn
+                implies distance(a.at, b.at) >= a.slice.run.min_distance
+}
+
+invariant FR21_MarkSizeBounded {
+    for m in RegisteredMarks:
+        m.appearance.size >= config.min_mark_size and m.appearance.size <= config.max_mark_size
+}
+
+invariant FR14_OneSliceEveryPosition {
+    for a in Slices:
+        for b in Slices:
+            a != b and a.run = b.run implies a.index != b.index
+}
+
+invariant FR15_AtMostOneMarkPerContour {
+    for a in PlacedMarks:
+        for b in PlacedMarks:
+            a != b implies a.contour != b.contour
+}
+
+------------------------------------------------------------
+-- Surfaces
+------------------------------------------------------------
+
+surface Command {
+    facing person: Operator
+
+    provides:
+        LayerforgeInvoked(person, stl_file, options)
+
+    @guarantee OptionsCheckedBeforeWork
+        -- Bad option values are reported before the mesh is sliced. A usage
+        -- error exits with code 2, an option conflict with code 1.
+}
+
+------------------------------------------------------------
+-- Open Questions
+------------------------------------------------------------
+
+-- G-1  Slice positions start at z = 0, not at the mesh minimum.
+-- G-2  Each slice has its own 2D frame, so inheritance compares points from
+--      different frames.
+-- G-3  Holes are treated as solid polygons.
+-- G-4  One mark per contour cannot fix rotation.
+-- G-5  Shapes do not cycle once all are used.
+-- G-6  Mark size is fixed at 3 to 5, not proportional to the model.
+-- G-7  Marks are inherited from any earlier slice, not only neighbours.
+-- G-8  Angle units are mixed between radians and degrees.
+-- G-9  Candidate points use unseeded random numbers.
+-- G-10 The slice on the top face is empty for flat-topped models.
+-- G-11 Some bad inputs give a traceback instead of a clear message.
+-- G-12 The SVG has no viewBox and does not flip the y axis.
+-- G-13 Marks that fit nowhere are dropped without a warning.

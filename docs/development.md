@@ -1,42 +1,19 @@
 # Development
 
-## Project Requirements
+## Requirements
 
-### Functional Requirements
+The functional and non-functional requirements, constraints and known gaps are
+on the [Requirements](requirements.md) page. The same behavior is written as a
+formal Allium specification in `specs/layerforge.allium`. Check it with:
 
-1. **Load 3D Model**:
-    - Read an STL file and load the model.
-
-2. **Scaling**:
-    - Scale the model using either a multiplier or a target height while maintaining aspect ratios.
-
-3. **Slicing**:
-    - Slice the model into layers of a specified thickness.
-
-4. **Reference Marks**:
-    - Reference marks are placed using a stability metric that chooses points far from one another and from the contours.
-    - Reference marks should be inherited from adjacent slices where possible, including the shape of the mark.
-    - New reference marks should be a different shape when added to a slice where they are not inherited.
-    - New reference marks must be introduced to a layer that does have a reference mark inherited from an adjacent slice, to ensure there is continuity in the reassembly process.
-    - Ensure marks are aligned with adjacent slices.
-    - Marks must not overlap and must be inside the model's contours.
-    - Marks must not be placed on the contour's edges.
-    - Marks must not exceed the contour's boundaries.
-    - The distance between marks should be within the scale of the overall model.
-    - The size of the marks should be proportional to the model's scale, while maintaining visibility.
-    - The marks need to be able to be used to properly align the slices during reassembly, including rotational alignment in addition to translational alignment.
-
-5. **SVG Generation**:
-    - Generate an SVG file for each slice.
-    - Include contours, reference marks, and slice numbers.
-    - Each slice should be labeled with its number within the contour area.
-
-### Non-Functional Requirements
-
-- The application should bundle all dependencies to mimic a statically compiled binary.
-- The executable should run on different platforms without requiring a Python installation.
+```bash
+allium check specs/layerforge.allium
+```
 
 ## Pseudocode
+
+This is the intended design. Where the code differs, see the known gaps on the
+[Requirements](requirements.md#known-gaps) page.
 
 1. Load the 3D Model:
     1. Read an STL file to load the model into the application.

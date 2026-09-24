@@ -6,6 +6,7 @@ from layerforge.utils.optional_dependencies import require_module
 
 if TYPE_CHECKING:  # pragma: no cover - import only for type checking
     from svgwrite import Drawing as SvgDrawing
+
     Drawing: TypeAlias = SvgDrawing
 else:  # pragma: no cover - imported lazily for runtime
     Drawing: TypeAlias = require_module("svgwrite", "ShapeDrawingStrategy").Drawing  # type: ignore

@@ -15,4 +15,4 @@ class Arrow(BaseShape):
         str
             The type of the shape. Always 'arrow'.
         """
-        return 'arrow'
+        return "arrow"

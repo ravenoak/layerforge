@@ -28,4 +28,3 @@ class ReferenceMarkConfig(BaseModel):
         if v < 0:
             raise ValueError("values must be non-negative")
         return v
-

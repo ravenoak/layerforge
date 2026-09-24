@@ -15,6 +15,7 @@ class BaseShape(ABC):
     size : float
         The size of the shape.
     """
+
     x: float
     y: float
     size: float

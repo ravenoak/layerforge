@@ -4,7 +4,11 @@ pytest.importorskip("shapely")
 
 from shapely.geometry import Polygon, Point
 
-from layerforge.models.reference_marks import ReferenceMarkManager, ReferenceMarkService, ReferenceMarkConfig
+from layerforge.models.reference_marks import (
+    ReferenceMarkManager,
+    ReferenceMarkService,
+    ReferenceMarkConfig,
+)
 from layerforge.models.slicing import Slice
 
 

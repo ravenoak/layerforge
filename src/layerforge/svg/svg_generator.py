@@ -52,6 +52,6 @@ class SVGGenerator:
         None
         """
         for slice_obj in slices:
-            dwg = svgwrite.Drawing(profile='tiny')
+            dwg = svgwrite.Drawing(profile="tiny")
             SliceSVGDrawer.draw_slice(dwg, slice_obj, self.shape_context)
             self.svg_writer.write(dwg, self.output_folder, slice_obj.index)

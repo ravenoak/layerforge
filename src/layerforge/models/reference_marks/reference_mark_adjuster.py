@@ -4,6 +4,7 @@ from layerforge.utils.optional_dependencies import require_module
 
 if TYPE_CHECKING:  # pragma: no cover
     from shapely.geometry import Point as ShpPoint, Polygon as ShpPolygon
+
     Point: TypeAlias = ShpPoint
     Polygon: TypeAlias = ShpPolygon
 else:
@@ -31,8 +32,7 @@ class ReferenceMarkAdjuster:
         for mark in marks:
             mark_point = Point(mark.x, mark.y)
             is_too_close = any(
-                polygon.boundary.distance(mark_point) < min_distance
-                for polygon in contours
+                polygon.boundary.distance(mark_point) < min_distance for polygon in contours
             )
             if is_too_close:
                 continue

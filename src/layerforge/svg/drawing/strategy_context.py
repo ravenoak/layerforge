@@ -5,9 +5,11 @@ from typing import TYPE_CHECKING, TypeAlias
 if TYPE_CHECKING:
     from svgwrite import Drawing as SvgDrawing
     from .strategies.base_strategy import ShapeDrawingStrategy
+
     Drawing: TypeAlias = SvgDrawing
 else:
     from layerforge.utils.optional_dependencies import require_module
+
     Drawing: TypeAlias = require_module("svgwrite", "StrategyContext").Drawing  # type: ignore
 from layerforge.domain.shapes.base_shape import BaseShape
 

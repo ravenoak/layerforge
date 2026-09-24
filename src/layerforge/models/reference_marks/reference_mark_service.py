@@ -14,4 +14,3 @@ class ReferenceMarkService:
         """Calculate and adjust reference marks for ``slice_``."""
         slice_.process_reference_marks()
         slice_.adjust_marks()
-

@@ -1,11 +1,16 @@
 import pytest
+
 pytest.importorskip("svgwrite")
 pytest.importorskip("shapely")
 
 import svgwrite
 from shapely.geometry import box, Point
 
-from layerforge.models.reference_marks import ReferenceMark, ReferenceMarkManager, ReferenceMarkConfig
+from layerforge.models.reference_marks import (
+    ReferenceMark,
+    ReferenceMarkManager,
+    ReferenceMarkConfig,
+)
 from layerforge.models.slicing.slice import Slice
 from layerforge.svg.slice_svg_drawer import SliceSVGDrawer
 from layerforge.svg.svg_generator import SVGGenerator
@@ -60,10 +65,12 @@ def test_draw_slice_adds_expected_shapes():
     ctx = StrategyContext()
     register_shape_strategies(ctx)
     slice_obj = _create_slice(0, "circle")
-    slice_obj.ref_marks.extend([
-        ReferenceMark(5, 6, "square", 4),
-        ReferenceMark(6, 6, "triangle", 4),
-    ])
+    slice_obj.ref_marks.extend(
+        [
+            ReferenceMark(5, 6, "square", 4),
+            ReferenceMark(6, 6, "triangle", 4),
+        ]
+    )
     dwg = svgwrite.Drawing()
     SliceSVGDrawer.draw_slice(dwg, slice_obj, ctx)
 

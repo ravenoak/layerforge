@@ -15,4 +15,4 @@ class Square(BaseShape):
         str
             The type of shape. Always 'square'.
         """
-        return 'square'
+        return "square"

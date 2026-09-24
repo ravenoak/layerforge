@@ -5,13 +5,12 @@ from layerforge.utils.optional_dependencies import require_module
 
 if TYPE_CHECKING:  # pragma: no cover - import only for type checking
     from svgwrite import Drawing as SvgDrawing
+
     Drawing: TypeAlias = SvgDrawing
 else:  # pragma: no cover - imported lazily for runtime
     Drawing: TypeAlias = require_module("svgwrite", "SVGWriter").Drawing  # type: ignore
 
 from layerforge.utils.file_operations import ensure_directory_exists, generate_file_name
-
-
 
 
 class SVGWriter(ABC):
@@ -49,5 +48,5 @@ class SVGFileWriter(SVGWriter):
             The index of the slice.
         """
         ensure_directory_exists(output_folder)
-        svg_file = generate_file_name(output_folder, index, 'svg')
+        svg_file = generate_file_name(output_folder, index, "svg")
         svg.saveas(svg_file)

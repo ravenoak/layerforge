@@ -1,4 +1,4 @@
-__all__ = ['Arrow', 'Circle', 'Square', 'Triangle']
+__all__ = ["Arrow", "Circle", "Square", "Triangle"]
 
 from .arrow import Arrow
 from .circle import Circle

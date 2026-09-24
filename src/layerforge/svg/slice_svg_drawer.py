@@ -5,6 +5,7 @@ from layerforge.utils.optional_dependencies import require_module
 if TYPE_CHECKING:  # pragma: no cover - for type checking only
     from shapely.geometry import Point as ShpPoint, Polygon as ShpPolygon
     from svgwrite import Drawing as SvgDrawing
+
     Point: TypeAlias = ShpPoint
     Polygon: TypeAlias = ShpPolygon
     Drawing: TypeAlias = SvgDrawing
@@ -40,7 +41,7 @@ class SliceSVGDrawer:
         None
         """
         points = [(x, y) for x, y in contour.exterior.coords]
-        dwg.add(dwg.polygon(points, fill='none', stroke='black'))
+        dwg.add(dwg.polygon(points, fill="none", stroke="black"))
 
     @staticmethod
     def draw_reference_marks(
@@ -73,7 +74,9 @@ class SliceSVGDrawer:
             shape_context.draw(dwg, shape_instance)
 
     @staticmethod
-    def _label_position(contour: Polygon, padding: tuple[float, float] | float | None) -> tuple[float, float]:
+    def _label_position(
+        contour: Polygon, padding: tuple[float, float] | float | None
+    ) -> tuple[float, float]:
         """Return a label position for ``contour`` respecting ``padding``."""
         try:
             pt = contour.centroid
@@ -125,4 +128,4 @@ class SliceSVGDrawer:
 
         for contour in slice_obj.contours:
             x, y = SliceSVGDrawer._label_position(contour, padding)
-            dwg.add(dwg.text(f"Slice {slice_obj.index}", insert=(x, y), fill='black'))
+            dwg.add(dwg.text(f"Slice {slice_obj.index}", insert=(x, y), fill="black"))

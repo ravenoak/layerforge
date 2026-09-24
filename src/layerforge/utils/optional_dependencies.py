@@ -11,4 +11,3 @@ def require_module(module: str, feature: str) -> Any:
         raise ImportError(
             f"{feature} requires the '{pkg}' package. Install it via 'pip install {pkg}'."
         ) from exc
-

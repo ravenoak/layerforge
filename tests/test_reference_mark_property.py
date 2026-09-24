@@ -26,7 +26,7 @@ def test_marks_inside_polygon(coords):
         assert poly.contains(pt)
         assert poly.boundary.distance(pt) >= cfg.min_distance
     for i, m1 in enumerate(marks):
-        for m2 in marks[i+1:]:
+        for m2 in marks[i + 1 :]:
             assert calculate_distance(m1[0], m1[1], m2[0], m2[1]) >= cfg.min_distance
 
 
@@ -35,4 +35,3 @@ def test_stability_score_permutation():
     score = ReferenceMarkCalculator._stability_score(pts)
     random.shuffle(pts)
     assert score == pytest.approx(ReferenceMarkCalculator._stability_score(pts))
-

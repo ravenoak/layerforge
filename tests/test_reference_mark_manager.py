@@ -1,4 +1,5 @@
 import pytest
+
 pytest.importorskip("trimesh")
 pytest.importorskip("shapely")
 from layerforge.models.reference_marks import ReferenceMarkManager, ReferenceMark

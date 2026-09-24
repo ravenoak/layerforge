@@ -6,6 +6,7 @@ from layerforge.utils.optional_dependencies import require_module
 
 if TYPE_CHECKING:
     from shapely.geometry import Point as ShpPoint, Polygon as ShpPolygon
+
     Point: TypeAlias = ShpPoint
     Polygon: TypeAlias = ShpPolygon
 else:
@@ -92,10 +93,7 @@ class ReferenceMarkCalculator:
             for x, y in existing_marks:
                 pt = Point(x, y)
                 if poly.contains(pt) and poly.boundary.distance(pt) >= min_distance:
-                    if all(
-                        calculate_distance(x, y, sx, sy) >= min_distance
-                        for sx, sy in selected
-                    ):
+                    if all(calculate_distance(x, y, sx, sy) >= min_distance for sx, sy in selected):
                         inherited = (x, y)
                         break
             if inherited:
@@ -110,10 +108,7 @@ class ReferenceMarkCalculator:
                 pt = Point(x, y)
                 if poly.boundary.distance(pt) < min_distance:
                     continue
-                if any(
-                    calculate_distance(x, y, sx, sy) < min_distance
-                    for sx, sy in selected
-                ):
+                if any(calculate_distance(x, y, sx, sy) < min_distance for sx, sy in selected):
                     continue
                 score = ReferenceMarkCalculator._stability_score(selected + [cand])
                 if score > best_score:
@@ -130,6 +125,4 @@ class ReferenceMarkCalculator:
         config: ReferenceMarkConfig | None = None,
     ) -> List[Tuple[float, float]]:
         """Compatibility alias for :meth:`get_stable_marks`."""
-        return ReferenceMarkCalculator.get_stable_marks(
-            layer, existing_marks, config=config
-        )
+        return ReferenceMarkCalculator.get_stable_marks(layer, existing_marks, config=config)

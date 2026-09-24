@@ -7,4 +7,3 @@ __all__ = [
     "register_shape_strategies",
     "require_module",
 ]
-

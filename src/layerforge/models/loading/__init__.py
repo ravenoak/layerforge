@@ -5,8 +5,6 @@ from .implementations.trimesh_loader import TrimeshLoader
 from .base import MeshLoader
 
 
-
-
 class LoaderFactory:
     """Factory class for creating loaders
 
@@ -18,6 +16,7 @@ class LoaderFactory:
         A dictionary of loaders, where the key is the name of the loader
         and the value is the loader class.
     """
+
     loaders: dict[str, type["MeshLoader"]] = {}
 
     @classmethod

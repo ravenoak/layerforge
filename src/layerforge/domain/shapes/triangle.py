@@ -15,7 +15,7 @@ class Triangle(BaseShape):
         str
             The type of shape. Always 'triangle'.
         """
-        return 'triangle'
+        return "triangle"
 
     @property
     def vertices(self) -> list[tuple[float, float]]:
@@ -26,6 +26,8 @@ class Triangle(BaseShape):
         list
             The vertices of the triangle.
         """
-        return [(self.x, self.y - self.size),
-                (self.x - self.size, self.y + self.size),
-                (self.x + self.size, self.y + self.size)]
+        return [
+            (self.x, self.y - self.size),
+            (self.x - self.size, self.y + self.size),
+            (self.x + self.size, self.y + self.size),
+        ]

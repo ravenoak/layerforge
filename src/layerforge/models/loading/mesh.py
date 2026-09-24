@@ -33,9 +33,7 @@ class Mesh(ABC):
         """Return the extents of the mesh."""
 
     @abstractmethod
-    def section(
-        self, plane_origin: Sequence[float], plane_normal: Sequence[float]
-    ) -> Any:
+    def section(self, plane_origin: Sequence[float], plane_normal: Sequence[float]) -> Any:
         """Return a section of the mesh at the given plane."""
 
 
@@ -62,13 +60,8 @@ class TrimeshMesh(Mesh):
     def extents(self) -> Any:
         return self.geometry.extents
 
-    def section(
-        self, plane_origin: Sequence[float], plane_normal: Sequence[float]
-    ) -> Any:
-        return self.geometry.section(
-            plane_origin=plane_origin, plane_normal=plane_normal
-        )
-
+    def section(self, plane_origin: Sequence[float], plane_normal: Sequence[float]) -> Any:
+        return self.geometry.section(plane_origin=plane_origin, plane_normal=plane_normal)
 
 
 @dataclass

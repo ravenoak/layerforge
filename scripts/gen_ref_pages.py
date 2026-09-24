@@ -4,6 +4,7 @@ Taken from https://mkdocstrings.github.io/recipes/
 
 This script generates a page for each module in the `layerforge` package.
 """
+
 from pathlib import Path
 
 import mkdocs_gen_files

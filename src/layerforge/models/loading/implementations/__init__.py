@@ -1,3 +1,3 @@
-__all__ = ['TrimeshLoader']
+__all__ = ["TrimeshLoader"]
 
 from .trimesh_loader import TrimeshLoader

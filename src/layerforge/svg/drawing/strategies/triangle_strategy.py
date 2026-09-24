@@ -5,6 +5,7 @@ from layerforge.utils.optional_dependencies import require_module
 
 if TYPE_CHECKING:
     from svgwrite import Drawing as SvgDrawing
+
     Drawing: TypeAlias = SvgDrawing
 else:
     Drawing: TypeAlias = require_module("svgwrite", "TriangleDrawingStrategy").Drawing  # type: ignore
@@ -21,7 +22,7 @@ class TriangleDrawingStrategy(ShapeDrawingStrategy):
     def draw(self, dwg: Drawing, shape: BaseShape) -> None:
         """Draw a :class:`Triangle` shape on ``dwg``."""
         triangle = cast(Triangle, shape)
-        color = triangle.color or 'green'
+        color = triangle.color or "green"
         verts = triangle.vertices
         if triangle.angle:
             verts = []
@@ -32,4 +33,4 @@ class TriangleDrawingStrategy(ShapeDrawingStrategy):
                 theta = math.atan2(dy, dx) + triangle.angle
                 verts.append((cx + r * math.cos(theta), cy + r * math.sin(theta)))
 
-        dwg.add(dwg.polygon(verts, stroke=color, fill='none'))
+        dwg.add(dwg.polygon(verts, stroke=color, fill="none"))

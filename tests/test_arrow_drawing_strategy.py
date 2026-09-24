@@ -1,5 +1,6 @@
 import math
 import pytest
+
 pytest.importorskip("svgwrite")
 pytest.importorskip("shapely")
 import svgwrite

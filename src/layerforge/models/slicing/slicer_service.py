@@ -11,6 +11,7 @@ from layerforge.models.reference_marks import (
 
 class SlicerService:
     """Service class for slicing models"""
+
     @staticmethod
     def calculate_slice_positions(total_height: float, layer_height: float) -> list[float]:
         """Calculate the positions of the slices
@@ -36,9 +37,7 @@ class SlicerService:
         return positions
 
     @staticmethod
-    def slice_model(
-        model: Model, config: ReferenceMarkConfig | None = None
-    ) -> list[Slice]:
+    def slice_model(model: Model, config: ReferenceMarkConfig | None = None) -> list[Slice]:
         """Slice the model into layers
 
         Parameters

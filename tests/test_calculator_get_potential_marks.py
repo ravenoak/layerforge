@@ -63,3 +63,24 @@ def test_sample_points_are_deterministic():
     first = ReferenceMarkCalculator._sample_points(triangle, samples=4)
     second = ReferenceMarkCalculator._sample_points(triangle, samples=4)
     assert first == second
+
+
+def _plate_with_hole() -> Polygon:
+    """A 100 x 100 plate with a 60 x 60 hole, so its centroid is in the hole."""
+    hole = [(20, 20), (80, 20), (80, 80), (20, 80)]
+    return Polygon([(0, 0), (100, 0), (100, 100), (0, 100)], [hole])
+
+
+def test_marks_avoid_holes():
+    plate = _plate_with_hole()
+    cfg = ReferenceMarkConfig(min_distance=5)
+    sl = create_slice([plate], cfg=cfg)
+
+    (mark,) = ReferenceMarkCalculator.get_stable_marks(sl, [], config=cfg)
+    assert plate.contains(Point(*mark))
+
+
+def test_sample_points_stay_out_of_holes():
+    plate = _plate_with_hole()
+    for x, y in ReferenceMarkCalculator._sample_points(plate, samples=8):
+        assert plate.contains(Point(x, y))

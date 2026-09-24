@@ -43,7 +43,7 @@ LayerForge slices a 3D mesh into horizontal layers. It writes one SVG file per l
 |---|---|---|---|
 | FR-11 | The model height is maximum z minus minimum z. | `models/model.py::calculate_height` | `test_slicer_service` |
 | FR-12 | The mesh is divided from its lowest point upwards into layers of `layer_height`. The last layer is shorter if the height is not a multiple. There are `ceil(height / layer_height)` layers, at least one. Each slice is cut at the middle of its layer, so no cut lies on the bottom or top face. A mesh 10 high from z = 0 with layer height 3 gives the positions 1.5, 4.5, 7.5 and 9.5. A mesh centred on z = 0 is sliced over its whole height. | `models/slicing/slicer_service.py::calculate_slice_positions` | `test_slicer_service`, `test_end_to_end` |
-| FR-13 | Each position is a horizontal plane (normal +z). The cut through the mesh gives closed loops. Each loop becomes one polygon in the model's x and y coordinates, so every slice shares one frame. A plane that cuts nothing gives an empty list of polygons. | `models/model.py::calculate_slice_contours` | `test_model_contours`, `test_end_to_end` |
+| FR-13 | Each position is a horizontal plane (normal +z). The cut through the mesh gives closed loops. The loops are combined by the even-odd rule: a loop inside another is a hole, and a loop inside that hole is solid again. Each polygon is in the model's x and y coordinates, so every slice shares one frame. A plane that cuts nothing gives an empty list of polygons. | `models/model.py::calculate_slice_contours` | `test_model_contours`, `test_end_to_end` |
 | FR-14 | One slice is made per position, in order and numbered from 0. Empty slices are kept. | `models/slicing/slicer_service.py::slice_model` | `test_end_to_end` |
 
 ### Reference marks
@@ -51,7 +51,7 @@ LayerForge slices a 3D mesh into horizontal layers. It writes one SVG file per l
 | ID | Requirement | Code | Tests |
 |---|---|---|---|
 | FR-15 | Each polygon gets at most one mark. | `models/reference_marks/reference_mark_calculator.py::get_stable_marks` | `test_reference_mark_calculator`, `test_reference_mark_property` |
-| FR-16 | Candidate points for a polygon are its centroid plus random points inside its bounding box that fall inside the polygon (up to 40 tries, 4 wanted). The random generator has a fixed seed, so the same polygon always gives the same points. | `models/reference_marks/reference_mark_calculator.py::_sample_points` | `test_calculator_get_potential_marks` |
+| FR-16 | Candidate points for a polygon are its centroid, if the centroid is inside the polygon, plus random points inside its bounding box that fall inside the polygon (up to 40 tries, 4 wanted). The random generator has a fixed seed, so the same polygon always gives the same points. | `models/reference_marks/reference_mark_calculator.py::_sample_points` | `test_calculator_get_potential_marks` |
 | FR-17 | A point qualifies only if it is at least `min_distance` from the polygon boundary and from marks already chosen in the same slice. | same | `test_reference_mark_property` |
 | FR-18 | An earlier mark that qualifies and lies inside the polygon is reused. Otherwise the qualifying candidate with the highest stability score wins. The score is the sum of distances between all pairs of points, the candidate and the marks already chosen. | same | `test_calculator_get_potential_marks`, `test_reference_mark_property` |
 | FR-19 | Marks are shared across all slices in one run. A chosen point that lies within `tolerance` of an earlier mark inherits its shape, size, angle and color. | `models/slicing/slice.py::process_reference_marks`, `models/reference_marks/reference_mark_manager.py` | `test_slice_mark_inheritance`, `test_slice_process_reference_marks`, `test_reference_mark_manager` |
@@ -65,7 +65,7 @@ LayerForge slices a 3D mesh into horizontal layers. It writes one SVG file per l
 | ID | Requirement | Code | Tests |
 |---|---|---|---|
 | FR-24 | One SVG file is written per slice, named `slice_000.svg`, `slice_001.svg` and so on, including empty slices (a slice whose cut misses the mesh). | `writers/svg_writer.py`, `utils/file_operations.py` | `test_file_operations`, `test_svg_output`, `test_end_to_end` |
-| FR-25 | Each SVG has, in order: the polygon outlines (black, no fill), the marks, and the text `Slice N` once per polygon. The label sits at the polygon centroid, or at the centre of its bounding box if the centroid is outside the polygon. | `svg/slice_svg_drawer.py` | `test_svg_output` |
+| FR-25 | Each SVG has, in order: the polygon outlines (black, no fill; a polygon with holes has one outline for the outer edge and one for each hole), the marks, and the text `Slice N` once per polygon. The label sits at the polygon centroid. If that is outside the polygon, it sits at the centre of the bounding box. If that is outside too, it sits at a point that is inside the polygon. | `svg/slice_svg_drawer.py` | `test_svg_output` |
 | FR-26 | The SVG has no size or viewBox. Its coordinates are the x and y coordinates of FR-13, in model units. | `svg/svg_generator.py` | - |
 | FR-27 | Mark shapes, all unfilled. Circle: diameter is the size, default red. Square: side is the size, default blue. Triangle: 2 × size wide and tall, default green. Arrow: a line as long as the size with a head, default black. The color option replaces the default. Angle turns the shape. Angles are in radians everywhere inside the package; only the `--mark-angle` option takes degrees. | `svg/drawing/strategies/*`, `domain/shapes/*` | `test_svg_output`, `test_arrow_drawing_strategy` |
 | FR-28 | `ShapeFactory.get_shape` raises `ValueError: Unknown shape type` for an unknown shape name. The command checks `--available-shapes` against the registered shapes first, and an unknown or empty list stops it with `Invalid value for --available-shapes` and exit code 2. | `svg/drawing/shape_factory.py`, `cli.py::process_model` | `test_shape_factory`, `test_process_model_validation` |
@@ -95,11 +95,10 @@ The earlier goals to bundle all dependencies into one binary and to run without 
 
 ## Known gaps
 
-These are places where current behavior differs from the intent in the project docs, or where behavior is likely to surprise. Each was checked against the current code. G-3 was also reproduced by running trimesh 5.1 directly; the numbers are in the Evidence column.
+These are places where current behavior differs from the intent in the project docs, or where behavior is likely to surprise. Each was checked against the current code.
 
 | ID | Gap | Evidence | Effect |
 |---|---|---|---|
-| G-3 | Holes are drawn as solid shapes (FR-13). | A tube (annulus, radii 5 and 10) gives two closed polygons, areas 312.1 and 78.0. | A mark can land inside a hole. Handling holes needs trimesh's `polygons_full`, which also needs the `rtree` package. |
 | G-4 | Only one mark per polygon (FR-15). | `get_stable_marks` | One mark fixes position but not rotation. The requirement in the development notes for rotational alignment is not met. |
 | G-5 | Shapes do not cycle (FR-20). Once all are used, every new mark is the first shape. | `_select_unique_shape` | Marks are harder to tell apart on large models. The algorithm page says shapes cycle. |
 | G-6 | Mark size is fixed at 3 to 5 units (FR-21). | `_calculate_mark_size` | It does not scale with the model, and the development notes say it should. |

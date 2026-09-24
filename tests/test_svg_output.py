@@ -6,7 +6,7 @@ pytest.importorskip("shapely")
 import svgwrite
 import svgwrite.shapes
 import svgwrite.text
-from shapely.geometry import Point, box
+from shapely.geometry import Point, Polygon, box
 
 from layerforge.models.reference_marks import (
     ReferenceMark,
@@ -115,3 +115,35 @@ def test_label_inside_slice_polygon():
     poly = slice_obj.contours[0]
     for x, y in positions:
         assert poly.contains(Point(x, y))
+
+
+def _plate_with_hole_slice() -> Slice:
+    hole = [(20, 20), (80, 20), (80, 80), (20, 80)]
+    plate = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)], [hole])
+    manager = ReferenceMarkManager()
+    return Slice(0, 0.0, [plate], origin=(0, 0), mark_manager=manager, config=ReferenceMarkConfig())
+
+
+def test_holes_are_drawn_as_outlines():
+    ctx = StrategyContext()
+    register_shape_strategies(ctx)
+    dwg = svgwrite.Drawing()
+    SliceSVGDrawer.draw_slice(dwg, _plate_with_hole_slice(), ctx)
+
+    outlines = [
+        el
+        for el in dwg.elements
+        if isinstance(el, svgwrite.shapes.Polygon) and el.attribs.get("stroke") == "black"
+    ]
+    assert len(outlines) == 2
+
+
+def test_label_is_not_placed_in_a_hole():
+    ctx = StrategyContext()
+    register_shape_strategies(ctx)
+    slice_obj = _plate_with_hole_slice()
+    dwg = svgwrite.Drawing()
+    SliceSVGDrawer.draw_slice(dwg, slice_obj, ctx)
+
+    (x, y) = _text_positions(dwg)[0]
+    assert slice_obj.contours[0].contains(Point(x, y))

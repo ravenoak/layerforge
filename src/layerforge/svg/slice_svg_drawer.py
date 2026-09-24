@@ -1,4 +1,4 @@
-from shapely.geometry import Polygon
+from shapely.geometry import Point, Polygon
 from svgwrite import Drawing
 
 from layerforge.models.reference_marks import ReferenceMark
@@ -12,7 +12,7 @@ class SliceSVGDrawer:
 
     @staticmethod
     def draw_contour(dwg: Drawing, contour: Polygon) -> None:
-        """Draws a contour.
+        """Draws a contour: its outer outline and the outline of each hole.
 
         Parameters
         ----------
@@ -25,8 +25,9 @@ class SliceSVGDrawer:
         -------
         None
         """
-        points = [(x, y) for x, y in contour.exterior.coords]
-        dwg.add(dwg.polygon(points, fill="none", stroke="black"))
+        for ring in [contour.exterior, *contour.interiors]:
+            points = [(x, y) for x, y in ring.coords]
+            dwg.add(dwg.polygon(points, fill="none", stroke="black"))
 
     @staticmethod
     def draw_reference_marks(
@@ -65,11 +66,12 @@ class SliceSVGDrawer:
         """Return a label position for ``contour`` respecting ``padding``."""
         try:
             pt = contour.centroid
-            x, y = pt.x, pt.y
             if not contour.contains(pt):
                 minx, miny, maxx, maxy = contour.bounds
-                x = (minx + maxx) / 2
-                y = (miny + maxy) / 2
+                pt = Point((minx + maxx) / 2, (miny + maxy) / 2)
+            if not contour.contains(pt):
+                pt = contour.representative_point()
+            x, y = pt.x, pt.y
         except Exception:
             x, y = 10, 20
 

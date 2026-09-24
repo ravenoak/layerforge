@@ -69,8 +69,10 @@ def test_cli_writes_one_svg_per_slice(
     assert [f.name for f in files] == [f"slice_{i:03d}.svg" for i in range(len(positions))]
 
     marks: list[tuple[str | None, str | None]] = []
+    view_boxes: set[str | None] = set()
     for index, path in enumerate(files):
         root = ET.parse(path).getroot()
+        view_boxes.add(root.get("viewBox"))
         contours = [p for p in root.iter(f"{SVG}polygon") if p.get("stroke") == "black"]
         circles = list(root.iter(f"{SVG}circle"))
         labels = [t.text for t in root.iter(f"{SVG}text")]
@@ -78,6 +80,10 @@ def test_cli_writes_one_svg_per_slice(
         assert circles, f"{path.name} has no reference mark"
         assert f"Slice {index}" in labels
         marks.append((circles[0].get("cx"), circles[0].get("cy")))
+
+    # All layers share one frame, so they can be laid over each other.
+    assert len(view_boxes) == 1
+    assert None not in view_boxes
 
     # The first mark is inherited by every later slice at the same position.
     assert len(set(marks)) == 1

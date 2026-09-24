@@ -8,7 +8,12 @@ from layerforge.svg.drawing.strategy_context import StrategyContext
 
 
 class SliceSVGDrawer:
-    """Draws SVGs for slices."""
+    """Draws SVGs for slices.
+
+    The model's y axis points up and SVG's points down, so everything is drawn
+    at ``(x, -y)``. Seen in a viewer, the slice then has the same handedness as
+    the model seen from above.
+    """
 
     @staticmethod
     def draw_contour(dwg: Drawing, contour: Polygon) -> None:
@@ -26,7 +31,7 @@ class SliceSVGDrawer:
         None
         """
         for ring in [contour.exterior, *contour.interiors]:
-            points = [(x, y) for x, y in ring.coords]
+            points = [(x, -y) for x, y in ring.coords]
             dwg.add(dwg.polygon(points, fill="none", stroke="black"))
 
     @staticmethod
@@ -52,9 +57,9 @@ class SliceSVGDrawer:
             shape_instance = ShapeFactory.get_shape(
                 mark.shape,
                 mark.x,
-                mark.y,
+                -mark.y,
                 size=mark.size,
-                angle=mark.angle,
+                angle=-mark.angle,
                 color=mark.color,
             )
             shape_context.draw(dwg, shape_instance)
@@ -102,7 +107,7 @@ class SliceSVGDrawer:
         shape_context : StrategyContext
             The shape drawing context.
         padding : tuple | float | None, optional
-            Extra offset applied to label positions.
+            Extra offset applied to label positions, in model coordinates.
 
         Returns
         -------
@@ -115,4 +120,4 @@ class SliceSVGDrawer:
 
         for contour in slice_obj.contours:
             x, y = SliceSVGDrawer._label_position(contour, padding)
-            dwg.add(dwg.text(f"Slice {slice_obj.index}", insert=(x, y), fill="black"))
+            dwg.add(dwg.text(f"Slice {slice_obj.index}", insert=(x, -y), fill="black"))

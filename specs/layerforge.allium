@@ -337,9 +337,11 @@ rule FR24_WriteSvg {
     @guidance
         -- svg_name(i) is "slice_" plus i as three digits plus ".svg". The file
         -- holds each contour as a black unfilled polygon, then each mark, then
-        -- the text "Slice N" once per contour (FR-25). It has no viewBox and
-        -- uses the model's x and y coordinates (FR-26, G-12). Every slice
-        -- gets a file, including empty ones.
+        -- the text "Slice N" once per contour (FR-25). Points are drawn at
+        -- (x, -y), so the y axis points up as in the model (FR-26). Every file
+        -- has the same viewBox, which holds the contours of all slices plus a
+        -- 5% margin, so layers can be laid over each other. Every slice gets a
+        -- file, including empty ones.
 }
 
 rule RunCompletes {
@@ -405,5 +407,4 @@ surface Command {
 -- G-5  Shapes do not cycle once all are used.
 -- G-6  Mark size is fixed at 3 to 5, not proportional to the model.
 -- G-7  Marks are inherited from any earlier slice, not only neighbours.
--- G-12 The SVG has no viewBox and does not flip the y axis.
 -- G-13 Marks that fit nowhere are dropped without a warning.

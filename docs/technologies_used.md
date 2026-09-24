@@ -15,10 +15,9 @@ deployment processes.
 mkdocs is used for project documentation. It helps create a static site from Markdown files, making it easy to maintain
 and update documentation.
 
-## pyoxidizer
+## uv
 
-pyoxidizer is used to bundle the application and its dependencies into a single executable. This ensures the application
-can run on different platforms without requiring a Python installation.
+uv manages the Python version, the virtual environment, the lock file (`uv.lock`) and the package build.
 
 ## Python Libraries
 

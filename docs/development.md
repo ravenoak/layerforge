@@ -79,66 +79,17 @@
 
 ## Running the Tests
 
-The test suite depends on optional libraries such as `shapely` and `trimesh`. Each
-test module calls `pytest.importorskip` for these imports so that tests are
-skipped if the dependencies are unavailable. Install these packages to execute
-the entire suite.
-
-```
-pip install -r requirements-dev.txt
-```
-
-## Optional Dependencies
-
-In addition to the core requirements, installing `scipy` and `networkx` enables
-advanced slicing features in `trimesh` and prevents common runtime errors.
-
 ```bash
-pip install scipy networkx
+uv sync
+uv run pytest
 ```
+
+`uv sync` installs the runtime dependencies and the `dev` group (pytest and
+hypothesis). Add `--group docs` to build the documentation with
+`uv run mkdocs build --strict`.
 
 ## Common Error Messages
 
-- `ModuleNotFoundError: No module named 'shapely'` – optional geometry
-  libraries are missing.
-- `ModuleNotFoundError: No module named 'networkx'` – some slicing routines in
-  `trimesh` rely on NetworkX.
-- `pyoxidizer: error: Python interpreter too old` – ensure Python 3.12+ is used
-  when building the executable.
-
-## Building a Standalone Executable
-
-LayerForge uses [PyOxidizer](https://github.com/indygreg/PyOxidizer) to bundle the application and its dependencies into a single binary. As mentioned in the [README](../README.md#features), "Pyoxidizer packaging enables simple cross-platform distribution."
-
-### Requirements
-
-- Rust toolchain (\`cargo\` and \`rustc\`)
-- Python 3.12 or newer
-- PyOxidizer installed via `pip install pyoxidizer`
-- Supported on Linux and Windows
-
-### Build Steps
-
-Run the following from the project root:
-
-```bash
-pyoxidizer build
-```
-
-The resulting executable will be placed under `build/`.
-
-For quick testing you can run the generated binary directly:
-
-```bash
-./build/layerforge --help
-```
-
-This produces a self-contained executable that embeds Python and all
-project dependencies.
-
-### Troubleshooting
-
-- **Missing Rust toolchain**: install Rust from [rustup.rs](https://rustup.rs) and ensure `cargo` is on your `PATH`.
-- **Incorrect Python version**: PyOxidizer must use Python 3.12+. Set `PYTHON_SYS_EXECUTABLE` if multiple versions are installed.
-- **Windows build errors**: run from a Developer Command Prompt so that MSVC tools are available.
-- **Anti-virus interference**: some security tools may quarantine the generated binary. Whitelist the output directory if needed.
+- `ModuleNotFoundError: No module named 'networkx'` or `'scipy'` – `trimesh`
+  needs both for slicing. Both are declared dependencies, so this means the
+  environment was not created with `uv sync`.

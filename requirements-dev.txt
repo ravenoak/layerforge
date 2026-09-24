@@ -1,5 +1,0 @@
-pytest
-hypothesis
-svgwrite==1.4.3
-shapely==2.0.4
-trimesh==4.4.1

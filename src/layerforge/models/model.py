@@ -70,10 +70,7 @@ class Model:
             plane_origin=plane_origin, plane_normal=plane_normal
         )
         if layer is not None:
-            if hasattr(layer, "to_2D"):
-                slice_2d = layer.to_2D()
-            else:
-                slice_2d, _ = layer.to_planar()
+            slice_2d, _ = layer.to_2D()
             contours = slice_2d.polygons_closed
             return [Polygon(contour) for contour in contours]
         return []

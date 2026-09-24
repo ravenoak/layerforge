@@ -22,25 +22,15 @@ A 3D Model Slicing and SVG Generation Application
 
 ## Installation
 
-1. Ensure Python 3.12 or newer is installed.
-2. Install the GEOS library (required by `shapely`).
-3. Create and activate a virtual environment:
+1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/). uv fetches a matching Python (3.12 or newer) if needed.
+2. Install the command-line tool:
    ```bash
-   python -m venv .venv
-   source .venv/bin/activate
+   uv tool install git+https://github.com/ravenoak/layerforge
    ```
-4. Install LayerForge and its dependencies:
+3. To work on the code, clone the repository and create the environment:
    ```bash
-   pip install -e .
-   ```
-   Alternatively, run `pip install -r requirements.txt` if you only need the runtime dependencies.
-   To ensure all optional features are available use:
-   ```bash
-   pip install -e .[full]
-   ```
-5. Install development dependencies for running the tests:
-   ```bash
-   pip install -r requirements-dev.txt
+   uv sync
+   uv run pytest
    ```
 
 ## Dependencies
@@ -50,6 +40,8 @@ The following Python packages are required at runtime:
 - `trimesh` – mesh loading and manipulation
 - `svgwrite` – generating SVG files
 - `shapely` – geometric computations
+- `pydantic` – configuration validation
+- `scipy`, `networkx` – needed by `trimesh` for slicing
 
 These packages are installed automatically when installing LayerForge.
 
@@ -77,7 +69,6 @@ python -c "import layerforge; print(layerforge.__version__)"
 - Reference marks are chosen using a geometric stability metric inspired by GDOP.
 - Marks inherit shape, position, angle and color between adjacent slices and are adjusted to avoid overlaps.
 - Supports multiple mark shapes (circle, square, triangle, arrow) for easy identification.
-- Pyoxidizer packaging enables simple cross-platform distribution.
 
 ## Configuration
 

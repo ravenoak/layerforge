@@ -46,10 +46,20 @@ class ModelFactory:
         -------
         Model
             The Model object created from the STL file.
+
+        Raises
+        ------
+        ValueError
+            If the file holds more than one mesh, no geometry, or a mesh with
+            no height.
         """
         mesh = self.mesh_loader.load_mesh(model_file)
         if isinstance(mesh, list):
             raise ValueError(f"Expected a single mesh from '{model_file}', got {len(mesh)} meshes")
+        if mesh.bounds is None:
+            raise ValueError("the mesh contains no geometry")
+        if mesh.bounds[1][2] - mesh.bounds[0][2] <= 0:
+            raise ValueError("the mesh has no height, so it cannot be sliced")
         mesh = ModelFactory._scale_mesh(mesh, scale_factor, target_height)
         origin = ModelFactory._calculate_origin(mesh)
         return Model(mesh, layer_height, origin)

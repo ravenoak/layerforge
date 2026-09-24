@@ -205,7 +205,8 @@ rule FR9_ScaleToTargetHeight {
         scale_uniformly(run.mesh, run.target_height / run.height, about: origin_of_space)
         run.status = scaled
     @guidance
-        -- A mesh of zero height divides by zero here (G-11).
+        -- A mesh with no height is rejected when it is loaded, so run.height is
+        -- always positive here.
 }
 
 rule NoScaling {
@@ -408,6 +409,5 @@ surface Command {
 -- G-6  Mark size is fixed at 3 to 5, not proportional to the model.
 -- G-7  Marks are inherited from any earlier slice, not only neighbours.
 -- G-10 The slice on the top face is empty for flat-topped models.
--- G-11 Some bad inputs give a traceback instead of a clear message.
 -- G-12 The SVG has no viewBox and does not flip the y axis.
 -- G-13 Marks that fit nowhere are dropped without a warning.

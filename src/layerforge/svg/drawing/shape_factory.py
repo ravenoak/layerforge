@@ -19,6 +19,11 @@ def register_shape(name: str, cls: type[BaseShape]) -> None:
     _SHAPE_REGISTRY[name] = cls
 
 
+def registered_shapes() -> list[str]:
+    """Return the names of all registered shapes, sorted."""
+    return sorted(_SHAPE_REGISTRY)
+
+
 class ShapeFactory:
     """Factory class for creating shapes."""
 
@@ -34,6 +39,6 @@ class ShapeFactory:
 
         shape_cls = _SHAPE_REGISTRY.get(shape_type)
         if not shape_cls:
-            available = ", ".join(sorted(_SHAPE_REGISTRY))
+            available = ", ".join(registered_shapes())
             raise ValueError(f"Unknown shape type: {shape_type}. Available shapes: {available}")
         return cast(BaseShape, cast(Any, shape_cls)(*args, **kwargs))

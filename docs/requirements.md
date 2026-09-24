@@ -32,7 +32,7 @@ LayerForge slices a 3D mesh into horizontal layers. It writes one SVG file per l
 
 | ID | Requirement | Code | Tests |
 |---|---|---|---|
-| FR-7 | The mesh is read with trimesh. A file that holds more than one geometry is rejected with a `ValueError`. | `models/loading/implementations/trimesh_loader.py`, `models/model_factory.py` | `test_trimesh_loader`, `test_model_factory` |
+| FR-7 | The mesh is read with trimesh. A file that holds more than one geometry, no geometry, or a mesh with no height is rejected with a `ValueError`. The command turns it into `Cannot load '<file>': <reason>` with exit code 1. A missing or unreadable file fails the same way. | `models/loading/implementations/trimesh_loader.py`, `models/model_factory.py` | `test_trimesh_loader`, `test_model_factory`, `test_process_model_validation` |
 | FR-8 | With `--scale-factor`, the mesh is scaled uniformly by that factor about the coordinate origin. | `models/model_factory.py::_scale_mesh` | `test_model_factory`, `test_end_to_end` |
 | FR-9 | With `--target-height`, the mesh is scaled uniformly so its height (maximum z minus minimum z) equals the target. | `models/model_factory.py::_scale_mesh` | `test_model_factory`, `test_end_to_end` |
 | FR-10 | The model origin is the centre of the mesh bounding box in x and y, taken after scaling. The mesh is not moved. | `models/model_factory.py::_calculate_origin` | `test_model_factory` |
@@ -68,7 +68,7 @@ LayerForge slices a 3D mesh into horizontal layers. It writes one SVG file per l
 | FR-25 | Each SVG has, in order: the polygon outlines (black, no fill), the marks, and the text `Slice N` once per polygon. The label sits at the polygon centroid, or at the centre of its bounding box if the centroid is outside the polygon. | `svg/slice_svg_drawer.py` | `test_svg_output` |
 | FR-26 | The SVG has no size or viewBox. Its coordinates are the 2D coordinates of FR-13, in model units. | `svg/svg_generator.py` | - |
 | FR-27 | Mark shapes, all unfilled. Circle: diameter is the size, default red. Square: side is the size, default blue. Triangle: 2 × size wide and tall, default green. Arrow: a line as long as the size with a head, default black. The color option replaces the default. Angle turns the shape. Angles are in radians everywhere inside the package; only the `--mark-angle` option takes degrees. | `svg/drawing/strategies/*`, `domain/shapes/*` | `test_svg_output`, `test_arrow_drawing_strategy` |
-| FR-28 | An unknown shape name raises `ValueError: Unknown shape type`. This happens when the shape is drawn, not when options are read. | `svg/drawing/shape_factory.py` | `test_shape_factory` |
+| FR-28 | `ShapeFactory.get_shape` raises `ValueError: Unknown shape type` for an unknown shape name. The command checks `--available-shapes` against the registered shapes first, and an unknown or empty list stops it with `Invalid value for --available-shapes` and exit code 2. | `svg/drawing/shape_factory.py`, `cli.py::process_model` | `test_shape_factory`, `test_process_model_validation` |
 | FR-29 | Code can add shapes (`register_shape`) and mesh loaders (`LoaderFactory.register_loader`). The CLI uses only the four built-in shapes and the trimesh loader. | `svg/drawing/shape_factory.py`, `models/loading/__init__.py` | `test_shape_factory`, `test_loader_factory` |
 
 ## Non-functional requirements
@@ -79,7 +79,7 @@ LayerForge slices a 3D mesh into horizontal layers. It writes one SVG file per l
 | NFR-2 | Runtime dependencies are declared in `pyproject.toml` and locked in `uv.lock`: click, pydantic, scipy, networkx, shapely, svgwrite, trimesh. Installing the package pulls in all of them. | `pyproject.toml`, `uv.lock` |
 | NFR-3 | Every pull request passes `ruff check`, `ruff format --check`, `pyright` (strict on `src/`) and the full test suite. | `.github/workflows/tests.yaml` |
 | NFR-4 | The command installs as `layerforge` with `uv tool install`, and the wheel contains every module. | `pyproject.toml` (`[project.scripts]`) |
-| NFR-5 | Bad option values fail before any work starts, with a message that names the option. Click reports usage errors with exit code 2. A conflict between options exits with 1. Other failures (missing file, unreadable mesh) end with a Python traceback and exit code 1. | `cli.py` |
+| NFR-5 | Bad option values fail before any work starts, with a message that names the option. Click reports usage errors with exit code 2. A conflict between options exits with 1. A missing, unreadable or empty mesh file, or a mesh with no height, stops the command with a message that names the file and exit code 1. | `cli.py`, `models/model_factory.py` |
 | NFR-6 | Documentation builds with `mkdocs build --strict` and deploys to GitHub Pages on each push to `main`. | `.github/workflows/docs.yaml` |
 | NFR-7 | The code is licensed CC BY-NC 4.0. A commercial license is offered separately. | `LICENSE`, `COMMERCIAL_LICENSE` |
 | NFR-8 | The tool logs only through the standard `logging` module and sets no log configuration. | `models/slicing/slice.py` |
@@ -107,7 +107,6 @@ These are places where current behavior differs from the intent in the project d
 | G-6 | Mark size is fixed at 3 to 5 units (FR-21). | `_calculate_mark_size` | It does not scale with the model, and the development notes say it should. |
 | G-7 | Marks are shared by all slices, not only neighbours (FR-19). | One `ReferenceMarkManager` per run. | A mark can be inherited from a slice far away. |
 | G-10 | The last slice lies on the top face and comes out empty for a box (FR-12, G-1). | `test_end_to_end` skips it. | One useless SVG per run for flat-topped models. |
-| G-11 | Some bad inputs are not caught up front (NFR-5). A mesh with zero height and `--target-height` raises `ZeroDivisionError`. An unknown shape name fails only when drawn. | `model_factory.py`, `shape_factory.py` | Users see a traceback. |
 | G-12 | The SVG has no viewBox and does not flip the y axis (FR-26). | Sample output has negative coordinates and `width="100%"`. | Viewers may crop the drawing or show it mirrored. |
 | G-13 | Marks that fit no polygon are dropped silently (FR-17, FR-22). | `test_end_to_end` scaled cases need `--mark-min-distance 2`. | A small model with default options gets slices with no marks and no warning. |
 

@@ -1,17 +1,4 @@
-from typing import TYPE_CHECKING, TypeAlias
-
-from layerforge.utils.optional_dependencies import require_module
-
-if TYPE_CHECKING:  # pragma: no cover
-    from shapely.geometry import Point as ShpPoint
-    from shapely.geometry import Polygon as ShpPolygon
-
-    Point: TypeAlias = ShpPoint
-    Polygon: TypeAlias = ShpPolygon
-else:
-    _shapely = require_module("shapely.geometry", "ReferenceMarkManager")
-    Point: TypeAlias = _shapely.Point
-    Polygon: TypeAlias = _shapely.Polygon
+from shapely.geometry import Point, Polygon
 
 from layerforge.utils import calculate_distance
 

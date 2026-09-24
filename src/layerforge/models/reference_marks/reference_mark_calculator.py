@@ -1,20 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeAlias
-
-from layerforge.utils.optional_dependencies import require_module
-
-if TYPE_CHECKING:
-    from shapely.geometry import Point as ShpPoint
-    from shapely.geometry import Polygon as ShpPolygon
-
-    Point: TypeAlias = ShpPoint
-    Polygon: TypeAlias = ShpPolygon
-else:
-    _shapely = require_module("shapely.geometry", "ReferenceMarkCalculator")
-    Point: TypeAlias = _shapely.Point
-    Polygon: TypeAlias = _shapely.Polygon
 import random
+from typing import TYPE_CHECKING
+
+from shapely.geometry import Point, Polygon
 
 from layerforge.utils import calculate_distance
 
@@ -94,10 +83,13 @@ class ReferenceMarkCalculator:
             inherited = None
             for x, y in existing_marks:
                 pt = Point(x, y)
-                if poly.contains(pt) and poly.boundary.distance(pt) >= min_distance:
-                    if all(calculate_distance(x, y, sx, sy) >= min_distance for sx, sy in selected):
-                        inherited = (x, y)
-                        break
+                if (
+                    poly.contains(pt)
+                    and poly.boundary.distance(pt) >= min_distance
+                    and all(calculate_distance(x, y, sx, sy) >= min_distance for sx, sy in selected)
+                ):
+                    inherited = (x, y)
+                    break
             if inherited:
                 selected.append(inherited)
                 continue

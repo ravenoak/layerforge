@@ -14,6 +14,6 @@ def test_require_module_missing():
     with pytest.raises(ImportError) as exc:
         require_module("nonexistent_package_xyz", "MyFeature")
     assert (
-        str(exc.value)
-        == "MyFeature requires the 'nonexistent_package_xyz' package. Install it via 'pip install nonexistent_package_xyz'."
+        str(exc.value) == "MyFeature requires the 'nonexistent_package_xyz' package. "
+        "Install it via 'pip install nonexistent_package_xyz'."
     )

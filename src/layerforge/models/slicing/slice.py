@@ -1,14 +1,6 @@
 import logging
-from typing import TYPE_CHECKING, TypeAlias
 
-from layerforge.utils.optional_dependencies import require_module
-
-if TYPE_CHECKING:  # pragma: no cover
-    from shapely.geometry import Polygon as ShpPolygon
-
-    Polygon: TypeAlias = ShpPolygon
-else:
-    Polygon: TypeAlias = require_module("shapely.geometry", "Slice").Polygon
+from shapely.geometry import Polygon
 
 from layerforge.models.reference_marks import (
     ReferenceMark,

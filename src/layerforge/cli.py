@@ -1,10 +1,5 @@
 import math
 
-
-class ConflictingOptionsError(ValueError):
-    """Raised when mutually exclusive CLI options are provided."""
-
-
 import click
 
 from layerforge.models import ModelFactory, SlicerService
@@ -15,6 +10,10 @@ from layerforge.svg.drawing import StrategyContext
 from layerforge.utils import register_shape_strategies
 from layerforge.utils.loader_initialization import initialize_loaders
 from layerforge.writers import SVGFileWriter
+
+
+class ConflictingOptionsError(ValueError):
+    """Raised when mutually exclusive CLI options are provided."""
 
 
 def process_model(
@@ -185,7 +184,7 @@ def cli(
         )
     except ConflictingOptionsError as exc:
         click.echo(str(exc))
-        raise SystemExit(1)
+        raise SystemExit(1) from exc
 
 
 if __name__ == "__main__":

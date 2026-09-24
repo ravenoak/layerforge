@@ -1,16 +1,7 @@
 import math
-from typing import TYPE_CHECKING, TypeAlias
-
-from layerforge.utils.optional_dependencies import require_module
-
-if TYPE_CHECKING:
-    from svgwrite import Drawing as SvgDrawing
-
-    Drawing: TypeAlias = SvgDrawing
-else:
-    Drawing: TypeAlias = require_module("svgwrite", "TriangleDrawingStrategy").Drawing  # type: ignore
-
 from typing import cast
+
+from svgwrite import Drawing
 
 from layerforge.domain.shapes import Triangle
 from layerforge.domain.shapes.base_shape import BaseShape

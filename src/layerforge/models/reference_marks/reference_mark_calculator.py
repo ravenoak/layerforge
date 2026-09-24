@@ -13,6 +13,9 @@ if TYPE_CHECKING:
     from layerforge.models.slicing.slice import Slice
 
 
+_SAMPLE_SEED = 0
+
+
 class ReferenceMarkCalculator:
     """Class to calculate reference marks for a slice.
 
@@ -39,8 +42,10 @@ class ReferenceMarkCalculator:
 
         The centroid is always returned and additional points are randomly
         sampled within the bounding box until ``samples`` unique points that are
-        contained within ``poly`` are found.
+        contained within ``poly`` are found.  Sampling uses a fixed seed, so the
+        same polygon always gives the same points.
         """
+        rng = random.Random(_SAMPLE_SEED)
         if not poly.is_valid:
             rounded = [(round(x, 6), round(y, 6)) for x, y in poly.exterior.coords]
             poly = Polygon(rounded).buffer(0)
@@ -55,8 +60,8 @@ class ReferenceMarkCalculator:
         max_attempts = samples * 10
         while len(pts) < samples and attempts < max_attempts:
             attempts += 1
-            x = random.uniform(minx, maxx)
-            y = random.uniform(miny, maxy)
+            x = rng.uniform(minx, maxx)
+            y = rng.uniform(miny, maxy)
             candidate = Point(x, y)
             try:
                 inside = poly.contains(candidate)

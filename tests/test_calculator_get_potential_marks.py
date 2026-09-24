@@ -1,8 +1,6 @@
 import pytest
 
 pytest.importorskip("shapely")
-import random
-
 from shapely.geometry import Point, Polygon
 
 from layerforge.models.reference_marks import (
@@ -42,7 +40,6 @@ def test_existing_mark_inherited():
 
 
 def test_sample_points_generate_multiple_unique_points():
-    random.seed(0)
     square = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)])
     pts = ReferenceMarkCalculator._sample_points(square, samples=4)
     # should return centroid plus at least one other unique point
@@ -53,10 +50,16 @@ def test_sample_points_generate_multiple_unique_points():
 
 
 def test_sample_points_triangle_diversity():
-    random.seed(1)
     triangle = Polygon([(0, 0), (50, 100), (100, 0)])
     pts = ReferenceMarkCalculator._sample_points(triangle, samples=4)
     assert len(pts) >= 2
     assert len(set(pts)) == len(pts)
     for x, y in pts:
         assert triangle.contains(Point(x, y))
+
+
+def test_sample_points_are_deterministic():
+    triangle = Polygon([(0, 0), (50, 100), (100, 0)])
+    first = ReferenceMarkCalculator._sample_points(triangle, samples=4)
+    second = ReferenceMarkCalculator._sample_points(triangle, samples=4)
+    assert first == second

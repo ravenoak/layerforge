@@ -43,7 +43,7 @@ LayerForge slices a 3D mesh into horizontal layers. It writes one SVG file per l
 |---|---|---|---|
 | FR-11 | The model height is maximum z minus minimum z. | `models/model.py::calculate_height` | `test_slicer_service` |
 | FR-12 | The mesh is divided from its lowest point upwards into layers of `layer_height`. The last layer is shorter if the height is not a multiple. There are `ceil(height / layer_height)` layers, at least one. Each slice is cut at the middle of its layer, so no cut lies on the bottom or top face. A mesh 10 high from z = 0 with layer height 3 gives the positions 1.5, 4.5, 7.5 and 9.5. A mesh centred on z = 0 is sliced over its whole height. | `models/slicing/slicer_service.py::calculate_slice_positions` | `test_slicer_service`, `test_end_to_end` |
-| FR-13 | Each position is a horizontal plane (normal +z). The cut through the mesh gives closed loops. Each loop becomes one polygon in a flat 2D frame. A plane that cuts nothing gives an empty list of polygons. | `models/model.py::calculate_slice_contours` | `test_end_to_end` |
+| FR-13 | Each position is a horizontal plane (normal +z). The cut through the mesh gives closed loops. Each loop becomes one polygon in the model's x and y coordinates, so every slice shares one frame. A plane that cuts nothing gives an empty list of polygons. | `models/model.py::calculate_slice_contours` | `test_model_contours`, `test_end_to_end` |
 | FR-14 | One slice is made per position, in order and numbered from 0. Empty slices are kept. | `models/slicing/slicer_service.py::slice_model` | `test_end_to_end` |
 
 ### Reference marks
@@ -66,7 +66,7 @@ LayerForge slices a 3D mesh into horizontal layers. It writes one SVG file per l
 |---|---|---|---|
 | FR-24 | One SVG file is written per slice, named `slice_000.svg`, `slice_001.svg` and so on, including empty slices (a slice whose cut misses the mesh). | `writers/svg_writer.py`, `utils/file_operations.py` | `test_file_operations`, `test_svg_output`, `test_end_to_end` |
 | FR-25 | Each SVG has, in order: the polygon outlines (black, no fill), the marks, and the text `Slice N` once per polygon. The label sits at the polygon centroid, or at the centre of its bounding box if the centroid is outside the polygon. | `svg/slice_svg_drawer.py` | `test_svg_output` |
-| FR-26 | The SVG has no size or viewBox. Its coordinates are the 2D coordinates of FR-13, in model units. | `svg/svg_generator.py` | - |
+| FR-26 | The SVG has no size or viewBox. Its coordinates are the x and y coordinates of FR-13, in model units. | `svg/svg_generator.py` | - |
 | FR-27 | Mark shapes, all unfilled. Circle: diameter is the size, default red. Square: side is the size, default blue. Triangle: 2 × size wide and tall, default green. Arrow: a line as long as the size with a head, default black. The color option replaces the default. Angle turns the shape. Angles are in radians everywhere inside the package; only the `--mark-angle` option takes degrees. | `svg/drawing/strategies/*`, `domain/shapes/*` | `test_svg_output`, `test_arrow_drawing_strategy` |
 | FR-28 | `ShapeFactory.get_shape` raises `ValueError: Unknown shape type` for an unknown shape name. The command checks `--available-shapes` against the registered shapes first, and an unknown or empty list stops it with `Invalid value for --available-shapes` and exit code 2. | `svg/drawing/shape_factory.py`, `cli.py::process_model` | `test_shape_factory`, `test_process_model_validation` |
 | FR-29 | Code can add shapes (`register_shape`) and mesh loaders (`LoaderFactory.register_loader`). The CLI uses only the four built-in shapes and the trimesh loader. | `svg/drawing/shape_factory.py`, `models/loading/__init__.py` | `test_shape_factory`, `test_loader_factory` |
@@ -95,11 +95,10 @@ The earlier goals to bundle all dependencies into one binary and to run without 
 
 ## Known gaps
 
-These are places where current behavior differs from the intent in the project docs, or where behavior is likely to surprise. Each was checked against the current code. G-2 and G-3 were also reproduced by running trimesh 5.1 directly; the numbers are in the Evidence column.
+These are places where current behavior differs from the intent in the project docs, or where behavior is likely to surprise. Each was checked against the current code. G-3 was also reproduced by running trimesh 5.1 directly; the numbers are in the Evidence column.
 
 | ID | Gap | Evidence | Effect |
 |---|---|---|---|
-| G-2 | The 2D frame differs for each slice (FR-13). trimesh centres each cut on its own vertices. | A 20 mm box moved to x = 100, y = 50 gives 2D bounds of ±10 at every height. A 30° tilted box has its slice centre move from x = −6.87 at z = 5 to x = 6.0 at z = 30, while the 2D coordinates stay near 0. | Marks and SVG coordinates are not in model coordinates. A mark inherited by position (FR-19) compares points from different frames. |
 | G-3 | Holes are drawn as solid shapes (FR-13). | A tube (annulus, radii 5 and 10) gives two closed polygons, areas 312.1 and 78.0. | A mark can land inside a hole. Handling holes needs trimesh's `polygons_full`, which also needs the `rtree` package. |
 | G-4 | Only one mark per polygon (FR-15). | `get_stable_marks` | One mark fixes position but not rotation. The requirement in the development notes for rotational alignment is not met. |
 | G-5 | Shapes do not cycle (FR-20). Once all are used, every new mark is the first shape. | `_select_unique_shape` | Marks are harder to tell apart on large models. The algorithm page says shapes cycle. |

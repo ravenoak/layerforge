@@ -118,7 +118,7 @@ entity Slice {
 }
 
 entity Contour {
-    -- One closed loop of a cut, as a polygon in the slice's own 2D frame (G-2).
+    -- One closed loop of a cut, as a polygon in the model's x and y coordinates.
     slice: Slice
 }
 
@@ -337,7 +337,7 @@ rule FR24_WriteSvg {
         -- svg_name(i) is "slice_" plus i as three digits plus ".svg". The file
         -- holds each contour as a black unfilled polygon, then each mark, then
         -- the text "Slice N" once per contour (FR-25). It has no viewBox and
-        -- uses the slice's own 2D frame (FR-26, G-2, G-12). Every slice
+        -- uses the model's x and y coordinates (FR-26, G-12). Every slice
         -- gets a file, including empty ones.
 }
 
@@ -400,8 +400,6 @@ surface Command {
 -- Open Questions
 ------------------------------------------------------------
 
--- G-2  Each slice has its own 2D frame, so inheritance compares points from
---      different frames.
 -- G-3  Holes are treated as solid polygons.
 -- G-4  One mark per contour cannot fix rotation.
 -- G-5  Shapes do not cycle once all are used.

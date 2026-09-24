@@ -3,15 +3,16 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Sequence
+from typing import Any
 
 
 class Mesh(ABC):
     """Interface describing the operations required by :class:`Model`."""
 
     @abstractmethod
-    def copy(self) -> "Mesh":
+    def copy(self) -> Mesh:
         """Return a copy of the mesh."""
 
     @abstractmethod
@@ -33,9 +34,7 @@ class Mesh(ABC):
         """Return the extents of the mesh."""
 
     @abstractmethod
-    def section(
-        self, plane_origin: Sequence[float], plane_normal: Sequence[float]
-    ) -> Any:
+    def section(self, plane_origin: Sequence[float], plane_normal: Sequence[float]) -> Any:
         """Return a section of the mesh at the given plane."""
 
 
@@ -45,41 +44,8 @@ class TrimeshMesh(Mesh):
 
     geometry: Any
 
-    def copy(self) -> "TrimeshMesh":
+    def copy(self) -> TrimeshMesh:
         return TrimeshMesh(self.geometry.copy())
-
-    def apply_scale(self, scale: float) -> None:
-        self.geometry.apply_scale(scale)
-
-    def apply_translation(self, translation: Sequence[float]) -> None:
-        self.geometry.apply_translation(translation)
-
-    @property
-    def bounds(self) -> Any:
-        return self.geometry.bounds
-
-    @property
-    def extents(self) -> Any:
-        return self.geometry.extents
-
-    def section(
-        self, plane_origin: Sequence[float], plane_normal: Sequence[float]
-    ) -> Any:
-        return self.geometry.section(
-            plane_origin=plane_origin, plane_normal=plane_normal
-        )
-
-
-
-@dataclass
-class Mesh:
-    """Lightweight wrapper around an underlying mesh implementation."""
-
-    geometry: Any
-
-    def copy(self) -> "Mesh":
-        """Return a copy of the mesh."""
-        return Mesh(self.geometry.copy())
 
     def apply_scale(self, scale: float) -> None:
         self.geometry.apply_scale(scale)

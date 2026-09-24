@@ -1,18 +1,12 @@
 import math
-from typing import TYPE_CHECKING, TypeAlias
+from typing import cast
 
-from layerforge.utils.optional_dependencies import require_module
-
-if TYPE_CHECKING:
-    from svgwrite import Drawing as SvgDrawing
-    Drawing: TypeAlias = SvgDrawing
-else:
-    Drawing: TypeAlias = require_module("svgwrite", "ArrowDrawingStrategy").Drawing  # type: ignore
+from svgwrite import Drawing
 
 from layerforge.domain.shapes import Arrow
 from layerforge.domain.shapes.base_shape import BaseShape
+
 from .base_strategy import ShapeDrawingStrategy
-from typing import cast
 
 
 class ArrowDrawingStrategy(ShapeDrawingStrategy):
@@ -32,7 +26,7 @@ class ArrowDrawingStrategy(ShapeDrawingStrategy):
 
         head = arrow.size * 0.2
 
-        stroke_color = arrow.color or 'black'
+        stroke_color = arrow.color or "black"
         dwg.add(dwg.line((arrow.x, arrow.y), end, stroke=stroke_color))
         dwg.add(
             dwg.polygon(

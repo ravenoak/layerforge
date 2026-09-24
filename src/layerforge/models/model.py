@@ -1,17 +1,13 @@
-from typing import List, TYPE_CHECKING, TypeAlias, Sequence, cast
+from collections.abc import Sequence
+from typing import cast
 
-from layerforge.utils.optional_dependencies import require_module
+from shapely.geometry import Polygon
 
-if TYPE_CHECKING:  # pragma: no cover
-    from shapely.geometry import Polygon as ShpPolygon
-    Polygon: TypeAlias = ShpPolygon
-else:
-    Polygon: TypeAlias = require_module("shapely.geometry", "Model").Polygon
 from .loading.mesh import Mesh
 
 
 class Model:
-    """ Model class for 3D models.
+    """Model class for 3D models.
 
     Attributes
     ----------
@@ -66,9 +62,7 @@ class Model:
         """
         plane_normal = [0, 0, 1]
         plane_origin = [0, 0, position]
-        layer = self.mesh.section(
-            plane_origin=plane_origin, plane_normal=plane_normal
-        )
+        layer = self.mesh.section(plane_origin=plane_origin, plane_normal=plane_normal)
         if layer is not None:
             slice_2d, _ = layer.to_2D()
             contours = slice_2d.polygons_closed

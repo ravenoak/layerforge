@@ -1,17 +1,24 @@
 import pytest
+
 pytest.importorskip("svgwrite")
 pytest.importorskip("shapely")
 
 import svgwrite
-from shapely.geometry import box, Point
+import svgwrite.shapes
+import svgwrite.text
+from shapely.geometry import Point, box
 
-from layerforge.models.reference_marks import ReferenceMark, ReferenceMarkManager, ReferenceMarkConfig
+from layerforge.models.reference_marks import (
+    ReferenceMark,
+    ReferenceMarkConfig,
+    ReferenceMarkManager,
+)
 from layerforge.models.slicing.slice import Slice
+from layerforge.svg.drawing.strategy_context import StrategyContext
 from layerforge.svg.slice_svg_drawer import SliceSVGDrawer
 from layerforge.svg.svg_generator import SVGGenerator
-from layerforge.writers.svg_writer import SVGFileWriter, SVGWriter
-from layerforge.svg.drawing.strategy_context import StrategyContext
 from layerforge.utils.shape_strategies import register_shape_strategies
+from layerforge.writers.svg_writer import SVGFileWriter
 
 
 class CaptureWriter(SVGFileWriter):
@@ -50,8 +57,8 @@ def _text_positions(dwg: svgwrite.Drawing) -> list[tuple[float, float]]:
     for el in dwg.elements:
         if isinstance(el, svgwrite.text.Text):
             attr = getattr(el, "attribs", {})
-            x = float(attr.get("x"))
-            y = float(attr.get("y"))
+            x = float(attr["x"])
+            y = float(attr["y"])
             coords.append((x, y))
     return coords
 
@@ -60,10 +67,12 @@ def test_draw_slice_adds_expected_shapes():
     ctx = StrategyContext()
     register_shape_strategies(ctx)
     slice_obj = _create_slice(0, "circle")
-    slice_obj.ref_marks.extend([
-        ReferenceMark(5, 6, "square", 4),
-        ReferenceMark(6, 6, "triangle", 4),
-    ])
+    slice_obj.ref_marks.extend(
+        [
+            ReferenceMark(5, 6, "square", 4),
+            ReferenceMark(6, 6, "triangle", 4),
+        ]
+    )
     dwg = svgwrite.Drawing()
     SliceSVGDrawer.draw_slice(dwg, slice_obj, ctx)
 

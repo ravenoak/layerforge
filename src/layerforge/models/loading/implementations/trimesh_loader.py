@@ -1,11 +1,7 @@
-from typing import List
-
-from layerforge.utils.optional_dependencies import require_module
-
-trimesh = require_module("trimesh", "TrimeshLoader")
+import trimesh
 
 from layerforge.models.loading.base import MeshLoader
-from layerforge.models.loading.mesh import TrimeshMesh, Mesh
+from layerforge.models.loading.mesh import Mesh, TrimeshMesh
 
 
 class TrimeshLoader(MeshLoader):
@@ -24,10 +20,12 @@ class TrimeshLoader(MeshLoader):
         Mesh
             The loaded mesh.
         """
-        # TODO: Investigate encapsulating mesh in a custom object to abstract the specific library that is used.
-        mesh = trimesh.load_mesh(model_file)
+        # TODO: Investigate encapsulating mesh in a custom object to abstract the specific
+        # library that is used.
+        mesh = trimesh.load_mesh(model_file)  # pyright: ignore[reportUnknownMemberType]
         if isinstance(mesh, list):
             raise ValueError(
-                f"File '{model_file}' contains {len(mesh)} geometries; only a single mesh is supported."
+                f"File '{model_file}' contains {len(mesh)} geometries; "
+                "only a single mesh is supported."
             )
         return TrimeshMesh(mesh)

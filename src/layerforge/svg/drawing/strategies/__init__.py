@@ -1,4 +1,9 @@
-__all__ = ['ArrowDrawingStrategy', 'CircleDrawingStrategy', 'SquareDrawingStrategy', 'TriangleDrawingStrategy']
+__all__ = [
+    "ArrowDrawingStrategy",
+    "CircleDrawingStrategy",
+    "SquareDrawingStrategy",
+    "TriangleDrawingStrategy",
+]
 
 from .arrow_strategy import ArrowDrawingStrategy
 from .circle_strategy import CircleDrawingStrategy

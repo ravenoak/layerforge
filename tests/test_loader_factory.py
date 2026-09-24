@@ -5,7 +5,7 @@ from layerforge.models.loading.base import MeshLoader
 
 
 class DummyLoader(MeshLoader):
-    def load_mesh(self, model_file: str):
+    def load_mesh(self, model_file: str):  # pyright: ignore[reportIncompatibleMethodOverride]
         return model_file
 
 

@@ -1,5 +1,5 @@
+from layerforge.models.reference_marks import ReferenceMarkConfig, ReferenceMarkManager
 from layerforge.models.slicing.slice import Slice
-from layerforge.models.reference_marks import ReferenceMarkManager, ReferenceMarkConfig
 
 
 def _make_slice(origin=(0, 0)) -> Slice:

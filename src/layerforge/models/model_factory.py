@@ -49,9 +49,7 @@ class ModelFactory:
         """
         mesh = self.mesh_loader.load_mesh(model_file)
         if isinstance(mesh, list):
-            raise ValueError(
-                f"Expected a single mesh from '{model_file}', got {len(mesh)} meshes"
-            )
+            raise ValueError(f"Expected a single mesh from '{model_file}', got {len(mesh)} meshes")
         mesh = ModelFactory._scale_mesh(mesh, scale_factor, target_height)
         origin = ModelFactory._calculate_origin(mesh)
         return Model(mesh, layer_height, origin)
@@ -82,15 +80,12 @@ class ModelFactory:
             If both scale_factor and target_height are provided.
         """
         if scale_factor is not None and target_height is not None:
-            raise ValueError(
-                "Only one of scale_factor or target_height can be provided."
-            )
+            raise ValueError("Only one of scale_factor or target_height can be provided.")
         if scale_factor is not None:
             mesh.apply_scale(scale_factor)
         elif target_height is not None:
             current_height = mesh.bounds[1][2] - mesh.bounds[0][2]
-            scale_factor = target_height / current_height
-            mesh.apply_scale(scale_factor)
+            mesh.apply_scale(target_height / current_height)
         return mesh
 
     @staticmethod

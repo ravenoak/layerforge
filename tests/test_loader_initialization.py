@@ -2,9 +2,9 @@ import pytest
 
 pytest.importorskip("trimesh")
 
-from layerforge.utils.loader_initialization import initialize_loaders
 from layerforge.models.loading import LoaderFactory
 from layerforge.models.loading.implementations.trimesh_loader import TrimeshLoader
+from layerforge.utils.loader_initialization import initialize_loaders
 
 
 def test_initialize_loaders_registers_trimesh(monkeypatch):

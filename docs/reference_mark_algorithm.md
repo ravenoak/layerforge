@@ -18,7 +18,7 @@ class ReferenceMarkCalculator:
     def _stability_score(points: list[tuple[float, float]]) -> float:
         score = 0.0
         for i, p1 in enumerate(points):
-            for p2 in points[i + 1:]:
+            for p2 in points[i + 1 :]:
                 score += calculate_distance(p1[0], p1[1], p2[0], p2[1])
         return score
 ```

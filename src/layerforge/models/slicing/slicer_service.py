@@ -1,16 +1,16 @@
-from typing import List
 import math
 
-from layerforge.models import Slice, Model
+from layerforge.models import Model, Slice
 from layerforge.models.reference_marks import (
-    ReferenceMarkManager,
     ReferenceMarkConfig,
+    ReferenceMarkManager,
     ReferenceMarkService,
 )
 
 
 class SlicerService:
     """Service class for slicing models"""
+
     @staticmethod
     def calculate_slice_positions(total_height: float, layer_height: float) -> list[float]:
         """Calculate the positions of the slices
@@ -36,9 +36,7 @@ class SlicerService:
         return positions
 
     @staticmethod
-    def slice_model(
-        model: Model, config: ReferenceMarkConfig | None = None
-    ) -> list[Slice]:
+    def slice_model(model: Model, config: ReferenceMarkConfig | None = None) -> list[Slice]:
         """Slice the model into layers
 
         Parameters
@@ -55,7 +53,7 @@ class SlicerService:
         slice_positions = SlicerService.calculate_slice_positions(
             model.calculate_height(), model.layer_height
         )
-        slices = []
+        slices: list[Slice] = []
         mark_manager = ReferenceMarkManager(config=cfg)
         for index, position in enumerate(slice_positions):
             contours = model.calculate_slice_contours(position)

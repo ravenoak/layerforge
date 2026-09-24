@@ -15,7 +15,7 @@ class Circle(BaseShape):
         str
             The type of the shape. Always 'circle'.
         """
-        return 'circle'
+        return "circle"
 
     @property
     def radius(self) -> float:

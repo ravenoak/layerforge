@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+
 @dataclass
 class ReferenceMark:
     """Represents a reference mark on a slice."""

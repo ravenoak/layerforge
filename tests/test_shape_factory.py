@@ -1,7 +1,7 @@
 import pytest
 
-from layerforge.svg.drawing.shape_factory import ShapeFactory, register_shape
 from layerforge.domain.shapes.base_shape import BaseShape
+from layerforge.svg.drawing.shape_factory import ShapeFactory, register_shape
 
 
 class MockShape(BaseShape):

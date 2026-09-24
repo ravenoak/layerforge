@@ -1,8 +1,4 @@
-from typing import List
-
-from layerforge.utils.optional_dependencies import require_module
-
-svgwrite = require_module("svgwrite", "SVGGenerator")
+import svgwrite
 
 from layerforge.models.slicing import Slice
 from layerforge.svg.drawing import StrategyContext
@@ -39,7 +35,7 @@ class SVGGenerator:
         self.svg_writer = svg_writer
         self.shape_context = shape_context
 
-    def generate_svgs(self, slices: List[Slice]) -> None:
+    def generate_svgs(self, slices: list[Slice]) -> None:
         """Generates SVGs for slices.
 
         Parameters
@@ -52,6 +48,6 @@ class SVGGenerator:
         None
         """
         for slice_obj in slices:
-            dwg = svgwrite.Drawing(profile='tiny')
+            dwg = svgwrite.Drawing(profile="tiny")
             SliceSVGDrawer.draw_slice(dwg, slice_obj, self.shape_context)
             self.svg_writer.write(dwg, self.output_folder, slice_obj.index)

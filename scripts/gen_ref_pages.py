@@ -4,11 +4,13 @@ Taken from https://mkdocstrings.github.io/recipes/
 
 This script generates a page for each module in the `layerforge` package.
 """
+
 from pathlib import Path
 
 import mkdocs_gen_files
+from mkdocs_gen_files.nav import Nav
 
-nav = mkdocs_gen_files.Nav()
+nav = Nav()
 
 root = Path(__file__).parent.parent
 src_root = root / "src"

@@ -1,10 +1,14 @@
 import math
+
 import pytest
+
 pytest.importorskip("svgwrite")
 pytest.importorskip("shapely")
 import svgwrite
-from layerforge.svg.drawing.strategies.arrow_strategy import ArrowDrawingStrategy
+import svgwrite.shapes
+
 from layerforge.domain.shapes import Arrow
+from layerforge.svg.drawing.strategies.arrow_strategy import ArrowDrawingStrategy
 
 
 def _line_end(dwg: svgwrite.Drawing) -> tuple:

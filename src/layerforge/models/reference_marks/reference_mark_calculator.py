@@ -1,20 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Tuple, TypeAlias
-
-from layerforge.utils.optional_dependencies import require_module
-
-if TYPE_CHECKING:
-    from shapely.geometry import Point as ShpPoint, Polygon as ShpPolygon
-    Point: TypeAlias = ShpPoint
-    Polygon: TypeAlias = ShpPolygon
-else:
-    _shapely = require_module("shapely.geometry", "ReferenceMarkCalculator")
-    Point: TypeAlias = _shapely.Point
-    Polygon: TypeAlias = _shapely.Polygon
 import random
+from typing import TYPE_CHECKING
+
+from shapely.geometry import Point, Polygon
 
 from layerforge.utils import calculate_distance
+
 from .config import ReferenceMarkConfig
 
 if TYPE_CHECKING:
@@ -33,7 +25,7 @@ class ReferenceMarkCalculator:
     """
 
     @staticmethod
-    def _stability_score(points: List[Tuple[float, float]]) -> float:
+    def _stability_score(points: list[tuple[float, float]]) -> float:
         """Return the total pairwise distance between ``points``."""
         score = 0.0
         for i, p1 in enumerate(points):
@@ -42,7 +34,7 @@ class ReferenceMarkCalculator:
         return score
 
     @staticmethod
-    def _sample_points(poly: Polygon, samples: int = 4) -> List[Tuple[float, float]]:
+    def _sample_points(poly: Polygon, samples: int = 4) -> list[tuple[float, float]]:
         """Return ``samples`` candidate points inside ``poly``.
 
         The centroid is always returned and additional points are randomly
@@ -79,25 +71,25 @@ class ReferenceMarkCalculator:
     @staticmethod
     def get_stable_marks(
         layer: Slice,
-        existing_marks: List[Tuple[float, float]],
+        existing_marks: list[tuple[float, float]],
         config: ReferenceMarkConfig | None = None,
-    ) -> List[Tuple[float, float]]:
+    ) -> list[tuple[float, float]]:
         """Return stable mark positions for ``layer`` respecting ``config.min_distance``."""
         cfg = config or ReferenceMarkConfig()
         min_distance = cfg.min_distance
-        selected: List[Tuple[float, float]] = []
+        selected: list[tuple[float, float]] = []
         for poly in layer.contours:
             # Try to inherit an existing mark that is inside the polygon
             inherited = None
             for x, y in existing_marks:
                 pt = Point(x, y)
-                if poly.contains(pt) and poly.boundary.distance(pt) >= min_distance:
-                    if all(
-                        calculate_distance(x, y, sx, sy) >= min_distance
-                        for sx, sy in selected
-                    ):
-                        inherited = (x, y)
-                        break
+                if (
+                    poly.contains(pt)
+                    and poly.boundary.distance(pt) >= min_distance
+                    and all(calculate_distance(x, y, sx, sy) >= min_distance for sx, sy in selected)
+                ):
+                    inherited = (x, y)
+                    break
             if inherited:
                 selected.append(inherited)
                 continue
@@ -110,10 +102,7 @@ class ReferenceMarkCalculator:
                 pt = Point(x, y)
                 if poly.boundary.distance(pt) < min_distance:
                     continue
-                if any(
-                    calculate_distance(x, y, sx, sy) < min_distance
-                    for sx, sy in selected
-                ):
+                if any(calculate_distance(x, y, sx, sy) < min_distance for sx, sy in selected):
                     continue
                 score = ReferenceMarkCalculator._stability_score(selected + [cand])
                 if score > best_score:
@@ -125,11 +114,9 @@ class ReferenceMarkCalculator:
 
     @staticmethod
     def get_potential_marks(
-        layer: "Slice",
-        existing_marks: List[Tuple[float, float]],
+        layer: Slice,
+        existing_marks: list[tuple[float, float]],
         config: ReferenceMarkConfig | None = None,
-    ) -> List[Tuple[float, float]]:
+    ) -> list[tuple[float, float]]:
         """Compatibility alias for :meth:`get_stable_marks`."""
-        return ReferenceMarkCalculator.get_stable_marks(
-            layer, existing_marks, config=config
-        )
+        return ReferenceMarkCalculator.get_stable_marks(layer, existing_marks, config=config)

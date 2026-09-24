@@ -1,18 +1,7 @@
-from typing import List, TYPE_CHECKING, TypeAlias
+from shapely.geometry import Point, Polygon
 
-from layerforge.utils.optional_dependencies import require_module
-
-if TYPE_CHECKING:  # pragma: no cover
-    from shapely.geometry import Point as ShpPoint, Polygon as ShpPolygon
-    Point: TypeAlias = ShpPoint
-    Polygon: TypeAlias = ShpPolygon
-else:
-    _shapely = require_module("shapely.geometry", "ReferenceMarkAdjuster")
-    Point: TypeAlias = _shapely.Point
-    Polygon: TypeAlias = _shapely.Polygon
-
-from .reference_mark import ReferenceMark
 from .config import ReferenceMarkConfig
+from .reference_mark import ReferenceMark
 
 
 class ReferenceMarkAdjuster:
@@ -20,19 +9,18 @@ class ReferenceMarkAdjuster:
 
     @staticmethod
     def adjust_marks(
-        marks: List[ReferenceMark],
-        contours: List[Polygon],
+        marks: list[ReferenceMark],
+        contours: list[Polygon],
         config: ReferenceMarkConfig | None = None,
-    ) -> List[ReferenceMark]:
+    ) -> list[ReferenceMark]:
         """Return a filtered list of ``marks`` respecting ``config.min_distance``."""
         cfg = config or ReferenceMarkConfig()
         min_distance = cfg.min_distance
-        adjusted_marks: List[ReferenceMark] = []
+        adjusted_marks: list[ReferenceMark] = []
         for mark in marks:
             mark_point = Point(mark.x, mark.y)
             is_too_close = any(
-                polygon.boundary.distance(mark_point) < min_distance
-                for polygon in contours
+                polygon.boundary.distance(mark_point) < min_distance for polygon in contours
             )
             if is_too_close:
                 continue

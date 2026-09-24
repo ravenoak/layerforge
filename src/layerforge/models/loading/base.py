@@ -5,6 +5,7 @@ from .mesh import Mesh
 
 class MeshLoader(ABC):
     """Base class for loading mesh files"""
+
     @abstractmethod
     def load_mesh(self, model_file: str) -> Mesh:
         """Load a mesh file

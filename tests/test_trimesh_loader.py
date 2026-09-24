@@ -3,6 +3,7 @@ import pytest
 pytest.importorskip("trimesh")
 
 import trimesh
+
 from layerforge.models.loading.implementations.trimesh_loader import TrimeshLoader
 
 

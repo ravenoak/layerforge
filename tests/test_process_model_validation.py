@@ -1,5 +1,5 @@
-import pytest
 import click
+import pytest
 
 from layerforge.cli import process_model
 
@@ -31,4 +31,3 @@ def test_process_model_invalid_target_height(cylinder_stl, tmp_path):
             output_folder=str(tmp_path),
             target_height=0,
         )
-

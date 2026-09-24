@@ -1,11 +1,12 @@
 import pytest
+
 pytest.importorskip("shapely")
 from shapely.geometry import Polygon
 
 from layerforge.models.reference_marks import (
+    ReferenceMark,
     ReferenceMarkAdjuster,
     ReferenceMarkConfig,
-    ReferenceMark,
 )
 
 

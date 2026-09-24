@@ -1,10 +1,8 @@
 __all__ = ["LoaderFactory", "Mesh", "TrimeshMesh", "TrimeshLoader"]
 
-from .mesh import Mesh, TrimeshMesh
-from .implementations.trimesh_loader import TrimeshLoader
 from .base import MeshLoader
-
-
+from .implementations.trimesh_loader import TrimeshLoader
+from .mesh import Mesh, TrimeshMesh
 
 
 class LoaderFactory:
@@ -18,17 +16,18 @@ class LoaderFactory:
         A dictionary of loaders, where the key is the name of the loader
         and the value is the loader class.
     """
-    loaders: dict[str, type["MeshLoader"]] = {}
+
+    loaders: dict[str, type[MeshLoader]] = {}
 
     @classmethod
-    def register_loader(cls, name: str, loader_cls: type) -> None:
+    def register_loader(cls, name: str, loader_cls: type[MeshLoader]) -> None:
         """Register a mesh loader class with the factory.
 
         Parameters
         ----------
         name : str
             The name of the mesh loader
-        loader_cls : type
+        loader_cls : type[MeshLoader]
             The mesh loader class to register
 
         Returns
@@ -38,7 +37,7 @@ class LoaderFactory:
         cls.loaders[name] = loader_cls
 
     @classmethod
-    def get_loader(cls, name: str) -> object:
+    def get_loader(cls, name: str) -> MeshLoader:
         """Get a loader by name.
 
         Parameters
@@ -48,7 +47,7 @@ class LoaderFactory:
 
         Returns
         -------
-        object
+        MeshLoader
             An instance of the loader class with the given name.
         """
         loader_cls = cls.loaders.get(name)

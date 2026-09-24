@@ -1,1 +1,3 @@
-from .svg_writer import SVGWriter, SVGFileWriter
+from .svg_writer import SVGFileWriter, SVGWriter
+
+__all__ = ["SVGFileWriter", "SVGWriter"]

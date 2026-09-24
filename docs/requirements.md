@@ -32,7 +32,7 @@ LayerForge slices a 3D mesh into horizontal layers. It writes one SVG file per l
 
 | ID | Requirement | Code | Tests |
 |---|---|---|---|
-| FR-7 | The mesh is read with trimesh. A file that holds more than one geometry is rejected with a `ValueError`. | `models/loading/implementations/trimesh_loader.py`, `models/model_factory.py` | `test_trimesh_loader`, `test_model_factory` |
+| FR-7 | The mesh is read with trimesh. A file that holds more than one geometry, no geometry, or a mesh with no height is rejected with a `ValueError`. The command turns it into `Cannot load '<file>': <reason>` with exit code 1. A missing or unreadable file fails the same way. | `models/loading/implementations/trimesh_loader.py`, `models/model_factory.py` | `test_trimesh_loader`, `test_model_factory`, `test_process_model_validation` |
 | FR-8 | With `--scale-factor`, the mesh is scaled uniformly by that factor about the coordinate origin. | `models/model_factory.py::_scale_mesh` | `test_model_factory`, `test_end_to_end` |
 | FR-9 | With `--target-height`, the mesh is scaled uniformly so its height (maximum z minus minimum z) equals the target. | `models/model_factory.py::_scale_mesh` | `test_model_factory`, `test_end_to_end` |
 | FR-10 | The model origin is the centre of the mesh bounding box in x and y, taken after scaling. The mesh is not moved. | `models/model_factory.py::_calculate_origin` | `test_model_factory` |
@@ -41,9 +41,9 @@ LayerForge slices a 3D mesh into horizontal layers. It writes one SVG file per l
 
 | ID | Requirement | Code | Tests |
 |---|---|---|---|
-| FR-11 | The model height is maximum z minus minimum z. | `models/model.py::calculate_height` | - |
-| FR-12 | Slice positions are `i × layer_height` for `i` from 0 up to `ceil(height / layer_height) − 1`, at least one. The last position is always equal to the model height, added if the steps stop short of it. For height 10 and layer height 3 the positions are 0, 3, 6, 9, 10. | `models/slicing/slicer_service.py::calculate_slice_positions` | `test_slicer_service` |
-| FR-13 | Each position is a horizontal plane (normal +z). The cut through the mesh gives closed loops. Each loop becomes one polygon in a flat 2D frame. A plane that cuts nothing gives an empty list of polygons. | `models/model.py::calculate_slice_contours` | `test_end_to_end` |
+| FR-11 | The model height is maximum z minus minimum z. | `models/model.py::calculate_height` | `test_slicer_service` |
+| FR-12 | The mesh is divided from its lowest point upwards into layers of `layer_height`. The last layer is shorter if the height is not a multiple. There are `ceil(height / layer_height)` layers, at least one. Each slice is cut at the middle of its layer, so no cut lies on the bottom or top face. A mesh 10 high from z = 0 with layer height 3 gives the positions 1.5, 4.5, 7.5 and 9.5. A mesh centred on z = 0 is sliced over its whole height. | `models/slicing/slicer_service.py::calculate_slice_positions` | `test_slicer_service`, `test_end_to_end` |
+| FR-13 | Each position is a horizontal plane (normal +z). The cut through the mesh gives closed loops. The loops are combined by the even-odd rule: a loop inside another is a hole, and a loop inside that hole is solid again. Each polygon is in the model's x and y coordinates, so every slice shares one frame. A plane that cuts nothing gives an empty list of polygons. | `models/model.py::calculate_slice_contours` | `test_model_contours`, `test_end_to_end` |
 | FR-14 | One slice is made per position, in order and numbered from 0. Empty slices are kept. | `models/slicing/slicer_service.py::slice_model` | `test_end_to_end` |
 
 ### Reference marks
@@ -51,24 +51,24 @@ LayerForge slices a 3D mesh into horizontal layers. It writes one SVG file per l
 | ID | Requirement | Code | Tests |
 |---|---|---|---|
 | FR-15 | Each polygon gets at most one mark. | `models/reference_marks/reference_mark_calculator.py::get_stable_marks` | `test_reference_mark_calculator`, `test_reference_mark_property` |
-| FR-16 | Candidate points for a polygon are its centroid plus random points inside its bounding box that fall inside the polygon (up to 40 tries, 4 wanted). | `models/reference_marks/reference_mark_calculator.py::_sample_points` | `test_calculator_get_potential_marks` |
+| FR-16 | Candidate points for a polygon are its centroid, if the centroid is inside the polygon, plus random points inside its bounding box that fall inside the polygon (up to 40 tries, 4 wanted). The random generator has a fixed seed, so the same polygon always gives the same points. | `models/reference_marks/reference_mark_calculator.py::_sample_points` | `test_calculator_get_potential_marks` |
 | FR-17 | A point qualifies only if it is at least `min_distance` from the polygon boundary and from marks already chosen in the same slice. | same | `test_reference_mark_property` |
 | FR-18 | An earlier mark that qualifies and lies inside the polygon is reused. Otherwise the qualifying candidate with the highest stability score wins. The score is the sum of distances between all pairs of points, the candidate and the marks already chosen. | same | `test_calculator_get_potential_marks`, `test_reference_mark_property` |
 | FR-19 | Marks are shared across all slices in one run. A chosen point that lies within `tolerance` of an earlier mark inherits its shape, size, angle and color. | `models/slicing/slice.py::process_reference_marks`, `models/reference_marks/reference_mark_manager.py` | `test_slice_mark_inheritance`, `test_slice_process_reference_marks`, `test_reference_mark_manager` |
 | FR-20 | A new mark takes the first configured shape that no mark uses yet. If all are in use, it takes the first configured shape. Its angle and color come from the options. | `models/slicing/slice.py::_select_unique_shape` | `test_slice_process_reference_marks` |
 | FR-21 | A new mark's size is `int(distance from the model origin / 10)`, limited to 3 through 5. | `models/slicing/slice.py::_calculate_mark_size` | `test_slice_mark_size` |
-| FR-22 | After marks are chosen, any mark closer than `min_distance` to a contour boundary, or to a mark already kept, is dropped. The earlier mark stays. | `models/reference_marks/reference_mark_adjuster.py` | `test_reference_mark_adjuster`, `test_reference_mark_adjuster_extra` |
+| FR-22 | After marks are chosen, any mark closer than `min_distance` to a contour boundary, or to a mark already kept, is dropped. The earlier mark stays. If a slice then has a contour with no mark, one warning is logged for the slice (`No reference mark fits N of M contours in slice I. Try a smaller --mark-min-distance.`). The slice is still written. | `models/reference_marks/reference_mark_adjuster.py` | `test_reference_mark_adjuster`, `test_reference_mark_adjuster_extra`, `test_slice_process_reference_marks`, `test_end_to_end` |
 | FR-23 | The mark settings are checked when created: `available_shapes` must not be empty, and `tolerance` and `min_distance` must not be negative. Violations raise `ValueError`. | `models/reference_marks/config.py` | `test_reference_mark_config` |
 
 ### SVG output
 
 | ID | Requirement | Code | Tests |
 |---|---|---|---|
-| FR-24 | One SVG file is written per slice, named `slice_000.svg`, `slice_001.svg` and so on, including empty slices. | `writers/svg_writer.py`, `utils/file_operations.py` | `test_file_operations`, `test_svg_output`, `test_end_to_end` |
-| FR-25 | Each SVG has, in order: the polygon outlines (black, no fill), the marks, and the text `Slice N` once per polygon. The label sits at the polygon centroid, or at the centre of its bounding box if the centroid is outside the polygon. | `svg/slice_svg_drawer.py` | `test_svg_output` |
-| FR-26 | The SVG has no size or viewBox. Its coordinates are the 2D coordinates of FR-13, in model units. | `svg/svg_generator.py` | - |
-| FR-27 | Mark shapes, all unfilled. Circle: diameter is the size, default red. Square: side is the size, default blue. Triangle: 2 × size wide and tall, default green. Arrow: a line as long as the size with a head, default black. The color option replaces the default. Angle turns the shape. | `svg/drawing/strategies/*`, `domain/shapes/*` | `test_svg_output`, `test_arrow_drawing_strategy` |
-| FR-28 | An unknown shape name raises `ValueError: Unknown shape type`. This happens when the shape is drawn, not when options are read. | `svg/drawing/shape_factory.py` | `test_shape_factory` |
+| FR-24 | One SVG file is written per slice, named `slice_000.svg`, `slice_001.svg` and so on, including empty slices (a slice whose cut misses the mesh). | `writers/svg_writer.py`, `utils/file_operations.py` | `test_file_operations`, `test_svg_output`, `test_end_to_end` |
+| FR-25 | Each SVG has, in order: the polygon outlines (black, no fill; a polygon with holes has one outline for the outer edge and one for each hole), the marks, and the text `Slice N` once per polygon. The label sits at the polygon centroid. If that is outside the polygon, it sits at the centre of the bounding box. If that is outside too, it sits at a point that is inside the polygon. | `svg/slice_svg_drawer.py` | `test_svg_output` |
+| FR-26 | Points are drawn at `(x, −y)` in model units, so the picture has the same handedness as the model seen from above (SVG's y axis points down). Marks are flipped the same way, including their angle. Every SVG has the same `viewBox`. It holds the outlines of all slices plus a margin of 5% of the larger side, so layers can be laid over each other. The file sets `width` and `height` to 100%, and the root sets `font-size` to 1/20 and `stroke-width` to 1/200 of the viewBox's larger side. When no slice has an outline, there is no `viewBox`. | `svg/svg_generator.py`, `svg/slice_svg_drawer.py` | `test_svg_output`, `test_end_to_end` |
+| FR-27 | Mark shapes, all unfilled. Circle: diameter is the size, default red. Square: side is the size, default blue. Triangle: 2 × size wide and tall, default green. Arrow: a line as long as the size with a head, default black. The color option replaces the default. Angle turns the shape. Angles are in radians everywhere inside the package; only the `--mark-angle` option takes degrees. | `svg/drawing/strategies/*`, `domain/shapes/*` | `test_svg_output`, `test_arrow_drawing_strategy` |
+| FR-28 | `ShapeFactory.get_shape` raises `ValueError: Unknown shape type` for an unknown shape name. The command checks `--available-shapes` against the registered shapes first, and an unknown or empty list stops it with `Invalid value for --available-shapes` and exit code 2. | `svg/drawing/shape_factory.py`, `cli.py::process_model` | `test_shape_factory`, `test_process_model_validation` |
 | FR-29 | Code can add shapes (`register_shape`) and mesh loaders (`LoaderFactory.register_loader`). The CLI uses only the four built-in shapes and the trimesh loader. | `svg/drawing/shape_factory.py`, `models/loading/__init__.py` | `test_shape_factory`, `test_loader_factory` |
 
 ## Non-functional requirements
@@ -79,10 +79,10 @@ LayerForge slices a 3D mesh into horizontal layers. It writes one SVG file per l
 | NFR-2 | Runtime dependencies are declared in `pyproject.toml` and locked in `uv.lock`: click, pydantic, scipy, networkx, shapely, svgwrite, trimesh. Installing the package pulls in all of them. | `pyproject.toml`, `uv.lock` |
 | NFR-3 | Every pull request passes `ruff check`, `ruff format --check`, `pyright` (strict on `src/`) and the full test suite. | `.github/workflows/tests.yaml` |
 | NFR-4 | The command installs as `layerforge` with `uv tool install`, and the wheel contains every module. | `pyproject.toml` (`[project.scripts]`) |
-| NFR-5 | Bad option values fail before any work starts, with a message that names the option. Click reports usage errors with exit code 2. A conflict between options exits with 1. Other failures (missing file, unreadable mesh) end with a Python traceback and exit code 1. | `cli.py` |
+| NFR-5 | Bad option values fail before any work starts, with a message that names the option. Click reports usage errors with exit code 2. A conflict between options exits with 1. A missing, unreadable or empty mesh file, or a mesh with no height, stops the command with a message that names the file and exit code 1. | `cli.py`, `models/model_factory.py` |
 | NFR-6 | Documentation builds with `mkdocs build --strict` and deploys to GitHub Pages on each push to `main`. | `.github/workflows/docs.yaml` |
 | NFR-7 | The code is licensed CC BY-NC 4.0. A commercial license is offered separately. | `LICENSE`, `COMMERCIAL_LICENSE` |
-| NFR-8 | The tool logs only through the standard `logging` module and sets no log configuration. | `models/slicing/slice.py` |
+| NFR-8 | The tool logs only through the standard `logging` module and sets no log configuration. Warnings therefore reach stderr through Python's last-resort handler. | `models/slicing/slice.py` |
 
 The earlier goals to bundle all dependencies into one binary and to run without a Python install are withdrawn. They depended on PyOxidizer, which was removed because its build file was an unedited template that could not build the tool.
 
@@ -95,22 +95,13 @@ The earlier goals to bundle all dependencies into one binary and to run without 
 
 ## Known gaps
 
-These are places where current behavior differs from the intent in the project docs, or where behavior is likely to surprise. Each was checked against the current code. G-2 and G-3 were also reproduced by running trimesh 5.1 directly; the numbers are in the Evidence column.
+These are places where current behavior differs from the intent in the project docs, or where behavior is likely to surprise. Each was checked against the current code.
 
 | ID | Gap | Evidence | Effect |
 |---|---|---|---|
-| G-1 | Slice positions start at z = 0, not at the lowest point of the mesh (FR-12). | `slicer_service.py::calculate_slice_positions` uses `i × layer_height` only. | A mesh centred on z = 0 loses its lower half and gets empty slices at the top. The end-to-end test uses a box that sits on z = 0. |
-| G-2 | The 2D frame differs for each slice (FR-13). trimesh centres each cut on its own vertices. | A 20 mm box moved to x = 100, y = 50 gives 2D bounds of ±10 at every height. A 30° tilted box has its slice centre move from x = −6.87 at z = 5 to x = 6.0 at z = 30, while the 2D coordinates stay near 0. | Marks and SVG coordinates are not in model coordinates. A mark inherited by position (FR-19) compares points from different frames. |
-| G-3 | Holes are drawn as solid shapes (FR-13). | A tube (annulus, radii 5 and 10) gives two closed polygons, areas 312.1 and 78.0. | A mark can land inside a hole. Handling holes needs trimesh's `polygons_full`, which also needs the `rtree` package. |
 | G-4 | Only one mark per polygon (FR-15). | `get_stable_marks` | One mark fixes position but not rotation. The requirement in the development notes for rotational alignment is not met. |
 | G-5 | Shapes do not cycle (FR-20). Once all are used, every new mark is the first shape. | `_select_unique_shape` | Marks are harder to tell apart on large models. The algorithm page says shapes cycle. |
 | G-6 | Mark size is fixed at 3 to 5 units (FR-21). | `_calculate_mark_size` | It does not scale with the model, and the development notes say it should. |
 | G-7 | Marks are shared by all slices, not only neighbours (FR-19). | One `ReferenceMarkManager` per run. | A mark can be inherited from a slice far away. |
-| G-8 | Angle units are mixed. Options and config use radians after conversion. The arrow treats values above 2π as degrees. `docs/configuration.md` says degrees. | `arrow_strategy.py`, `test_arrow_drawing_strategy` | An angle of 90 in config is read as degrees by the arrow and as radians by circles and triangles. |
-| G-9 | Candidate points use unseeded random numbers (FR-16). | `reference_mark_calculator.py::_sample_points` | Two runs on the same mesh can place marks differently when the centroid does not qualify. Tests seed the generator. |
-| G-10 | The last slice lies on the top face and comes out empty for a box (FR-12, G-1). | `test_end_to_end` skips it. | One useless SVG per run for flat-topped models. |
-| G-11 | Some bad inputs are not caught up front (NFR-5). A mesh with zero height and `--target-height` raises `ZeroDivisionError`. An unknown shape name fails only when drawn. | `model_factory.py`, `shape_factory.py` | Users see a traceback. |
-| G-12 | The SVG has no viewBox and does not flip the y axis (FR-26). | Sample output has negative coordinates and `width="100%"`. | Viewers may crop the drawing or show it mirrored. |
-| G-13 | Marks that fit no polygon are dropped silently (FR-17, FR-22). | `test_end_to_end` scaled cases need `--mark-min-distance 2`. | A small model with default options gets slices with no marks and no warning. |
 
 Fixing these is not part of this page. Each is a candidate for its own issue.

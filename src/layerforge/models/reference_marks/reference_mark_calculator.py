@@ -3,6 +3,7 @@ from __future__ import annotations
 import random
 from typing import TYPE_CHECKING
 
+from shapely import make_valid
 from shapely.geometry import Point, Polygon
 
 from layerforge.utils import calculate_distance
@@ -11,6 +12,9 @@ from .config import ReferenceMarkConfig
 
 if TYPE_CHECKING:
     from layerforge.models.slicing.slice import Slice
+
+
+_SAMPLE_SEED = 0
 
 
 class ReferenceMarkCalculator:
@@ -37,15 +41,22 @@ class ReferenceMarkCalculator:
     def _sample_points(poly: Polygon, samples: int = 4) -> list[tuple[float, float]]:
         """Return ``samples`` candidate points inside ``poly``.
 
-        The centroid is always returned and additional points are randomly
+        The centroid is returned when it lies inside ``poly`` (it may not, for a
+        polygon with a hole or a concave one). Additional points are randomly
         sampled within the bounding box until ``samples`` unique points that are
-        contained within ``poly`` are found.
+        contained within ``poly`` are found.  Sampling uses a fixed seed, so the
+        same polygon always gives the same points.
         """
+        rng = random.Random(_SAMPLE_SEED)
         if not poly.is_valid:
-            rounded = [(round(x, 6), round(y, 6)) for x, y in poly.exterior.coords]
-            poly = Polygon(rounded).buffer(0)
+            # Keep the largest polygon of the repaired shape, holes included.
+            repaired = make_valid(poly)
+            parts = [g for g in getattr(repaired, "geoms", [repaired]) if isinstance(g, Polygon)]
+            if parts:
+                poly = max(parts, key=lambda g: g.area)
 
-        pts = [(poly.centroid.x, poly.centroid.y)]
+        centroid = poly.centroid
+        pts = [(centroid.x, centroid.y)] if poly.contains(centroid) else []
         minx, miny, maxx, maxy = poly.bounds
 
         # Keep sampling until we have the desired number of unique points. Limit
@@ -55,8 +66,8 @@ class ReferenceMarkCalculator:
         max_attempts = samples * 10
         while len(pts) < samples and attempts < max_attempts:
             attempts += 1
-            x = random.uniform(minx, maxx)
-            y = random.uniform(miny, maxy)
+            x = rng.uniform(minx, maxx)
+            y = rng.uniform(miny, maxy)
             candidate = Point(x, y)
             try:
                 inside = poly.contains(candidate)

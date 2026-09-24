@@ -16,15 +16,16 @@ def _line_end(dwg: svgwrite.Drawing) -> tuple:
     return float(line["x2"]), float(line["y2"])
 
 
-def test_arrow_endpoint_degrees():
+def test_arrow_angle_is_always_radians():
+    """A large value is a large number of radians, not degrees."""
     arrow = Arrow(0, 0, 10, angle=90, color="purple")
     dwg = svgwrite.Drawing()
     ArrowDrawingStrategy().draw(dwg, arrow)
     x2, y2 = _line_end(dwg)
     line = [el for el in dwg.elements if isinstance(el, svgwrite.shapes.Line)][0]
     assert line["stroke"] == "purple"
-    assert math.isclose(x2, 0.0, abs_tol=1e-6)
-    assert math.isclose(y2, 10.0, abs_tol=1e-6)
+    assert math.isclose(x2, 10 * math.cos(90), abs_tol=1e-6)
+    assert math.isclose(y2, 10 * math.sin(90), abs_tol=1e-6)
 
 
 def test_arrow_endpoint_radians():

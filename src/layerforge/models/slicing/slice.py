@@ -1,6 +1,6 @@
 import logging
 
-from shapely.geometry import Polygon
+from shapely.geometry import Point, Polygon
 
 from layerforge.models.reference_marks import (
     ReferenceMark,
@@ -138,6 +138,17 @@ class Slice:
             )
         except ValueError as e:
             logging.error(f"Error in adjusting marks for slice {self.index}: {e}")
+        self._warn_about_unmarked_contours()
+
+    def _warn_about_unmarked_contours(self) -> None:
+        """Log a warning if some contours of the slice ended up with no mark."""
+        points = [Point(mark.x, mark.y) for mark in self.ref_marks]
+        unmarked = [c for c in self.contours if not any(c.contains(p) for p in points)]
+        if unmarked:
+            logging.warning(
+                f"No reference mark fits {len(unmarked)} of {len(self.contours)} contours "
+                f"in slice {self.index}. Try a smaller --mark-min-distance."
+            )
 
     def _select_unique_shape(self) -> str:
         """Select a unique shape for a reference mark.

@@ -118,7 +118,8 @@ entity Slice {
 }
 
 entity Contour {
-    -- One closed loop of a cut, as a polygon in the slice's own 2D frame (G-2).
+    -- One polygon of a cut, in the model's x and y coordinates. It may have
+    -- holes, which come from loops nested inside it.
     slice: Slice
 }
 
@@ -182,6 +183,9 @@ rule FR2_FR3_RejectNonPositiveValues {
     ensures: run.status = rejected
     @guidance
         -- Message: "Invalid value for --<option>: must be > 0". Exit code 2.
+        -- --available-shapes is checked in the same way: an empty list or an
+        -- unknown shape name gives "Invalid value for --available-shapes" and
+        -- exit code 2, before the mesh is read.
 }
 
 -- Scaling (FR-8 to FR-10) -------------------------------------------------
@@ -205,7 +209,10 @@ rule FR9_ScaleToTargetHeight {
         scale_uniformly(run.mesh, run.target_height / run.height, about: origin_of_space)
         run.status = scaled
     @guidance
-        -- A mesh of zero height divides by zero here (G-11).
+        -- A mesh with no geometry or no height is rejected after it is loaded
+        -- with "Cannot load '<file>': <reason>" and exit code 1, so run.height
+        -- is always positive here. A missing or unreadable file fails the same
+        -- way.
 }
 
 rule NoScaling {
@@ -226,7 +233,7 @@ rule FR10_SetOrigin {
 
 rule FR12_FR14_PlanSlices {
     when: run: Run.status transitions_to scaled
-    let positions = slice_positions(run.height, run.layer_height)
+    let positions = slice_positions(run.mesh.min_z, run.mesh.max_z, run.layer_height)
     ensures:
         for i in positions.indices:
             Slice.created(
@@ -238,10 +245,10 @@ rule FR12_FR14_PlanSlices {
             )
         run.status = sliced
     @guidance
-        -- slice_positions gives i * layer_height for i in 0 ..< max(1,
-        -- ceil(height / layer_height)), and the last entry is always the
-        -- height itself. Positions start at z = 0, not at the mesh minimum
-        -- (G-1).
+        -- slice_positions divides the mesh from min_z upwards into layers of
+        -- layer_height, the last one shorter if needed, and returns the middle
+        -- of each layer. That is max(1, ceil(height / layer_height)) positions,
+        -- all strictly between min_z and max_z.
 }
 
 rule FR13_CutSlice {
@@ -250,8 +257,9 @@ rule FR13_CutSlice {
         slice.contours = closed_loops(cut(slice.run.mesh, slice.position))
         slice.status = cut
     @guidance
-        -- A plane that cuts nothing gives no contours. Every loop is one
-        -- solid polygon, holes included (G-3).
+        -- A plane that cuts nothing gives no contours. Loops are combined by the even-odd rule, so a loop inside
+        -- another is a hole of that polygon, and a loop inside a hole is a
+        -- polygon of its own.
 }
 
 -- Reference marks (FR-15 to FR-22) ----------------------------------------
@@ -298,8 +306,8 @@ rule FR15_FR21_PlaceMarks {
         -- An earlier registered point inside the contour is reused if it is
         -- at least min_distance from the boundary and from marks already
         -- placed on this slice. Otherwise the candidate with the highest
-        -- stability score wins; candidates are the centroid plus random points
-        -- inside the bounding box (G-9). The score is the sum of pairwise
+        -- stability score wins; candidates are the centroid (if inside the contour) plus points from a
+        -- fixed-seed generator inside the bounding box. The score is the sum of pairwise
         -- distances over the candidate and the marks already placed.
         -- next_shape gives the first shape not yet registered, else the first
         -- shape (G-5). mark_size is int(d / mark_size_step) clamped to
@@ -317,8 +325,8 @@ rule FR22_AdjustMarks {
                 not exists mark
     @guidance
         -- The earlier mark of a close pair stays. Marks dropped here stay in
-        -- the run's registry. A slice can end with no marks and no warning
-        -- (G-13).
+        -- the run's registry. A slice can end with a contour that has no
+        -- mark. One warning is logged for the slice; it is still written.
 }
 
 -- SVG output (FR-24 to FR-27) ---------------------------------------------
@@ -334,10 +342,12 @@ rule FR24_WriteSvg {
         slice.status = drawn
     @guidance
         -- svg_name(i) is "slice_" plus i as three digits plus ".svg". The file
-        -- holds each contour as a black unfilled polygon, then each mark, then
-        -- the text "Slice N" once per contour (FR-25). It has no viewBox and
-        -- uses the slice's own 2D frame (FR-26, G-2, G-12). Every slice
-        -- gets a file, including empty ones (G-10).
+        -- holds each contour as a black unfilled polygon (plus one for each hole), then each mark, then
+        -- the text "Slice N" once per contour (FR-25). Points are drawn at
+        -- (x, -y), so the y axis points up as in the model (FR-26). Every file
+        -- has the same viewBox, which holds the contours of all slices plus a
+        -- 5% margin, so layers can be laid over each other. Every slice gets a
+        -- file, including empty ones.
 }
 
 rule RunCompletes {
@@ -399,17 +409,7 @@ surface Command {
 -- Open Questions
 ------------------------------------------------------------
 
--- G-1  Slice positions start at z = 0, not at the mesh minimum.
--- G-2  Each slice has its own 2D frame, so inheritance compares points from
---      different frames.
--- G-3  Holes are treated as solid polygons.
 -- G-4  One mark per contour cannot fix rotation.
 -- G-5  Shapes do not cycle once all are used.
 -- G-6  Mark size is fixed at 3 to 5, not proportional to the model.
 -- G-7  Marks are inherited from any earlier slice, not only neighbours.
--- G-8  Angle units are mixed between radians and degrees.
--- G-9  Candidate points use unseeded random numbers.
--- G-10 The slice on the top face is empty for flat-topped models.
--- G-11 Some bad inputs give a traceback instead of a clear message.
--- G-12 The SVG has no viewBox and does not flip the y axis.
--- G-13 Marks that fit nowhere are dropped without a warning.

@@ -17,11 +17,14 @@ SVG = "{http://www.w3.org/2000/svg}"
 LAYER_HEIGHT = 5.0
 
 
-@pytest.fixture
-def box_stl(tmp_path: Path) -> Path:
-    """A 20 mm cube whose base sits on z=0 (slicing starts at z=0)."""
+@pytest.fixture(params=[10.0, 0.0], ids=["on-the-floor", "centred-on-origin"])
+def box_stl(tmp_path: Path, request: pytest.FixtureRequest) -> Path:
+    """A 20 mm cube, either sitting on z=0 or centred on the origin.
+
+    The centre height is ``request.param``.
+    """
     mesh = trimesh.creation.box(extents=(20, 20, 20))
-    mesh.apply_translation((0, 0, 10))
+    mesh.apply_translation((0, 0, request.param))
     path = tmp_path / "box.stl"
     mesh.export(path)
     return path
@@ -59,15 +62,17 @@ def test_cli_writes_one_svg_per_slice(
     )
     assert result.returncode == 0, result.stderr
 
-    positions = SlicerService.calculate_slice_positions(final_height, LAYER_HEIGHT)
+    # Scaling is about the origin, so the lowest point scales too.
+    bottom = float(trimesh.load_mesh(box_stl).bounds[0][2]) * final_height / 20.0
+    positions = SlicerService.calculate_slice_positions(bottom, bottom + final_height, LAYER_HEIGHT)
     files = sorted(out.glob("slice_*.svg"))
     assert [f.name for f in files] == [f"slice_{i:03d}.svg" for i in range(len(positions))]
 
-    # The last slice lies exactly on the top face and comes out empty today
-    # (see the known gaps in docs/requirements.md), so only check the rest.
     marks: list[tuple[str | None, str | None]] = []
-    for index, path in enumerate(files[:-1]):
+    view_boxes: set[str | None] = set()
+    for index, path in enumerate(files):
         root = ET.parse(path).getroot()
+        view_boxes.add(root.get("viewBox"))
         contours = [p for p in root.iter(f"{SVG}polygon") if p.get("stroke") == "black"]
         circles = list(root.iter(f"{SVG}circle"))
         labels = [t.text for t in root.iter(f"{SVG}text")]
@@ -75,6 +80,10 @@ def test_cli_writes_one_svg_per_slice(
         assert circles, f"{path.name} has no reference mark"
         assert f"Slice {index}" in labels
         marks.append((circles[0].get("cx"), circles[0].get("cy")))
+
+    # All layers share one frame, so they can be laid over each other.
+    assert len(view_boxes) == 1
+    assert None not in view_boxes
 
     # The first mark is inherited by every later slice at the same position.
     assert len(set(marks)) == 1
@@ -85,3 +94,21 @@ def test_cli_missing_file_fails_without_output(tmp_path: Path) -> None:
     result = _run_cli("--stl-file", str(tmp_path / "missing.stl"), "--output-folder", str(out))
     assert result.returncode != 0
     assert not list(out.glob("*.svg"))
+
+
+def test_cli_warns_when_no_mark_fits(box_stl: Path, tmp_path: Path) -> None:
+    """A 10 mm cube is too small for the default 10 mm mark clearance."""
+    out = tmp_path / "out"
+    result = _run_cli(
+        "--stl-file",
+        str(box_stl),
+        "--layer-height",
+        str(LAYER_HEIGHT),
+        "--output-folder",
+        str(out),
+        "--target-height",
+        "10",
+    )
+    assert result.returncode == 0, result.stderr
+    assert "--mark-min-distance" in result.stderr
+    assert len(list(out.glob("slice_*.svg"))) == 2

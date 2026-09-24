@@ -1,4 +1,3 @@
-import random
 import xml.etree.ElementTree as ET
 
 import pytest
@@ -24,7 +23,6 @@ def _circle_position(svg_file: str) -> tuple[float, float] | None:
 
 
 def test_mark_shape_and_position_inherited(cylinder_stl, tmp_path):
-    random.seed(0)
     out_dir = tmp_path / "svgs"
     process_model(
         stl_file=str(cylinder_stl),

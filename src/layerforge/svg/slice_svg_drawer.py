@@ -1,4 +1,4 @@
-from shapely.geometry import Polygon
+from shapely.geometry import Point, Polygon
 from svgwrite import Drawing
 
 from layerforge.models.reference_marks import ReferenceMark
@@ -8,11 +8,16 @@ from layerforge.svg.drawing.strategy_context import StrategyContext
 
 
 class SliceSVGDrawer:
-    """Draws SVGs for slices."""
+    """Draws SVGs for slices.
+
+    The model's y axis points up and SVG's points down, so everything is drawn
+    at ``(x, -y)``. Seen in a viewer, the slice then has the same handedness as
+    the model seen from above.
+    """
 
     @staticmethod
     def draw_contour(dwg: Drawing, contour: Polygon) -> None:
-        """Draws a contour.
+        """Draws a contour: its outer outline and the outline of each hole.
 
         Parameters
         ----------
@@ -25,8 +30,9 @@ class SliceSVGDrawer:
         -------
         None
         """
-        points = [(x, y) for x, y in contour.exterior.coords]
-        dwg.add(dwg.polygon(points, fill="none", stroke="black"))
+        for ring in [contour.exterior, *contour.interiors]:
+            points = [(x, -y) for x, y in ring.coords]
+            dwg.add(dwg.polygon(points, fill="none", stroke="black"))
 
     @staticmethod
     def draw_reference_marks(
@@ -51,9 +57,9 @@ class SliceSVGDrawer:
             shape_instance = ShapeFactory.get_shape(
                 mark.shape,
                 mark.x,
-                mark.y,
+                -mark.y,
                 size=mark.size,
-                angle=mark.angle,
+                angle=-mark.angle,
                 color=mark.color,
             )
             shape_context.draw(dwg, shape_instance)
@@ -65,11 +71,12 @@ class SliceSVGDrawer:
         """Return a label position for ``contour`` respecting ``padding``."""
         try:
             pt = contour.centroid
-            x, y = pt.x, pt.y
             if not contour.contains(pt):
                 minx, miny, maxx, maxy = contour.bounds
-                x = (minx + maxx) / 2
-                y = (miny + maxy) / 2
+                pt = Point((minx + maxx) / 2, (miny + maxy) / 2)
+            if not contour.contains(pt):
+                pt = contour.representative_point()
+            x, y = pt.x, pt.y
         except Exception:
             x, y = 10, 20
 
@@ -100,7 +107,7 @@ class SliceSVGDrawer:
         shape_context : StrategyContext
             The shape drawing context.
         padding : tuple | float | None, optional
-            Extra offset applied to label positions.
+            Extra offset applied to label positions, in model coordinates.
 
         Returns
         -------
@@ -113,4 +120,4 @@ class SliceSVGDrawer:
 
         for contour in slice_obj.contours:
             x, y = SliceSVGDrawer._label_position(contour, padding)
-            dwg.add(dwg.text(f"Slice {slice_obj.index}", insert=(x, y), fill="black"))
+            dwg.add(dwg.text(f"Slice {slice_obj.index}", insert=(x, -y), fill="black"))

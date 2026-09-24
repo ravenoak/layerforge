@@ -3,10 +3,12 @@ import pytest
 pytest.importorskip("svgwrite")
 pytest.importorskip("shapely")
 
+import math
+
 import svgwrite
 import svgwrite.shapes
 import svgwrite.text
-from shapely.geometry import Point, box
+from shapely.geometry import Point, Polygon, box
 
 from layerforge.models.reference_marks import (
     ReferenceMark,
@@ -114,4 +116,98 @@ def test_label_inside_slice_polygon():
     assert positions
     poly = slice_obj.contours[0]
     for x, y in positions:
-        assert poly.contains(Point(x, y))
+        # SVG's y axis points down, so the drawing shows the model's y negated.
+        assert poly.contains(Point(x, -y))
+
+
+def _plate_with_hole_slice() -> Slice:
+    hole = [(20, 20), (80, 20), (80, 80), (20, 80)]
+    plate = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)], [hole])
+    manager = ReferenceMarkManager()
+    return Slice(0, 0.0, [plate], origin=(0, 0), mark_manager=manager, config=ReferenceMarkConfig())
+
+
+def test_holes_are_drawn_as_outlines():
+    ctx = StrategyContext()
+    register_shape_strategies(ctx)
+    dwg = svgwrite.Drawing()
+    SliceSVGDrawer.draw_slice(dwg, _plate_with_hole_slice(), ctx)
+
+    outlines = [
+        el
+        for el in dwg.elements
+        if isinstance(el, svgwrite.shapes.Polygon) and el.attribs.get("stroke") == "black"
+    ]
+    assert len(outlines) == 2
+
+
+def test_label_is_not_placed_in_a_hole():
+    ctx = StrategyContext()
+    register_shape_strategies(ctx)
+    slice_obj = _plate_with_hole_slice()
+    dwg = svgwrite.Drawing()
+    SliceSVGDrawer.draw_slice(dwg, slice_obj, ctx)
+
+    (x, y) = _text_positions(dwg)[0]
+    assert slice_obj.contours[0].contains(Point(x, -y))
+
+
+def _draw(polygon: Polygon, *marks: ReferenceMark) -> svgwrite.Drawing:
+    ctx = StrategyContext()
+    register_shape_strategies(ctx)
+    sl = Slice(0, 0.0, [polygon], origin=(0, 0), mark_manager=ReferenceMarkManager(), config=None)
+    sl.ref_marks = list(marks)
+    dwg = svgwrite.Drawing()
+    SliceSVGDrawer.draw_slice(dwg, sl, ctx)
+    return dwg
+
+
+def test_y_axis_is_flipped_for_outlines():
+    """SVG's y axis points down; the model's points up. An L shape keeps its handedness."""
+    l_shape = Polygon([(0, 0), (10, 0), (10, 2), (2, 2), (2, 10), (0, 10)])
+    dwg = _draw(l_shape)
+    (outline,) = [el for el in dwg.elements if isinstance(el, svgwrite.shapes.Polygon)]
+    assert {(0, 0), (10, 0), (10, -2), (2, -2), (2, -10), (0, -10)} <= set(outline.points)
+
+
+def test_y_axis_is_flipped_for_marks():
+    dwg = _draw(box(0, 0, 20, 20), ReferenceMark(x=5, y=6, shape="circle", size=4))
+    (circle,) = [el for el in dwg.elements if isinstance(el, svgwrite.shapes.Circle)]
+    assert (circle.attribs["cx"], circle.attribs["cy"]) == (5, -6)
+
+
+def test_arrow_pointing_up_in_the_model_points_up_on_screen():
+    arrow = ReferenceMark(x=5, y=6, shape="arrow", size=4, angle=math.pi / 2)
+    dwg = _draw(box(0, 0, 20, 20), arrow)
+    (line,) = [el for el in dwg.elements if isinstance(el, svgwrite.shapes.Line)]
+    assert float(line["x2"]) == pytest.approx(5)
+    assert float(line["y1"]) == pytest.approx(-6)
+    assert float(line["y2"]) == pytest.approx(-10)
+
+
+def _view_box(dwg: svgwrite.Drawing) -> tuple[float, ...]:
+    return tuple(float(v) for v in dwg.attribs["viewBox"].split(","))
+
+
+def test_every_svg_has_the_same_view_box_around_all_slices(tmp_path):
+    ctx = StrategyContext()
+    register_shape_strategies(ctx)
+    writer = CaptureWriter()
+    big, small = box(90, 40, 110, 60), box(95, 45, 105, 55)
+    slices = [
+        Slice(i, 0.0, [poly], (100, 50), ReferenceMarkManager(), ReferenceMarkConfig())
+        for i, poly in enumerate([big, small])
+    ]
+    SVGGenerator(str(tmp_path), writer, ctx).generate_svgs(slices)
+
+    # The union is 20 x 20 at x 90..110 and y -60..-40, plus a 5% margin (1) each side.
+    assert [_view_box(d) for d in writer.saved] == [(89, -61, 22, 22)] * 2
+
+
+def test_no_view_box_when_nothing_was_cut(tmp_path):
+    ctx = StrategyContext()
+    register_shape_strategies(ctx)
+    writer = CaptureWriter()
+    empty = Slice(0, 0.0, [], (0, 0), ReferenceMarkManager(), ReferenceMarkConfig())
+    SVGGenerator(str(tmp_path), writer, ctx).generate_svgs([empty])
+    assert "viewBox" not in writer.saved[0].attribs

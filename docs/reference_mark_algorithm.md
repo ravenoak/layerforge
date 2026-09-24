@@ -83,7 +83,10 @@ flowchart LR
 
 ### `min_distance`
 
-Marks must stay at least this far from contours **and** other marks.
+Marks must stay at least this far from contours **and** other marks. Holes
+count as contour edges. If a contour is too small for any mark to keep this
+distance, it gets no mark and a warning names the slice. Use a smaller
+`min_distance` in that case.
 
 ```mermaid
 flowchart LR
@@ -106,7 +109,8 @@ flowchart LR
 
 ### `angle`
 
-Controls the orientation of newly generated marks.
+Controls the orientation of newly generated marks. The command line option
+`--mark-angle` takes degrees. Inside the package, angles are radians.
 
 ```mermaid
 flowchart LR

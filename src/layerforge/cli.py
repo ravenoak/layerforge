@@ -7,6 +7,7 @@ from layerforge.models.loading import LoaderFactory
 from layerforge.models.reference_marks import ReferenceMarkConfig
 from layerforge.svg import SVGGenerator
 from layerforge.svg.drawing import StrategyContext
+from layerforge.svg.drawing.shape_factory import registered_shapes
 from layerforge.utils import register_shape_strategies
 from layerforge.utils.loader_initialization import initialize_loaders
 from layerforge.writers import SVGFileWriter
@@ -69,17 +70,31 @@ def process_model(
     if target_height is not None and target_height <= 0:
         raise click.BadParameter("must be > 0", param_hint="--target-height")
 
+    shapes = [s.strip() for s in available_shapes.split(",") if s.strip()]
+    if not shapes:
+        raise click.BadParameter("must name at least one shape", param_hint="--available-shapes")
+    unknown = [s for s in shapes if s not in registered_shapes()]
+    if unknown:
+        raise click.BadParameter(
+            f"unknown shape {', '.join(unknown)}. Available shapes: "
+            f"{', '.join(registered_shapes())}",
+            param_hint="--available-shapes",
+        )
+
     shape_context = StrategyContext()
     register_shape_strategies(shape_context)
     initialize_loaders()
     mesh_loader = LoaderFactory.get_loader("trimesh")
     model_factory = ModelFactory(mesh_loader)
-    model = model_factory.create_model(stl_file, layer_height, scale_factor, target_height)
+    try:
+        model = model_factory.create_model(stl_file, layer_height, scale_factor, target_height)
+    except ValueError as exc:
+        raise click.ClickException(f"Cannot load '{stl_file}': {exc}") from exc
 
     config = ReferenceMarkConfig(
         tolerance=mark_tolerance,
         min_distance=mark_min_distance,
-        available_shapes=[s.strip() for s in available_shapes.split(",") if s.strip()],
+        available_shapes=shapes,
         angle=math.radians(mark_angle),
         color=mark_color,
     )

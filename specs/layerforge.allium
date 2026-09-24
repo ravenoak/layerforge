@@ -227,7 +227,7 @@ rule FR10_SetOrigin {
 
 rule FR12_FR14_PlanSlices {
     when: run: Run.status transitions_to scaled
-    let positions = slice_positions(run.height, run.layer_height)
+    let positions = slice_positions(run.mesh.min_z, run.mesh.max_z, run.layer_height)
     ensures:
         for i in positions.indices:
             Slice.created(
@@ -239,10 +239,10 @@ rule FR12_FR14_PlanSlices {
             )
         run.status = sliced
     @guidance
-        -- slice_positions gives i * layer_height for i in 0 ..< max(1,
-        -- ceil(height / layer_height)), and the last entry is always the
-        -- height itself. Positions start at z = 0, not at the mesh minimum
-        -- (G-1).
+        -- slice_positions divides the mesh from min_z upwards into layers of
+        -- layer_height, the last one shorter if needed, and returns the middle
+        -- of each layer. That is max(1, ceil(height / layer_height)) positions,
+        -- all strictly between min_z and max_z.
 }
 
 rule FR13_CutSlice {
@@ -338,7 +338,7 @@ rule FR24_WriteSvg {
         -- holds each contour as a black unfilled polygon, then each mark, then
         -- the text "Slice N" once per contour (FR-25). It has no viewBox and
         -- uses the slice's own 2D frame (FR-26, G-2, G-12). Every slice
-        -- gets a file, including empty ones (G-10).
+        -- gets a file, including empty ones.
 }
 
 rule RunCompletes {
@@ -400,7 +400,6 @@ surface Command {
 -- Open Questions
 ------------------------------------------------------------
 
--- G-1  Slice positions start at z = 0, not at the mesh minimum.
 -- G-2  Each slice has its own 2D frame, so inheritance compares points from
 --      different frames.
 -- G-3  Holes are treated as solid polygons.
@@ -408,6 +407,5 @@ surface Command {
 -- G-5  Shapes do not cycle once all are used.
 -- G-6  Mark size is fixed at 3 to 5, not proportional to the model.
 -- G-7  Marks are inherited from any earlier slice, not only neighbours.
--- G-10 The slice on the top face is empty for flat-topped models.
 -- G-12 The SVG has no viewBox and does not flip the y axis.
 -- G-13 Marks that fit nowhere are dropped without a warning.

@@ -17,11 +17,14 @@ SVG = "{http://www.w3.org/2000/svg}"
 LAYER_HEIGHT = 5.0
 
 
-@pytest.fixture
-def box_stl(tmp_path: Path) -> Path:
-    """A 20 mm cube whose base sits on z=0 (slicing starts at z=0)."""
+@pytest.fixture(params=[10.0, 0.0], ids=["on-the-floor", "centred-on-origin"])
+def box_stl(tmp_path: Path, request: pytest.FixtureRequest) -> Path:
+    """A 20 mm cube, either sitting on z=0 or centred on the origin.
+
+    The centre height is ``request.param``.
+    """
     mesh = trimesh.creation.box(extents=(20, 20, 20))
-    mesh.apply_translation((0, 0, 10))
+    mesh.apply_translation((0, 0, request.param))
     path = tmp_path / "box.stl"
     mesh.export(path)
     return path
@@ -59,14 +62,14 @@ def test_cli_writes_one_svg_per_slice(
     )
     assert result.returncode == 0, result.stderr
 
-    positions = SlicerService.calculate_slice_positions(final_height, LAYER_HEIGHT)
+    # Scaling is about the origin, so the lowest point scales too.
+    bottom = float(trimesh.load_mesh(box_stl).bounds[0][2]) * final_height / 20.0
+    positions = SlicerService.calculate_slice_positions(bottom, bottom + final_height, LAYER_HEIGHT)
     files = sorted(out.glob("slice_*.svg"))
     assert [f.name for f in files] == [f"slice_{i:03d}.svg" for i in range(len(positions))]
 
-    # The last slice lies exactly on the top face and comes out empty today
-    # (see the known gaps in docs/requirements.md), so only check the rest.
     marks: list[tuple[str | None, str | None]] = []
-    for index, path in enumerate(files[:-1]):
+    for index, path in enumerate(files):
         root = ET.parse(path).getroot()
         contours = [p for p in root.iter(f"{SVG}polygon") if p.get("stroke") == "black"]
         circles = list(root.iter(f"{SVG}circle"))

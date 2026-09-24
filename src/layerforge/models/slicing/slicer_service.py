@@ -12,27 +12,36 @@ class SlicerService:
     """Service class for slicing models"""
 
     @staticmethod
-    def calculate_slice_positions(total_height: float, layer_height: float) -> list[float]:
+    def calculate_slice_positions(bottom: float, top: float, layer_height: float) -> list[float]:
         """Calculate the positions of the slices
+
+        The model is divided into layers of ``layer_height`` from ``bottom``
+        upwards. The last layer is shorter if the height is not a multiple of
+        ``layer_height``. Each slice is cut at the middle of its layer, so a cut
+        never lies on the bottom or top face.
 
         Parameters
         ----------
-        total_height : float
-            The total height of the model
+        bottom : float
+            The lowest z of the model
+        top : float
+            The highest z of the model
         layer_height : float
             The height of each layer
 
         Returns
         -------
         list
-            A list of the positions of the slices
+            A list of the z positions of the slices, lowest first
         """
-        num_slices = max(1, math.ceil(total_height / layer_height))
-        positions = [i * layer_height for i in range(num_slices)]
-        if not positions or positions[-1] < total_height:
-            positions.append(total_height)
-        else:
-            positions[-1] = total_height
+        # Rounding stops float noise (0.3 / 0.1 is 2.9999999999999996) from
+        # adding a sliver layer.
+        num_slices = max(1, math.ceil(round((top - bottom) / layer_height, 9)))
+        positions: list[float] = []
+        for i in range(num_slices):
+            lower = bottom + i * layer_height
+            upper = min(lower + layer_height, top)
+            positions.append((lower + upper) / 2)
         return positions
 
     @staticmethod
@@ -50,8 +59,9 @@ class SlicerService:
             A list of the slices
         """
         cfg = config or ReferenceMarkConfig()
+        min_bound, max_bound = model.mesh.bounds
         slice_positions = SlicerService.calculate_slice_positions(
-            model.calculate_height(), model.layer_height
+            float(min_bound[2]), float(max_bound[2]), model.layer_height
         )
         slices: list[Slice] = []
         mark_manager = ReferenceMarkManager(config=cfg)

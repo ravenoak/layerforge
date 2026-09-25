@@ -7,6 +7,8 @@ pytest.importorskip("shapely")
 from shapely.geometry import Polygon
 
 from layerforge.models.reference_marks import (
+    ReferenceMark,
+    ReferenceMarkCalculator,
     ReferenceMarkConfig,
     ReferenceMarkManager,
     ReferenceMarkService,
@@ -67,3 +69,60 @@ def test_no_warning_when_every_contour_has_a_mark(caplog):
 
     assert len(sl.ref_marks) == 1
     assert not [r for r in caplog.records if r.levelno == logging.WARNING]
+
+
+def _stub_chosen_points(monkeypatch, points):
+    """Make the calculator choose ``points``, as if sampling had landed there."""
+    monkeypatch.setattr(
+        ReferenceMarkCalculator,
+        "get_stable_marks",
+        staticmethod(lambda layer, existing, config=None: list(points)),
+    )
+
+
+def test_point_near_a_stored_mark_takes_its_coordinates(monkeypatch):
+    square = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)])
+    manager = ReferenceMarkManager()
+    manager.marks = [ReferenceMark(x=20, y=50, shape="square", size=4, angle=1.0, color="red")]
+    _stub_chosen_points(monkeypatch, [(23, 50)])
+    sl = Slice(1, 0.0, [square], origin=(0, 0), mark_manager=manager, config=ReferenceMarkConfig())
+
+    sl.process_reference_marks()
+
+    (mark,) = sl.ref_marks
+    assert (mark.x, mark.y) == (20, 50)
+    assert (mark.shape, mark.size, mark.angle, mark.color) == ("square", 4, 1.0, "red")
+    assert len(manager.marks) == 1
+
+
+def test_point_between_two_stored_marks_takes_the_nearer_one(monkeypatch):
+    square = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)])
+    manager = ReferenceMarkManager()
+    manager.marks = [
+        ReferenceMark(x=5, y=50, shape="circle", size=3),
+        ReferenceMark(x=12, y=50, shape="square", size=3),
+    ]
+    _stub_chosen_points(monkeypatch, [(10, 50)])
+    sl = Slice(1, 0.0, [square], origin=(0, 0), mark_manager=manager, config=ReferenceMarkConfig())
+
+    sl.process_reference_marks()
+
+    (mark,) = sl.ref_marks
+    assert (mark.x, mark.y, mark.shape) == (12, 50, "square")
+
+
+def test_unusable_stored_mark_is_not_reused_at_a_nearby_place():
+    # The stored mark lies 5 from the edge, closer than min_distance, so this
+    # slice cannot inherit it. Marks chosen here must not sit within the
+    # tolerance of it, or the same mark would be at two places.
+    small = Polygon([(0, 0), (30, 0), (30, 30), (0, 30)])
+    manager = ReferenceMarkManager()
+    manager.marks = [ReferenceMark(x=15, y=25, shape="square", size=4)]
+    cfg = ReferenceMarkConfig(min_distance=10, tolerance=10)
+    sl = Slice(1, 0.0, [small], origin=(0, 0), mark_manager=manager, config=cfg)
+
+    ReferenceMarkService.process_slice(sl)
+
+    for mark in sl.ref_marks:
+        assert math.hypot(mark.x - 15, mark.y - 25) > 10
+    assert len(manager.marks) == 1 + len(sl.ref_marks)

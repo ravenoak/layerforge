@@ -72,8 +72,10 @@ reference marks.
 
 ### `tolerance`
 
-Marks from a previous slice are reused when they fall within the tolerance
-radius of a candidate position.
+A candidate position within the tolerance radius of a stored mark is that mark. It
+takes the stored coordinates and look, and the nearest stored mark wins. Sampled
+candidates in that range are skipped, so no two stored marks lie within the
+tolerance of each other.
 
 ```mermaid
 flowchart LR

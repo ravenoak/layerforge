@@ -22,14 +22,20 @@ class ReferenceMarkManager:
     def find_mark_by_position(
         self, x: float, y: float, tolerance: float | None = None
     ) -> ReferenceMark | None:
-        """Return the mark at ``(x, y)`` if within ``tolerance`` distance."""
+        """Return the stored mark nearest ``(x, y)`` if it is within ``tolerance``.
+
+        When two marks are equally near, the earlier one wins.
+        """
         if tolerance is None:
             tolerance = self.config.tolerance
-        for mark in self.marks:
-            distance = calculate_distance(mark.x, mark.y, x, y)
-            if distance <= tolerance:
-                return mark
-        return None
+        in_range = [
+            (distance, mark)
+            for mark in self.marks
+            if (distance := calculate_distance(mark.x, mark.y, x, y)) <= tolerance
+        ]
+        if not in_range:
+            return None
+        return min(in_range, key=lambda pair: pair[0])[1]
 
     def add_or_update_mark(
         self,

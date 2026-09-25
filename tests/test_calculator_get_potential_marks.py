@@ -1,6 +1,10 @@
+import math
+
 import pytest
 
 pytest.importorskip("shapely")
+from hypothesis import given
+from hypothesis import strategies as st
 from shapely.geometry import Point, Polygon
 
 from layerforge.models.reference_marks import (
@@ -84,3 +88,24 @@ def test_sample_points_stay_out_of_holes():
     plate = _plate_with_hole()
     for x, y in ReferenceMarkCalculator._sample_points(plate, samples=8):
         assert plate.contains(Point(x, y))
+
+
+_COORD = st.floats(0, 30).map(lambda v: round(v, 3))
+
+
+@given(
+    stored=st.lists(st.tuples(_COORD, _COORD), max_size=4),
+    tolerance=st.floats(1, 30).map(lambda v: round(v, 3)),
+)
+def test_chosen_points_are_stored_marks_or_out_of_snapping_range(stored, tolerance):
+    """A point within the tolerance of a stored mark must be that mark (TR-10)."""
+    square = Polygon([(0, 0), (30, 0), (30, 30), (0, 30)])
+    cfg = ReferenceMarkConfig(min_distance=5, tolerance=tolerance)
+    chosen = ReferenceMarkCalculator.get_stable_marks(create_slice([square], cfg=cfg), stored, cfg)
+
+    new = [p for p in chosen if p not in stored]
+    for x, y in new:
+        assert all(math.hypot(x - sx, y - sy) > tolerance for sx, sy in stored)
+    for i, (x1, y1) in enumerate(new):
+        for x2, y2 in new[i + 1 :]:
+            assert math.hypot(x1 - x2, y1 - y2) > tolerance

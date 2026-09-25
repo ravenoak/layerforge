@@ -19,7 +19,7 @@ These correspond to the CLI flags `--mark-tolerance`, `--mark-min-distance`,
 
 1. Candidate points are sampled within each contour and ranked using the
    stability metric implemented in ``ReferenceMarkCalculator``.
-2. Marks inherited from earlier slices keep their original shape so layers
+2. Marks inherited from earlier slices keep their original position and shape so layers
    remain easy to align.
 3. Newly created marks take the first unused shape from ``available_shapes`` and are filtered by
    ``ReferenceMarkAdjuster`` to ensure a minimum distance from contours and other

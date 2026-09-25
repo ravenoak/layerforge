@@ -48,6 +48,9 @@ output, the first release will raise the minor version.
   mark, with the usual warning, where it used to get a mark at a drifting
   position.
   (#72, #82, G-15, G-22)
+- The command prints `Using settings from <file>` to stderr when it reads a
+  config file, from `--config` or from `layerforge.toml` in the current
+  directory. Before, a stray file changed a run in silence. (#118, G-26)
 
 ### Added
 

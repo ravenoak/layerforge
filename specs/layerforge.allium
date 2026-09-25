@@ -168,8 +168,9 @@ rule FR1_StartRun {
         -- with more than one geometry is rejected (FR-7). Defaults are the
         -- config values above (FR-6). Each of layer_height, mark_size,
         -- tolerance, min_distance, shapes and angle is the option if given,
-        -- else the config file value, else the default (FR-30). Options are
-        -- checked by the next rules.
+        -- else the config file value, else the default (FR-30). A config file
+        -- that passes its check and is used is named once on stderr: "Using
+        -- settings from <file>". Options are checked by the next rules.
 }
 
 rule FR30_RejectBadConfigFile {
@@ -454,6 +455,5 @@ surface Command {
 -- G-20 Shapes have no common definition; the arrow cannot be cut as a hole.
 -- G-21 Clearance and spacing use the mark centre, not the whole hole.
 -- G-23 The output suits a screen, not a laser.
--- G-26 A config file is read without a message.
 -- G-4 to G-7, G-17 to G-19, G-20, G-21 and G-23 have targets in
 -- docs/alignment_requirements.md (TR-1 to TR-16).

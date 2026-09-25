@@ -34,7 +34,8 @@ match between slices and how near they may appear to each other.
 A TOML file can hold the settings you use on every run, such as your sheet
 thickness. Use `--config PATH`, or save it as `layerforge.toml` in the directory
 you run the command from. A `layerforge.toml` there is read on every run, so it
-changes the result.
+changes the result. The command prints `Using settings from <file>` to stderr
+when it uses a file.
 
 ```toml
 layer_height = 3.0        # the sheet thickness

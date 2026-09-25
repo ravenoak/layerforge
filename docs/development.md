@@ -136,6 +136,16 @@ New pull requests open with a checklist from
   Do not use `qlmanage`, which can hang.
 - Slice positions are the middle of each layer. A cut exactly on a face of the
   mesh comes out empty.
+- Write a pydantic default as `Field(default=10.0, allow_inf_nan=False)`. With the
+  value first, pyright strict reads the field as required and reports every call
+  that leaves it out.
+- `click.FloatRange` accepts `nan` and `inf`. Check `math.isfinite` yourself, or
+  let the strict pydantic model in `settings.py` do it.
+- `gh pr create --body-file` skips `.github/pull_request_template.md`. Copy the
+  checklist into the body by hand.
+- A test that passes before the code exists proves nothing. Two CLI tests that
+  asserted only "exit 2 and the option name" passed on click's own
+  `No such option` message, so they now assert the real message.
 
 ## Common Error Messages
 

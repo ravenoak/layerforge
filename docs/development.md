@@ -82,6 +82,17 @@ uv run pyright
 pyright runs in `strict` mode on `src/` and `standard` mode on `tests/` and `scripts/`.
 CI runs all three on every pull request.
 
+The pyright settings are the `[tool.pyright]` table in `pyproject.toml`. The command, CI
+and a language server started in the repo root read it (pyright's configuration docs say
+the server uses the same file). Keep it in that one place: a `pyrightconfig.json` would
+take precedence over the table, and two files drift. The table points at the project
+environment (`venvPath` and `venv`, the `.venv` that `uv sync` creates) and at `src`
+(`extraPaths`), so an editor needs no extra setting beyond opening the repo root. To see
+that a tool used the table, run `uv run pyright --verbose`: its first line reads
+`Loading pyproject.toml file at ...`. pyright accepts an unknown key with only a message
+(`Config contains unrecognized setting`) and exit code 0, so read the output after you
+edit the table.
+
 ## Spec checks
 
 `scripts/check_specs.sh` runs `allium check` on every file in `specs/`. It needs
@@ -209,8 +220,12 @@ New pull requests open with a checklist from
   close the issue. #119 moved a bad config file before the prompt, and bad option values
   and the option conflict still come after it (G-28, #135).
 - The editor's pyright once showed errors (`No parameter named "size"`, an unknown import
-  symbol) that `uv run pyright` and the CI lint job did not. No second install of
-  layerforge exists on the machine, and the cause is not known. Trust the command and CI.
+  symbol) that `uv run pyright` and the CI lint job did not. They came right after
+  `git checkout` and scripted edits changed files outside the editor. Later the same
+  server resolved the symbols correctly (`goToDefinition` on `find_config_file` gave
+  `settings.py:120`). The project venv holds no second copy of layerforge: a `.pth` file
+  points at `src`. I did not reproduce the errors, so "stale state after edits made
+  outside the editor" is a guess. Trust `uv run pyright` and the CI lint job.
 - `gh pr checks N` right after `gh pr create` can say `no checks reported`. Wait a few
   seconds, then use `--watch`.
 - A test that passes before the code exists proves nothing. Two CLI tests that

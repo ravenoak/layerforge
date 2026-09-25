@@ -53,6 +53,8 @@ line-length = 100
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM"]
 
+# The only pyright config. `uv run pyright`, CI and editors read it. Do not add a
+# pyrightconfig.json: that file takes precedence over this table (docs/development.md).
 [tool.pyright]
 include = ["src", "tests", "scripts"]
 pythonVersion = "3.12"

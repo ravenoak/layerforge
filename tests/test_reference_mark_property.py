@@ -14,8 +14,15 @@ from layerforge.models.reference_marks import (
 from layerforge.models.slicing.slice import Slice
 from layerforge.utils import calculate_distance
 
+# Hypothesis can draw coordinates such as 1e-200. A hull edge that short has a
+# squared length of 0 in floating point, and GEOS then divides by zero inside
+# ``boundary.distance`` (issue #77). Real meshes have no such edges, so the
+# strategy rounds to micrometres and any other RuntimeWarning fails the test.
+_COORD = st.floats(0, 100).map(lambda v: round(v, 6))
 
-@given(st.lists(st.tuples(st.floats(0, 100), st.floats(0, 100)), min_size=3, max_size=6))
+
+@pytest.mark.filterwarnings("error::RuntimeWarning")
+@given(st.lists(st.tuples(_COORD, _COORD), min_size=3, max_size=6))
 def test_marks_inside_polygon(coords):
     hull = Polygon(coords).convex_hull
     assume(isinstance(hull, Polygon) and hull.area > 0)

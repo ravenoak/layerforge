@@ -74,10 +74,12 @@ python -c "import layerforge; print(layerforge.__version__)"
 
 The CLI exposes parameters for tuning reference mark generation:
 
+- `--config` – a TOML settings file. Without it, `layerforge.toml` in the current directory is read if it exists. The command line beats the file. See [docs/configuration.md](docs/configuration.md#config-file).
+- `--mark-size` – size of every new mark. Without it the size is 3 to 5, by distance from the model origin.
 - `--mark-tolerance` – distance used when matching an existing mark. Defaults to `10.0`.
 - `--mark-min-distance` – minimum distance from contours and between marks. Defaults to `10.0`.
 - `--available-shapes` – comma separated list of shapes to choose from when creating marks. Defaults to `circle,square,triangle,arrow`.
-- `--mark-angle` – default orientation angle for generated marks in degrees.
+- `--mark-angle` – default orientation angle for generated marks in degrees. Defaults to `0.0`.
 - `--mark-color` – outline color for reference marks.
 
 See [docs/reference_mark_algorithm.md#parameter-effects](docs/reference_mark_algorithm.md#parameter-effects)

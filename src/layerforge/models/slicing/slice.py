@@ -166,9 +166,10 @@ class Slice:
         return available_shapes[0]
 
     def _calculate_mark_size(self, x: float, y: float) -> float:
-        """Calculate the size of a mark based on distance from origin.
+        """Calculate the size of a mark.
 
-        The sizes are limited to a range of 3 to 5.
+        A configured ``size`` is used as it is. Otherwise the size follows the
+        distance from the origin, limited to a range of 3 to 5.
 
         Parameters
         ----------
@@ -182,5 +183,7 @@ class Slice:
         float
             The size of the mark.
         """
+        if self.config.size is not None:
+            return self.config.size
         distance = calculate_distance(x, y, self.origin[0], self.origin[1])
         return max(3, min(int(distance / 10), 5))

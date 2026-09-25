@@ -12,6 +12,7 @@ class ReferenceMarkConfig(BaseModel):
         default_factory=lambda: ["circle", "square", "triangle", "arrow"]
     )
     angle: float = Field(default=0.0, allow_inf_nan=False)
+    size: float | None = Field(default=None, gt=0, allow_inf_nan=False)
     color: str | None = None
 
     @field_validator("available_shapes")

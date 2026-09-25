@@ -77,11 +77,11 @@ Start:
 While working:
 - One branch and one PR per issue. Commit message ends with `Fixes #N`, or `Refs #N` when part of the issue stays open.
 - Write the failing test first, and watch it fail for the right reason. A property test that passes on the first run proves nothing: shrink the input space until it fails on the bug. Run the checks without pipes: `uv run ruff format && uv run ruff check && uv run pyright && uv run pytest -q`.
-- In the same PR: update the FR row in `docs/requirements.md`, remove the fixed Known gaps row, and update `specs/layerforge.allium`. Add or update the matching target row if the target changed. Run `allium check` on both specs, and `uv run mkdocs build --strict`.
+- In the same PR: update the FR row in `docs/requirements.md`, remove the fixed Known gaps row, and update `specs/layerforge.allium`. Add or update the matching target row if the target changed. Run `./scripts/check_specs.sh` and `uv run mkdocs build --strict`.
 - Run `allium:weed` after spec edits, and `/code-review` before opening the PR.
 - Ask before pushing, merging or editing issues unless the owner has said to.
 - State in the docs, the changelog and the PR text only what was measured. "Unchanged at the defaults" was true for one model and false in general (session A, #103).
-- `allium check` exits 1 on warnings, even on `main`. Read its `findings` and any `error` diagnostics, not the exit code (#109).
+- `allium check` exits 1 on warnings, even on `main`. `scripts/check_specs.sh` fails only on an `error` diagnostic or a finding, and CI runs it. The accepted warnings are listed in [Development](development.md) (#109).
 - Merge with squash, oldest PR first. After `gh pr merge`, `mergeable` reads `UNKNOWN` for about 15 s: run `git fetch` and look again in a separate command. Two PRs that each delete one of two adjacent Known-gaps rows conflict. Drop both rows and continue the rebase.
 
 Finish:

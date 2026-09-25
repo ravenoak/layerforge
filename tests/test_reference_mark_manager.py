@@ -4,7 +4,7 @@ import pytest
 
 pytest.importorskip("trimesh")
 pytest.importorskip("shapely")
-from layerforge.models.reference_marks import ReferenceMarkManager
+from layerforge.models.reference_marks import ReferenceMark, ReferenceMarkManager
 
 
 def test_add_and_update_mark():
@@ -27,3 +27,42 @@ def test_add_and_update_mark():
     # add new mark at different position
     manager.add_or_update_mark(30, 40, "triangle", 4)
     assert len(manager.marks) == 2
+
+
+def _manager_with(*marks: tuple[float, float, str]) -> ReferenceMarkManager:
+    """A manager holding marks at the given places, whatever their spacing."""
+    manager = ReferenceMarkManager()
+    manager.marks = [ReferenceMark(x=x, y=y, shape=shape, size=3) for x, y, shape in marks]
+    return manager
+
+
+def test_find_mark_by_position_returns_the_nearest_mark_in_range():
+    manager = _manager_with((0, 0, "circle"), (8, 0, "square"))
+
+    found = manager.find_mark_by_position(6, 0, tolerance=10)
+
+    assert found is not None
+    assert (found.x, found.y, found.shape) == (8, 0, "square")
+
+
+def test_find_mark_by_position_breaks_a_tie_with_the_earliest_mark():
+    manager = _manager_with((0, 0, "circle"), (10, 0, "square"))
+
+    found = manager.find_mark_by_position(5, 0, tolerance=10)
+
+    assert found is not None
+    assert found.shape == "circle"
+
+
+def test_find_mark_by_position_ignores_marks_out_of_range():
+    manager = _manager_with((0, 0, "circle"))
+
+    assert manager.find_mark_by_position(11, 0, tolerance=10) is None
+
+
+def test_add_or_update_mark_updates_the_nearest_mark():
+    manager = _manager_with((0, 0, "circle"), (8, 0, "square"))
+
+    manager.add_or_update_mark(7, 0, "triangle", 4)
+
+    assert [m.shape for m in manager.marks] == ["circle", "triangle"]

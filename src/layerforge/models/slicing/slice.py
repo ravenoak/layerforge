@@ -86,8 +86,8 @@ class Slice:
             if existing_mark:
                 self.ref_marks.append(
                     ReferenceMark(
-                        x=x,
-                        y=y,
+                        x=existing_mark.x,
+                        y=existing_mark.y,
                         shape=existing_mark.shape,
                         size=existing_mark.size,
                         angle=existing_mark.angle,

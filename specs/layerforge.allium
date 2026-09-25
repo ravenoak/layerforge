@@ -280,11 +280,12 @@ rule FR15_FR21_PlaceMarks {
             if chosen != null:
                 let known = nearest_registered(slice.run.marks, chosen, slice.run.tolerance)
                 if known != null:
-                    -- FR-19: inherit appearance from the registered mark.
+                    -- FR-19: the point is the registered mark, so it keeps
+                    -- the stored coordinates and appearance.
                     PlacedMark.created(
                         slice: slice,
                         contour: contour,
-                        at: chosen,
+                        at: known.at,
                         appearance: known.appearance
                     )
                 else:
@@ -308,7 +309,8 @@ rule FR15_FR21_PlaceMarks {
         -- An earlier registered point inside the contour is reused if it is
         -- at least min_distance from the boundary and from marks already
         -- placed on this slice. Otherwise the candidate with the highest
-        -- stability score wins; candidates are the centroid (if inside the contour) plus points from a
+        -- stability score wins; a candidate within tolerance of a registered
+        -- mark or of a mark placed on this slice is skipped (FR-17); candidates are the centroid (if inside the contour) plus points from a
         -- fixed-seed generator inside the bounding box. The score is the sum of pairwise
         -- distances over the candidate and the marks already placed.
         -- next_shape gives the first shape not yet registered, else the first
@@ -415,15 +417,13 @@ surface Command {
 -- G-5  Shapes do not cycle once all are used.
 -- G-6  Mark size is fixed at 3 to 5, not proportional to the model.
 -- G-7  Marks are inherited from any earlier slice, not only neighbours.
--- G-15 Mark lookup returns the first mark within tolerance, not the nearest.
 -- G-16 Overlapping shells in one mesh give false holes.
 -- G-17 The SVG has no physical size.
 -- G-18 The slice label can cross an outline.
 -- G-19 The default min_distance ignores the model size.
 -- G-20 Shapes have no common definition; the arrow cannot be cut as a hole.
 -- G-21 Clearance and spacing use the mark centre, not the whole hole.
--- G-22 A mark near a stored mark takes its shape but not its coordinates.
 -- G-23 The output suits a screen, not a laser.
 -- G-24 Laser, material and mark numbers cannot be set.
--- G-4 to G-7, G-15, G-17 to G-19 and G-20 to G-24 have targets in
+-- G-4 to G-7, G-17 to G-19, G-20, G-21, G-23 and G-24 have targets in
 -- docs/alignment_requirements.md (TR-1 to TR-16).

@@ -16,12 +16,12 @@ Sizes are my estimates: S under an hour, M one session, L several sessions. Noth
 
 | Rank | Issue | Title | Size | Depends on | Why here | Owner input |
 |---|---|---|---|---|---|---|
-| 1 | #71 | Negative mark options end in a traceback | S | none | Small, finishes the input checks from #67. #87 can reuse the validation. | no |
-| 2 | #78 | Remove or use `Model.calculate_height` | S | none | Dead code. Quick. | no |
-| 3 | #77 | Investigate intermittent shapely warning | S to M | none | Degenerate polygons may hide a real bug in the mark code. Find it before that code is reworked. | no |
-| 4 | #82 + #72 | Mark identity: adopt stored coordinates; nearest wins | S to M | none | Same-mark-at-two-places breaks alignment today (TR-10). Small change with a clear test. | no |
-| 5 | #97 | Changelog and version policy | S | none | Must exist before #83 and #87 land. | no |
-| 6 | #73 | Investigate overlapping shells | M | none | Changes how contours are built, which #89 relies on. Decide before rank 14. | **yes**: how common are such STL files? Which fix? |
+| 1 | #71 | Negative mark options end in a traceback (done, #100) | S | none | Small, finishes the input checks from #67. #87 can reuse the validation. | no |
+| 2 | #78 | Remove or use `Model.calculate_height` (done, #101) | S | none | Dead code. Quick. | no |
+| 3 | #77 | Investigate intermittent shapely warning (done, #102) | S to M | none | Degenerate polygons may hide a real bug in the mark code. Find it before that code is reworked. | no |
+| 4 | #82 + #72 | Mark identity: adopt stored coordinates; nearest wins (done, #103) | S to M | none | Same-mark-at-two-places breaks alignment today (TR-10). Small change with a clear test. | no |
+| 5 | #97 | Changelog and version policy (done, #104) | S | none | Must exist before #83 and #87 land. | no |
+| 6 | #73 | Investigate overlapping shells (decided: document the limit) | M | none | Changes how contours are built, which #89 relies on. Decide before rank 14. | decided 2026-09-25 |
 | 7 | #87 | Settings model and config file | M to L | #71 helps | Everything else reads its numbers from here (TR-16). | confirm the file format and key names |
 | 8 | #96 | Calibrate the proposed defaults | owner | none (use with #87) | Turns proposed numbers into measured ones. Do it any time after rank 7, or in parallel. | **yes**: a test cut |
 | 9 | #74 | Units and physical SVG size | M | #87 | Laser software may import at the wrong size. High value. | no |
@@ -49,7 +49,7 @@ Issue #98 holds the same list as a checklist. Tick it as items merge, and keep t
 
 | Session | Items | Note |
 |---|---|---|
-| A | #71, #78, #77, #82 + #72, #97 | Five small PRs, one per issue. Ask the owner about #73 at the end. |
+| A | #71, #78, #77, #82 + #72, #97 | Done 2026-09-25 as PRs #100 to #104. #73 was decided: document the limit. |
 | B | #87 | Settings model, precedence, config file, validation. Add the example file for #96. |
 | C | #74, #84 | Units first, then the shape contract. |
 | D | #85, #62 + #76, #75 | Uses #84 and #87. |
@@ -85,7 +85,6 @@ See memory `layerforge-tooling-gotchas` and [Development](development.md) (Worki
 
 | Decision | Blocks | Needed by |
 |---|---|---|
-| Overlapping shells: how to treat them (#73) | #89 | Session A end |
 | Laser and material numbers (#96): kerf, smallest clean hole, number height, hairline behavior | Final defaults in #87, #62, #75 | Before #83 is merged |
 | Colours and stroke conventions of the laser software (#83) | #83 | Session E |
 | Dowel hole design (#93) | later work | Later |
@@ -93,4 +92,4 @@ See memory `layerforge-tooling-gotchas` and [Development](development.md) (Worki
 
 ## What is settled
 
-Marks are holes. Every layer aligns to the one below and the one above in exactly one way. The number fixes the flip. Mark shape fixes rotation. Units default to mm. Failing to align is an error before writing, and `--allow-unaligned` overrides it. Angle 0 points along +x, counter-clockwise. Mark size is the diameter of the smallest circle that holds the outline. Marks are chosen per pair of adjacent layers. Every laser, material and judgment number is a setting. Dowel holes are a later feature.
+Overlapping shells in one mesh are a documented limit (#73, decided 2026-09-25): the even-odd rule stays, users merge bodies before export, and a later opt-in `manifold3d` union is possible. Marks are holes. Every layer aligns to the one below and the one above in exactly one way. The number fixes the flip. Mark shape fixes rotation. Units default to mm. Failing to align is an error before writing, and `--allow-unaligned` overrides it. Angle 0 points along +x, counter-clockwise. Mark size is the diameter of the smallest circle that holds the outline. Marks are chosen per pair of adjacent layers. Every laser, material and judgment number is a setting. Dowel holes are a later feature.

@@ -78,6 +78,29 @@ uv run pyright
 pyright runs in `strict` mode on `src/` and `standard` mode on `tests/` and `scripts/`.
 CI runs all three on every pull request.
 
+## Spec checks
+
+`scripts/check_specs.sh` runs `allium check` on every file in `specs/`. It needs
+`allium` and `jq` on the path. CI runs it as the `specs` job with a pinned allium
+version and a pinned SHA-256 for the tarball. To bump the version, change both
+values in `.github/workflows/tests.yaml`.
+
+The script fails on an `error` diagnostic or a non-empty `findings` list. It does
+not use the exit code, because `allium check` exits 1 on warnings and infos too.
+These diagnostics are accepted, and the script prints their counts:
+
+- `layerforge.allium`: two `externalEntity.missingSourceHint` warnings for `Mesh`
+  and `Operator`. The hint wants an import of the spec that governs the entity.
+  trimesh and a person have no allium spec, so there is nothing to import.
+- `layerforge.allium`: `status.unreachableValue` for `Slice.planned`. The value is
+  set by `Slice.created(... status: planned)` inside a `for` loop. The checker
+  does not see a creation inside a loop. A single creation outside the loop, as
+  a test in a scratch copy showed, makes the warning go away.
+- `alignment.allium`: unused and unreachable items that exist because the target
+  spec has no code yet. Each goes away when its feature lands.
+
+A new warning is not a failure, so read the counts in the log when a spec changes.
+
 ## Changelog and versions
 
 The [changelog](https://github.com/ravenoak/layerforge/blob/main/CHANGELOG.md) states

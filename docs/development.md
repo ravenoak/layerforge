@@ -78,6 +78,14 @@ uv run pyright
 pyright runs in `strict` mode on `src/` and `standard` mode on `tests/` and `scripts/`.
 CI runs all three on every pull request.
 
+## Changelog and versions
+
+The [changelog](https://github.com/ravenoak/layerforge/blob/main/CHANGELOG.md) states
+the version policy. LayerForge is at 0.x, so a minor version may break users.
+A pull request that changes options, defaults, exit codes, output files or public
+functions adds a line under `Unreleased` and marks it **Breaking** when existing
+use stops working or gives different output.
+
 ## Working Notes
 
 - Run the checks so that a failure is not hidden. Do not pipe them through

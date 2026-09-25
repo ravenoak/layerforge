@@ -88,6 +88,10 @@ for diagrams and tuning tips on how these options influence mark placement.
 Contributions are welcome! Please read our [Code of Conduct](CODE_OF_CONDUCT.md)
 before participating in this project.
 
+Changes that a user can see are listed in [CHANGELOG.md](CHANGELOG.md), which also
+states the version policy. A pull request that changes options, defaults, exit
+codes, output files or public functions adds a line under `Unreleased`.
+
 ## License
 
 This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0) License

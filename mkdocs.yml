@@ -11,6 +11,7 @@ nav:
   - Features: features.md
   - Requirements: requirements.md
   - "Alignment Requirements": alignment_requirements.md
+  - "Prioritized Backlog": backlog.md
   - Architecture: architecture.md
   - "Reference Mark Algorithm": reference_mark_algorithm.md
   - Configuration: configuration.md

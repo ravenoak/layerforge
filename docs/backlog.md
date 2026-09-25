@@ -22,7 +22,7 @@ Sizes are my estimates: S under an hour, M one session, L several sessions. Noth
 | 4 | #82 + #72 | Mark identity: adopt stored coordinates; nearest wins (done, #103) | S to M | none | Same-mark-at-two-places breaks alignment today (TR-10). Small change with a clear test. | no |
 | 5 | #97 | Changelog and version policy (done, #104) | S | none | Must exist before #83 and #87 land. | no |
 | 6 | #73 | Investigate overlapping shells (decided: document the limit) | M | none | Changes how contours are built, which #89 relies on. Decide before rank 14. | decided 2026-09-25 |
-| 7 | #87 | Settings model and config file | M to L | #71 helps | Everything else reads its numbers from here (TR-16). | confirm the file format and key names |
+| 7 | #87 | Settings model and config file (done, #115: the mechanism and the six keys that exist today; each later issue adds its own keys) | M to L | #71 helps | Everything else reads its numbers from here (TR-16). | confirm the file format and key names |
 | 8 | #96 | Calibrate the proposed defaults | owner | none (use with #87) | Turns proposed numbers into measured ones. Do it any time after rank 7, or in parallel. | **yes**: a test cut |
 | 9 | #74 | Units and physical SVG size | M | #87 | Laser software may import at the wrong size. High value. | no |
 | 10 | #84 | Shape contract | M | none | Closed outlines, one size, anchor and angle. Needed by 11, 15, 17. | confirm angle 0 = +x, size = circumscribed diameter (already chosen) |
@@ -42,9 +42,9 @@ Sizes are my estimates: S under an hour, M one session, L several sessions. Noth
 | 24 | #80 | MkDocs 2 notice | S | none | Low priority. | decide whether to pin |
 | 25 | #94 | Cut-through numbers, numbers as outlines | M | #75, #83, #87 | Later. | choose an approach |
 | 26 | #93 | Design dowel holes | M | #96, #87 | Later. Design work, no code. | **yes**: process and sizes |
-| 27 | #106 | Non-finite option values (`nan`, `inf`) pass the input checks | S | none | Found after #71: `nan` gives a traceback or a silent wrong run. #87 reuses the check. Cheap: do it before rank 7. | no |
-| 28 | #110 | Pull request template with the changelog and checks list | S | #97 | The reminders live in this page and the dev notes only. Cheap: do it before rank 7. | no |
-| 29 | #109 | Run `allium check` in CI and clear or accept its warnings | S to M | none | The check is manual today, and its exit code is 1 on warnings. Investigate the CI install first. | no |
+| 27 | #106 | Non-finite option values (`nan`, `inf`) pass the input checks (done, #112) | S | none | Found after #71: `nan` gives a traceback or a silent wrong run. #87 reuses the check. Cheap: do it before rank 7. | no |
+| 28 | #110 | Pull request template with the changelog and checks list (done, #113) | S | #97 | The reminders live in this page and the dev notes only. Cheap: do it before rank 7. | no |
+| 29 | #109 | Run `allium check` in CI and clear or accept its warnings (done, #114: CI runs `scripts/check_specs.sh`; the three warnings on `layerforge.allium` are accepted) | S to M | none | The check is manual today, and its exit code is 1 on warnings. Investigate the CI install first. | no |
 | 30 | #108 | Harden the mark snapping path | S | #103 | One tolerance source, a containment check in the adjuster. Fits with rank 11 and 12. | no |
 | 31 | #107 | Stored marks never retire (acceptance for #63) | part of #63 | #63 | Not separate work: add its sheared-cylinder test to rank 19 and 21. | no |
 
@@ -57,8 +57,8 @@ Issue #98 holds the same list as a checklist. Tick it as items merge, and keep t
 | Session | Items | Note |
 |---|---|---|
 | A | #71, #78, #77, #82 + #72, #97 | Done 2026-09-25 as PRs #100 to #104. #73 was decided: document the limit. |
-| A2 | #106, #110, #109 | Three small PRs before B. #106 first, because #87 reuses its check. |
-| B | #87 | Settings model, precedence, config file, validation. Add the example file for #96. |
+| A2 | #106, #110, #109 | Done 2026-09-25 as PRs #112 to #114. |
+| B | #87 | Done 2026-09-25 as PR #115, narrow: the mechanism plus keys for today's settings. The example file for #96 is not added; `docs/configuration.md` has an example. |
 | C | #74, #84 | Units first, then the shape contract. |
 | D | #85, #62 + #76, #75, #108 | Uses #84 and #87. |
 | E | #83, #89 | Laser output, then adjacency. |
@@ -94,7 +94,7 @@ See memory `layerforge-tooling-gotchas` and [Development](development.md) (Worki
 
 ## Status
 
-Session A is done (2026-09-25): ranks 1 to 5 merged as #100 to #104, and rank 6 (#73) was decided as a documented limit (#105). The next work is session A2, then B.
+Sessions A, A2 and B are done (2026-09-25). A: ranks 1 to 5 merged as #100 to #104, and rank 6 (#73) was decided as a documented limit (#105). A2: #106, #110 and #109 merged as #112 to #114. B: #87 merged as #115, with the mechanism and the keys that exist today (`layer_height`, `marks.size`, `marks.tolerance`, `marks.min_distance`, `marks.shapes`, `marks.angle`). The next work is session C (#74, #84). Each later issue adds its own config keys and its own row in TR-16; the default `marks.tolerance` of 0.1 x mark size comes with #62.
 
 ## Open decisions and owner inputs
 
@@ -103,7 +103,7 @@ Session A is done (2026-09-25): ranks 1 to 5 merged as #100 to #104, and rank 6 
 | Laser and material numbers (#96): kerf, smallest clean hole, number height, hairline behavior | Final defaults in #87, #62, #75 | Before #83 is merged |
 | Colours and stroke conventions of the laser software (#83) | #83 | Session E |
 | Dowel hole design (#93) | later work | Later |
-| Config key names in TR-16 | #87 | Session B |
+| Config key names in TR-16 | Later keys | Each issue that adds a key. The six built in #87 follow TR-16 as written, so the owner may still rename them. |
 
 ## What is settled
 

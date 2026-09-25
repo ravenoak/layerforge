@@ -91,6 +91,29 @@ def test_cli_invalid_options_error(cylinder_stl, tmp_path):
     assert "Only one of scale_factor or target_height can be provided." in result.output
 
 
+@pytest.mark.parametrize("scale_factor", ["0", "-1", "nan", "inf", "2.0"])
+def test_cli_scale_factor_with_target_height_is_a_conflict_for_every_value(
+    cylinder_stl, tmp_path, scale_factor
+):
+    """Two options that cannot be used together fail the same way for any value (#117)."""
+    result = CliRunner().invoke(
+        cli,
+        [
+            "--stl-file",
+            str(cylinder_stl),
+            "--output-folder",
+            str(tmp_path),
+            "--scale-factor",
+            scale_factor,
+            "--target-height",
+            "5",
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert "Only one of scale_factor or target_height can be provided." in result.output
+
+
 @pytest.mark.parametrize("option", ["--mark-tolerance", "--mark-min-distance"])
 def test_cli_negative_mark_option_is_a_usage_error(cylinder_stl, tmp_path, option):
     """A negative mark option exits with usage code 2 and names the option."""

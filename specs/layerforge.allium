@@ -189,8 +189,9 @@ rule FR4_RejectConflictingScaling {
     ensures: run.status = rejected
     @guidance
         -- Message: "Only one of scale_factor or target_height can be provided."
-        -- Exit code 1. A scale factor of 0 counts as not given here and is
-        -- caught by the next rule instead.
+        -- Exit code 1. Any value counts as given, including 0, a negative
+        -- number, nan and inf, so the conflict is reported before a bad value
+        -- (FR-2, FR-3).
 }
 
 rule FR2_FR3_RejectNonPositiveValues {
@@ -450,7 +451,6 @@ surface Command {
 -- G-20 Shapes have no common definition; the arrow cannot be cut as a hole.
 -- G-21 Clearance and spacing use the mark centre, not the whole hole.
 -- G-23 The output suits a screen, not a laser.
--- G-25 The scale and target conflict check tests truthiness, so 0 differs from -1.
 -- G-26 A config file is read without a message.
 -- G-27 A bad config file is reported after the --stl-file prompt.
 -- G-4 to G-7, G-17 to G-19, G-20, G-21 and G-23 have targets in

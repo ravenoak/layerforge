@@ -83,7 +83,7 @@ def process_model(
     -------
     None
     """
-    if scale_factor and target_height:
+    if scale_factor is not None and target_height is not None:
         raise ConflictingOptionsError("Only one of scale_factor or target_height can be provided.")
 
     _check_positive(scale_factor, "--scale-factor")

@@ -86,6 +86,20 @@ def test_cli_invalid_options_error(cylinder_stl, tmp_path):
     assert "Only one of scale_factor or target_height can be provided." in result.output
 
 
+@pytest.mark.parametrize("option", ["--mark-tolerance", "--mark-min-distance"])
+def test_cli_negative_mark_option_is_a_usage_error(cylinder_stl, tmp_path, option):
+    """A negative mark option exits with usage code 2 and names the option."""
+    runner = CliRunner()
+
+    result = runner.invoke(
+        cli,
+        ["--stl-file", str(cylinder_stl), "--output-folder", str(tmp_path), option, "-1"],
+    )
+
+    assert result.exit_code == 2
+    assert option in result.output
+
+
 def test_cli_end_to_end_generates_svgs(tmp_path):
     """A full CLI run should generate SVG slices."""
     pytest.importorskip("trimesh")

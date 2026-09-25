@@ -69,6 +69,10 @@ def process_model(
         raise click.BadParameter("must be > 0", param_hint="--scale-factor")
     if target_height is not None and target_height <= 0:
         raise click.BadParameter("must be > 0", param_hint="--target-height")
+    if mark_tolerance < 0:
+        raise click.BadParameter("must be >= 0", param_hint="--mark-tolerance")
+    if mark_min_distance < 0:
+        raise click.BadParameter("must be >= 0", param_hint="--mark-min-distance")
 
     shapes = [s.strip() for s in available_shapes.split(",") if s.strip()]
     if not shapes:

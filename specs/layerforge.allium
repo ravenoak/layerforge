@@ -415,7 +415,6 @@ surface Command {
 -- G-5  Shapes do not cycle once all are used.
 -- G-6  Mark size is fixed at 3 to 5, not proportional to the model.
 -- G-7  Marks are inherited from any earlier slice, not only neighbours.
--- G-14 Negative mark tolerance or min_distance ends in a traceback.
 -- G-15 Mark lookup returns the first mark within tolerance, not the nearest.
 -- G-16 Overlapping shells in one mesh give false holes.
 -- G-17 The SVG has no physical size.

@@ -86,3 +86,23 @@ def test_process_model_bad_shapes_fail_before_slicing(cylinder_stl, tmp_path, sh
         )
     assert excinfo.value.param_hint == "--available-shapes"
     assert not out.exists()
+
+
+@pytest.mark.parametrize(
+    ("tolerance", "min_distance", "hint"),
+    [(-1.0, 10.0, "--mark-tolerance"), (10.0, -1.0, "--mark-min-distance")],
+)
+def test_process_model_negative_mark_option_fails_before_slicing(
+    cylinder_stl, tmp_path, tolerance, min_distance, hint
+):
+    out = tmp_path / "out"
+    with pytest.raises(click.BadParameter) as excinfo:
+        process_model(
+            stl_file=str(cylinder_stl),
+            layer_height=1.0,
+            output_folder=str(out),
+            mark_tolerance=tolerance,
+            mark_min_distance=min_distance,
+        )
+    assert excinfo.value.param_hint == hint
+    assert not out.exists()

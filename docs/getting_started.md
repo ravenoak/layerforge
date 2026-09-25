@@ -62,4 +62,9 @@ Opening the first SVG shows the slice label and contour:
   the dependencies. Run `uv sync`, or reinstall with `uv tool install`.
 - `FileNotFoundError: [Errno 2] No such file or directory` – check the
   provided `--stl-file` path.
+- A slice shows a hole where two parts of the model overlap – the STL holds
+  overlapping closed shells, for example two boxes saved as one file without a
+  union. LayerForge cuts loops by the even-odd rule, so the overlap becomes a
+  hole. Merge the bodies with a boolean union in your CAD or mesh tool before
+  export. See G-16 in the [known gaps](requirements.md#known-gaps).
 - `ConflictingOptionsError: Only one of scale_factor or target_height can be provided.`

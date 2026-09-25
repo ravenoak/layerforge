@@ -54,7 +54,7 @@ Sizes are my estimates: S under an hour, M one session, L several sessions. Noth
 | 36 | #121 | Harden settings.py: the second-stage error lookup | S | none | Latent `KeyError`. Do it before #62 adds the first key without an option. | no |
 | 37 | #125 | Defaults are written by hand in six places | S to M | none | Do it before #62 and #76 change the defaults. | no |
 | 38 | #122 | Test scripts/check_specs.sh and find out what `findings` hold | S | #114 | The CI gate is proven only by hand. | no |
-| 39 | #123 | Verify the allium install in CI; make the bump routine | S | #114 | The pinned hash is trust-on-first-use. There are no attestations. | maybe: ask the allium maintainers |
+| 39 | #123 | Verify the allium install in CI; make the bump routine (done, #127: upstream signs nothing, so the pin is checked against the tarball its release run built; the bump steps are in `docs/development.md`) | S | #114 | The pinned hash was trust-on-first-use. There are no attestations. | optional: tell upstream about the empty `sha256` for x86_64 in its Homebrew formula |
 | 40 | #124 | The spec does not model most option checks | S to M | none | Weed found spec faults in #115 only because it was run by hand. | no |
 
 Ranks 27 to 31 were found while doing ranks 1 to 6, and ranks 32 to 40 while doing ranks 7 and 27 to 29. They are appended, so the numbers in the Depends columns stay valid. Ranks 27 to 29 are done. Ranks 32 to 35 are small and independent (session A3 below). Ranks 36 and 37 go before #62 (session D). Ranks 38 to 40 are hygiene and can go any time (session A4).
@@ -68,7 +68,7 @@ Issue #98 holds the same list as a checklist. Tick it as items merge, and keep t
 | A | #71, #78, #77, #82 + #72, #97 | Done 2026-09-25 as PRs #100 to #104. #73 was decided: document the limit. |
 | A2 | #106, #110, #109 | Done 2026-09-25 as PRs #112 to #114. |
 | A3 | #120, #117, #118, #119 | Four small fixes before C. #120 first: it makes the test suite independent of the working directory before more keys arrive. |
-| A4 | #122, #123, #124 | Spec and CI hygiene. No product code. Run `allium:weed` with #124. Can go between any two sessions. |
+| A4 | #122, #123 (done), #124 | Spec and CI hygiene. No product code. Run `allium:weed` with #124. Can go between any two sessions. |
 | B | #87 | Done 2026-09-25 as PR #115, narrow: the mechanism plus keys for today's settings. The example file for #96 is not added; `docs/configuration.md` has an example. |
 | C | #74, #84 | Units first, then the shape contract. |
 | D | #121, #125, then #85, #62 + #76, #75, #108 | Uses #84 and #87. #121 and #125 go first, because #62 adds a key without an option and changes a default. |

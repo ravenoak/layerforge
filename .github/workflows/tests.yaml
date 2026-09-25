@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -39,8 +42,9 @@ jobs:
   specs:
     runs-on: ubuntu-latest
     env:
-      # To bump: set the version and the SHA-256 of the linux tarball from
-      # https://github.com/juxt/allium-tools/releases (SHA256SUMS.txt omits it).
+      # Bump both values with the steps in docs/development.md (Spec checks).
+      # Upstream publishes no checksum for this tarball, so the pin comes from
+      # comparing the release asset with its release run's artifact.
       ALLIUM_VERSION: '3.6.1'
       ALLIUM_SHA256: e00c99ae234b10207719257a70e7c2dcad73060864468cd293fb7ad40524e970
     steps:

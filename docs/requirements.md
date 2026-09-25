@@ -22,11 +22,11 @@ LayerForge slices a 3D mesh into horizontal layers. It writes one SVG file per l
 | ID | Requirement | Code | Tests |
 |---|---|---|---|
 | FR-1 | The `layerforge` command takes `--stl-file`. If it is missing, the command prompts for it. | `cli.py::cli` | `test_cli` |
-| FR-2 | `--layer-height` is a number greater than 0. The default is 3.0. A value of 0 or less stops the command with `Invalid value for --layer-height: must be > 0` and exit code 2. | `cli.py::process_model` | `test_process_model_validation`, `test_cli` |
-| FR-3 | `--scale-factor` and `--target-height`, when given, must be greater than 0. Both fail the same way as FR-2. | `cli.py::process_model` | `test_process_model_validation` |
+| FR-2 | `--layer-height` is a number greater than 0. The default is 3.0. A value of 0 or less stops the command with `Invalid value for --layer-height: must be > 0` and exit code 2. So does `nan` or `inf`, with `must be a finite number`. | `cli.py::process_model` | `test_process_model_validation`, `test_cli` |
+| FR-3 | `--scale-factor` and `--target-height`, when given, must be greater than 0. Both fail the same way as FR-2, and `nan` or `inf` fails too. | `cli.py::process_model` | `test_process_model_validation` |
 | FR-4 | `--scale-factor` and `--target-height` cannot be used together. The command prints `Only one of scale_factor or target_height can be provided.` and exits with code 1. | `cli.py::process_model`, `cli.py::cli` | `test_cli` |
 | FR-5 | `--output-folder` sets where SVG files go. The default is `output`. The folder and its parents are created if missing. | `utils/file_operations.py`, `writers/svg_writer.py` | `test_file_operations`, `test_end_to_end` |
-| FR-6 | Mark options: `--mark-tolerance` (default 10.0), `--mark-min-distance` (default 10.0), `--available-shapes` (comma-separated, default `circle,square,triangle,arrow`), `--mark-angle` (degrees, default 0.0), `--mark-color` (default none). Shape names are trimmed and empty items dropped. The angle is converted to radians. | `cli.py::process_model` | `test_cli` |
+| FR-6 | Mark options: `--mark-tolerance` (default 10.0), `--mark-min-distance` (default 10.0), `--available-shapes` (comma-separated, default `circle,square,triangle,arrow`), `--mark-angle` (degrees, default 0.0), `--mark-color` (default none). The three numbers must be finite, and the first two must not be negative. Shape names are trimmed and empty items dropped. The angle is converted to radians. | `cli.py::process_model` | `test_cli` |
 
 ### Loading and scaling
 
@@ -58,7 +58,7 @@ LayerForge slices a 3D mesh into horizontal layers. It writes one SVG file per l
 | FR-20 | A new mark takes the first configured shape that no mark uses yet. If all are in use, it takes the first configured shape. Its angle and color come from the options. | `models/slicing/slice.py::_select_unique_shape` | `test_slice_process_reference_marks` |
 | FR-21 | A new mark's size is `int(distance from the model origin / 10)`, limited to 3 through 5. | `models/slicing/slice.py::_calculate_mark_size` | `test_slice_mark_size` |
 | FR-22 | After marks are chosen, any mark closer than `min_distance` to a contour boundary, or to a mark already kept, is dropped. The earlier mark stays. If a slice then has a contour with no mark, one warning is logged for the slice (`No reference mark fits N of M contours in slice I. Try a smaller --mark-min-distance.`). The slice is still written. | `models/reference_marks/reference_mark_adjuster.py` | `test_reference_mark_adjuster`, `test_reference_mark_adjuster_extra`, `test_slice_process_reference_marks`, `test_end_to_end` |
-| FR-23 | The mark settings are checked when created: `available_shapes` must not be empty, and `tolerance` and `min_distance` must not be negative. Violations raise `ValueError`. | `models/reference_marks/config.py` | `test_reference_mark_config` |
+| FR-23 | The mark settings are checked when created: `available_shapes` must not be empty, `tolerance` and `min_distance` must not be negative, and `tolerance`, `min_distance` and `angle` must be finite. Violations raise `ValueError`. | `models/reference_marks/config.py` | `test_reference_mark_config` |
 
 ### SVG output
 

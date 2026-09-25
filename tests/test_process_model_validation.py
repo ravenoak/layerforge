@@ -106,3 +106,27 @@ def test_process_model_negative_mark_option_fails_before_slicing(
         )
     assert excinfo.value.param_hint == hint
     assert not out.exists()
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
+@pytest.mark.parametrize(
+    ("option", "hint"),
+    [
+        ("layer_height", "--layer-height"),
+        ("scale_factor", "--scale-factor"),
+        ("target_height", "--target-height"),
+        ("mark_tolerance", "--mark-tolerance"),
+        ("mark_min_distance", "--mark-min-distance"),
+        ("mark_angle", "--mark-angle"),
+    ],
+)
+def test_process_model_non_finite_option_fails_before_slicing(
+    cylinder_stl, tmp_path, option, hint, value
+):
+    out = tmp_path / "out"
+    kwargs = {"layer_height": 1.0, option: value}
+    with pytest.raises(click.BadParameter) as excinfo:
+        process_model(stl_file=str(cylinder_stl), output_folder=str(out), **kwargs)
+    assert excinfo.value.param_hint == hint
+    assert "finite" in excinfo.value.message
+    assert not out.exists()

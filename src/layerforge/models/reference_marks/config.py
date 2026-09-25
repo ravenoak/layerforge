@@ -6,12 +6,12 @@ from pydantic import BaseModel, Field, field_validator
 class ReferenceMarkConfig(BaseModel):
     """Configuration options for reference marks."""
 
-    tolerance: float = 10.0
-    min_distance: float = 10.0
+    tolerance: float = Field(default=10.0, allow_inf_nan=False)
+    min_distance: float = Field(default=10.0, allow_inf_nan=False)
     available_shapes: list[str] = Field(
         default_factory=lambda: ["circle", "square", "triangle", "arrow"]
     )
-    angle: float = 0.0
+    angle: float = Field(default=0.0, allow_inf_nan=False)
     color: str | None = None
 
     @field_validator("available_shapes")

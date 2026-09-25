@@ -17,6 +17,29 @@ class ConflictingOptionsError(ValueError):
     """Raised when mutually exclusive CLI options are provided."""
 
 
+def _check_number(
+    value: float | None,
+    hint: str,
+    *,
+    minimum: float | None = None,
+    open_min: bool = False,
+) -> None:
+    """Reject a number that is not finite or is below its bound.
+
+    ``None`` means the option was not given and passes.
+    """
+    if value is None:
+        return
+    if not math.isfinite(value):
+        raise click.BadParameter("must be a finite number", param_hint=hint)
+    if minimum is None:
+        return
+    if open_min and value <= minimum:
+        raise click.BadParameter(f"must be > {minimum:g}", param_hint=hint)
+    if value < minimum:
+        raise click.BadParameter(f"must be >= {minimum:g}", param_hint=hint)
+
+
 def process_model(
     *,
     stl_file: str,
@@ -63,16 +86,12 @@ def process_model(
     if scale_factor and target_height:
         raise ConflictingOptionsError("Only one of scale_factor or target_height can be provided.")
 
-    if layer_height <= 0:
-        raise click.BadParameter("must be > 0", param_hint="--layer-height")
-    if scale_factor is not None and scale_factor <= 0:
-        raise click.BadParameter("must be > 0", param_hint="--scale-factor")
-    if target_height is not None and target_height <= 0:
-        raise click.BadParameter("must be > 0", param_hint="--target-height")
-    if mark_tolerance < 0:
-        raise click.BadParameter("must be >= 0", param_hint="--mark-tolerance")
-    if mark_min_distance < 0:
-        raise click.BadParameter("must be >= 0", param_hint="--mark-min-distance")
+    _check_number(layer_height, "--layer-height", minimum=0.0, open_min=True)
+    _check_number(scale_factor, "--scale-factor", minimum=0.0, open_min=True)
+    _check_number(target_height, "--target-height", minimum=0.0, open_min=True)
+    _check_number(mark_tolerance, "--mark-tolerance", minimum=0.0)
+    _check_number(mark_min_distance, "--mark-min-distance", minimum=0.0)
+    _check_number(mark_angle, "--mark-angle")
 
     shapes = [s.strip() for s in available_shapes.split(",") if s.strip()]
     if not shapes:

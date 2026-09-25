@@ -92,6 +92,8 @@ def load_settings(path: Path | None, overrides: Mapping[str, object]) -> Setting
         the file and the key.
     click.BadParameter
         If a command line value is bad. The parameter hint names the option.
+        A bad merged value for a key that has no option raises ``click.UsageError``
+        and names the key instead.
     """
     path = find_config_file(path)
     settings = read_config_file(path) if path is not None else Settings()
@@ -108,9 +110,12 @@ def load_settings(path: Path | None, overrides: Mapping[str, object]) -> Setting
     try:
         return Settings.model_validate(merged)
     except ValidationError as exc:
-        # The file values passed above, so the bad value came from an option.
+        # The file values passed above, so the bad value came from an option or from
+        # a check across keys. A key that has no option is named by its key.
         error = exc.errors()[0]
-        hint = _OPTION_HINTS[tuple(str(part) for part in error["loc"])]
+        hint = _OPTION_HINTS.get(tuple(str(part) for part in error["loc"]))
+        if hint is None:
+            raise click.UsageError(f"{_key(error)}: {_message(error)}") from exc
         raise click.BadParameter(_message(error), param_hint=hint) from exc
 
 

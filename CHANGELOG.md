@@ -72,6 +72,9 @@ output, the first release will raise the minor version.
   `--mark-tolerance`, `--mark-min-distance` and `--mark-angle` exit with code 2
   and name the option. Before, most ended in a traceback, and the rest ran
   with a meaningless value. `ReferenceMarkConfig` rejects them too. (#106)
+- `--scale-factor` with `--target-height` exits with code 1 and the conflict
+  message for every value. `--scale-factor 0` used to count as not given and
+  exited with code 2. (#117, G-25)
 
 ### Removed
 

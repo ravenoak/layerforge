@@ -108,6 +108,10 @@ every run for the same trust in upstream, so it was not chosen. The job needs no
 secrets and only reads the repository. The workflow sets `permissions: contents: read`
 for all jobs, which the repository default (`read`) already gives.
 
+The pin covers the binary that CI runs, the x86_64 Linux tarball. A local run uses
+whatever `allium` is installed. On 2026-09-25 that was the Homebrew arm64 build of
+the same version (3.6.1), and it printed the same diagnostic counts as CI.
+
 ### Bumping allium
 
 Do this within 90 days of the upstream release, while its build artifacts exist.

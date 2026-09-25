@@ -34,13 +34,15 @@ def _check_config_file(
     """Check the config file before the ``--stl-file`` prompt, and return the one to use.
 
     The option is eager, so this runs even when ``--config`` is not given. Then it
-    checks ``layerforge.toml`` in the current directory, if that exists.
+    checks ``layerforge.toml`` in the current directory, if that exists. A file that
+    is used is named on stderr, so a stray file cannot change a run in silence.
     """
     if ctx.resilient_parsing:  # shell completion must not fail on a bad file
         return value
     path = find_config_file(value)
     if path is not None:
         read_config_file(path)
+        click.echo(f"Using settings from {path}", err=True)
     return path
 
 

@@ -318,6 +318,50 @@ def test_cli_help_works_with_a_bad_config_file(tmp_path, monkeypatch):
     assert "--config" in result.output
 
 
+def test_cli_says_when_it_reads_a_discovered_config_file(cylinder_stl, tmp_path, monkeypatch):
+    """A stray layerforge.toml must not change a run without a word (#118)."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "layerforge.toml").write_text("layer_height = 4.5\n")
+
+    result = CliRunner().invoke(
+        cli, ["--stl-file", str(cylinder_stl), "--output-folder", str(tmp_path / "out")]
+    )
+
+    assert result.exit_code == 0, result.output
+    assert result.stderr.count("Using settings from layerforge.toml") == 1
+    assert "Using settings" not in result.stdout
+
+
+def test_cli_says_when_it_reads_the_config_option_file(cylinder_stl, tmp_path):
+    other = tmp_path / "other.toml"
+    other.write_text("layer_height = 4.5\n")
+
+    result = CliRunner().invoke(
+        cli,
+        [
+            "--stl-file",
+            str(cylinder_stl),
+            "--config",
+            str(other),
+            "--output-folder",
+            str(tmp_path / "out"),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert result.stderr.count(f"Using settings from {other}") == 1
+    assert "Using settings" not in result.stdout
+
+
+def test_cli_says_nothing_about_settings_without_a_config_file(cylinder_stl, tmp_path):
+    result = CliRunner().invoke(
+        cli, ["--stl-file", str(cylinder_stl), "--output-folder", str(tmp_path / "out")]
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "Using settings" not in result.output
+
+
 def test_cli_missing_config_file_is_a_usage_error(cylinder_stl, tmp_path):
     result = CliRunner().invoke(
         cli, ["--stl-file", str(cylinder_stl), "--config", str(tmp_path / "missing.toml")]

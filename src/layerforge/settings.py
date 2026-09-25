@@ -93,7 +93,7 @@ def load_settings(path: Path | None, overrides: Mapping[str, object]) -> Setting
     click.BadParameter
         If a command line value is bad. The parameter hint names the option.
         A bad merged value for a key that has no option raises ``click.UsageError``
-        and names the key instead.
+        and names the key instead, or ``settings`` when the error has no key.
     """
     path = find_config_file(path)
     settings = read_config_file(path) if path is not None else Settings()
@@ -115,7 +115,7 @@ def load_settings(path: Path | None, overrides: Mapping[str, object]) -> Setting
         error = exc.errors()[0]
         hint = _OPTION_HINTS.get(tuple(str(part) for part in error["loc"]))
         if hint is None:
-            raise click.UsageError(f"{_key(error)}: {_message(error)}") from exc
+            raise click.UsageError(f"{_key(error) or 'settings'}: {_message(error)}") from exc
         raise click.BadParameter(_message(error), param_hint=hint) from exc
 
 

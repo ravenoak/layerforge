@@ -164,3 +164,21 @@ def test_cli_missing_stl_file_error(tmp_path):
     )
     assert result.exit_code != 0
     assert result.exception is not None
+
+
+@pytest.mark.parametrize("value", ["nan", "inf"])
+@pytest.mark.parametrize(
+    "option",
+    ["--layer-height", "--mark-tolerance", "--mark-min-distance", "--mark-angle"],
+)
+def test_cli_non_finite_option_is_a_usage_error(cylinder_stl, tmp_path, option, value):
+    """A nan or inf option exits with usage code 2 and names the option."""
+    runner = CliRunner()
+
+    result = runner.invoke(
+        cli,
+        ["--stl-file", str(cylinder_stl), "--output-folder", str(tmp_path), option, value],
+    )
+
+    assert result.exit_code == 2
+    assert option in result.output

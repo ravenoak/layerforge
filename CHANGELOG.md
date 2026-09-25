@@ -59,6 +59,10 @@ output, the first release will raise the minor version.
   the SVG outlines them. (#70, G-3)
 - A negative `--mark-tolerance` or `--mark-min-distance` exits with code 2 and
   names the option. It ended in a traceback. (#71, G-14)
+- `nan` and `inf` for `--layer-height`, `--scale-factor`, `--target-height`,
+  `--mark-tolerance`, `--mark-min-distance` and `--mark-angle` exit with code 2
+  and name the option. Before, most ended in a traceback, and the rest ran
+  with a meaningless value. `ReferenceMarkConfig` rejects them too. (#106)
 
 ### Removed
 

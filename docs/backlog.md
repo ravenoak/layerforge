@@ -56,8 +56,12 @@ Sizes are my estimates: S under an hour, M one session, L several sessions. Noth
 | 38 | #122 | Test scripts/check_specs.sh and find out what `findings` hold | S | #114 | The CI gate is proven only by hand. | no |
 | 39 | #123 | Verify the allium install in CI; make the bump routine (done, #127: upstream signs nothing, so the pin is checked against the tarball its release run built; the bump steps are in `docs/development.md`) | S | #114 | The pinned hash was trust-on-first-use. There are no attestations. | optional: tell upstream about the empty `sha256` for x86_64 in its Homebrew formula |
 | 40 | #124 | The spec does not model most option checks | S to M | none | Weed found spec faults in #115 only because it was run by hand. | no |
+| 41 | #135 | G-28: Bad option values and the scale and target conflict are reported after the STL prompt | S to M | none | #119 fixed only the config file. Do it before session C, which adds `--units` and more options that need the same early checks. Investigate option callbacks against moving the prompt. | no |
+| 42 | #136 | Tidy the eager `--config` callback: a double read and three small inconsistencies | S | none | Found by `/code-review` on #131 and by running the command. Low priority. | decide whether `--help` should win over a bad `--config` |
+| 43 | #137 | `getting_started.md` lists error messages the command does not print | S | none | Two lines are wrong and the two most common messages are missing. Can be folded into #95. | no |
+| 44 | #138 | The PR template has no way to say a box does not apply | S | #110 | One line. | no |
 
-Ranks 27 to 31 were found while doing ranks 1 to 6, and ranks 32 to 40 while doing ranks 7 and 27 to 29. They are appended, so the numbers in the Depends columns stay valid. Ranks 27 to 29 and 32 to 36 are done (session A3 below). Rank 37 goes before #62 (session D). Ranks 38 to 40 are hygiene and can go any time (session A4).
+Ranks 27 to 31 were found while doing ranks 1 to 6, and ranks 32 to 40 while doing ranks 7 and 27 to 29. They are appended, so the numbers in the Depends columns stay valid. Ranks 27 to 29 and 32 to 36 are done (session A3 below). Rank 37 goes before #62 (session D). Ranks 41 to 44 were found in the retrospective of session A3 (session A5 below); rank 41 goes before session C. Ranks 38 to 40 are hygiene and can go any time (session A4).
 
 Issue #98 holds the same list as a checklist. Tick it as items merge, and keep the order in both places the same.
 
@@ -69,6 +73,7 @@ Issue #98 holds the same list as a checklist. Tick it as items merge, and keep t
 | A2 | #106, #110, #109 | Done 2026-09-25 as PRs #112 to #114. |
 | A3 | #120, #117, #118, #119, #121 | Done 2026-09-25 as PRs #129 to #133. #121 moved here from D because #119 reshaped `load_settings`. |
 | A4 | #122, #123 (done), #124 | Spec and CI hygiene. No product code. Run `allium:weed` with #124. Can go between any two sessions. |
+| A5 | #135, #136, #137, #138 | Found in the A3 retrospective. #135 goes before C. #137 can move into H with #95. #136 and #138 are small and can go any time. |
 | B | #87 | Done 2026-09-25 as PR #115, narrow: the mechanism plus keys for today's settings. The example file for #96 is not added; `docs/configuration.md` has an example. |
 | C | #74, #84 | Units first, then the shape contract. |
 | D | #125, then #85, #62 + #76, #75, #108 | Uses #84 and #87. #125 goes first, because #62 changes a default. |
@@ -86,6 +91,8 @@ Start:
 4. Use plan mode before coding. Use the brainstorming, test-driven-development and verification-before-completion skills by name.
 
 While working:
+- When a fix names one member of a class of inputs, probe the rest of the class before you close the issue. #119 moved a bad config file before the `--stl-file` prompt and left bad option values and the option conflict after it (G-28, #135). Test each member of the class, as with `nan` and `inf` in #106.
+- Before a comment, a spec sentence or a doc line says "every" or "before any", run the case. "Before every other check" was false in #131 (an unknown option is refused first), and a code comment in #133 claimed a case that no test reached.
 - One branch and one PR per issue. Commit message ends with `Fixes #N`, or `Refs #N` when part of the issue stays open.
 - Write the failing test first, and watch it fail for the right reason. A property test that passes on the first run proves nothing: shrink the input space until it fails on the bug. Run the checks without pipes: `uv run ruff format && uv run ruff check && uv run pyright && uv run pytest -q`.
 - In the same PR: update the FR row in `docs/requirements.md`, remove the fixed Known gaps row, and update `specs/layerforge.allium`. Add or update the matching target row if the target changed. Run `./scripts/check_specs.sh` and `uv run mkdocs build --strict`.
@@ -104,11 +111,11 @@ Finish:
 
 ## Known traps
 
-See memory `layerforge-tooling-gotchas` and [Development](development.md) (Working Notes): trimesh `section` argument order, `to_2D` re-centring, no triangulation engine, BSD `sed -i`, `qlmanage` hangs (use `rsvg-convert`), and `| tail` hiding failed checks. In shell heredocs, do not put backslashes before backticks: build issue and PR bodies in Python or from a file.
+See memory `layerforge-tooling-gotchas` and [Development](development.md) (Working Notes): trimesh `section` argument order, `to_2D` re-centring, no triangulation engine, BSD `sed -i`, `qlmanage` hangs (use `rsvg-convert`), `| tail` hiding failed checks, and zsh not splitting an unquoted `$var` (three slips in one day: use one explicit call per case). In shell heredocs, do not put backslashes before backticks: build issue and PR bodies in Python or from a file.
 
 ## Status
 
-Sessions A, A2 and B are done (2026-09-25). A: ranks 1 to 5 merged as #100 to #104, and rank 6 (#73) was decided as a documented limit (#105). A2: #106, #110 and #109 merged as #112 to #114. B: #87 merged as #115, with the mechanism and the keys that exist today (`layer_height`, `marks.size`, `marks.tolerance`, `marks.min_distance`, `marks.shapes`, `marks.angle`). Retrospective 2026-09-25: nine new issues, #117 to #125 (ranks 32 to 40). Session A3 is done (2026-09-25): #120, #117, #119, #118 and #121 merged as #129 to #133. The next work is session C (#74, #84), or A4 (#122, #124) first. Each later issue adds its own config keys and its own row in TR-16; the default `marks.tolerance` of 0.1 x mark size comes with #62.
+Sessions A, A2 and B are done (2026-09-25). A: ranks 1 to 5 merged as #100 to #104, and rank 6 (#73) was decided as a documented limit (#105). A2: #106, #110 and #109 merged as #112 to #114. B: #87 merged as #115, with the mechanism and the keys that exist today (`layer_height`, `marks.size`, `marks.tolerance`, `marks.min_distance`, `marks.shapes`, `marks.angle`). Retrospective 2026-09-25: nine new issues, #117 to #125 (ranks 32 to 40). Session A3 is done (2026-09-25): #120, #117, #119, #118 and #121 merged as #129 to #133. The retrospective found four more issues, #135 to #138 (ranks 41 to 44). The next work is #135 (session A5), then session C (#74, #84), or A4 (#122, #124) first. Each later issue adds its own config keys and its own row in TR-16; the default `marks.tolerance` of 0.1 x mark size comes with #62.
 
 ## Open decisions and owner inputs
 

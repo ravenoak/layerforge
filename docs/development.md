@@ -198,6 +198,21 @@ New pull requests open with a checklist from
 - `gh pr create --body-file` skips `.github/pull_request_template.md`. Copy the
   checklist into the body by hand.
 - Run the checks in the order `ruff format`, `ruff check`, `pyright`, `pytest`, and run `pyright` after the first edit to a model, not at the end. In #106 it reported 31 errors that pytest did not show.
+- zsh does not split an unquoted `$var`. `for a in "--x 1"; do cmd $a; done` passes one
+  argument, and every probe then says `No such option '--x 1'` and tests nothing. Write
+  one explicit call per case. Write scratch files with an absolute path.
+- An `is_eager=True` option's callback runs before the `--stl-file` prompt, with
+  `value=None` when the option is absent (click 8.5). A parser error such as an unknown
+  option, and `click.Path(exists=True)`, fail before the callback. `CliRunner` results
+  have `.stderr` and `.stdout` apart, and `.output` holds both.
+- When a fix names one kind of bad input, probe the others of the same kind before you
+  close the issue. #119 moved a bad config file before the prompt, and bad option values
+  and the option conflict still come after it (G-28, #135).
+- The editor's pyright once showed errors (`No parameter named "size"`, an unknown import
+  symbol) that `uv run pyright` and the CI lint job did not. No second install of
+  layerforge exists on the machine, and the cause is not known. Trust the command and CI.
+- `gh pr checks N` right after `gh pr create` can say `no checks reported`. Wait a few
+  seconds, then use `--watch`.
 - A test that passes before the code exists proves nothing. Two CLI tests that
   asserted only "exit 2 and the option name" passed on click's own
   `No such option` message, so they now assert the real message.

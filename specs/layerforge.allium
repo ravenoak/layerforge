@@ -450,5 +450,8 @@ surface Command {
 -- G-20 Shapes have no common definition; the arrow cannot be cut as a hole.
 -- G-21 Clearance and spacing use the mark centre, not the whole hole.
 -- G-23 The output suits a screen, not a laser.
+-- G-25 The scale and target conflict check tests truthiness, so 0 differs from -1.
+-- G-26 A config file is read without a message.
+-- G-27 A bad config file is reported after the --stl-file prompt.
 -- G-4 to G-7, G-17 to G-19, G-20, G-21 and G-23 have targets in
 -- docs/alignment_requirements.md (TR-1 to TR-16).

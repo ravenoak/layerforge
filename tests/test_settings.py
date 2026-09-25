@@ -2,7 +2,9 @@ from pathlib import Path
 
 import click
 import pytest
+from pydantic import model_validator
 
+import layerforge.settings as settings_module
 from layerforge.settings import load_settings
 
 
@@ -146,3 +148,27 @@ def test_a_bad_command_line_value_names_the_option_not_the_file(
 
     assert excinfo.value.param_hint == hint
     assert reason in excinfo.value.message
+
+
+def test_a_bad_option_value_with_no_option_hint_is_a_usage_error_not_a_key_error(monkeypatch):
+    """A key without an option (a later TR-16 key) must not end in a traceback (#121)."""
+    monkeypatch.setattr(settings_module, "_OPTION_HINTS", {})
+
+    with pytest.raises(click.UsageError, match=r"marks\.tolerance: must be >= 0"):
+        load_settings(None, {"mark_tolerance": -1})
+
+
+def test_a_check_across_keys_is_a_usage_error_that_names_settings(monkeypatch):
+    """An error with no key of its own is still named, not printed as ': reason' (#121)."""
+
+    class Crossed(settings_module.Settings):
+        @model_validator(mode="after")
+        def _tolerance_not_too_large(self):
+            if self.marks.tolerance > 100:
+                raise ValueError("tolerance is too large")
+            return self
+
+    monkeypatch.setattr(settings_module, "Settings", Crossed)
+
+    with pytest.raises(click.UsageError, match=r"^settings: tolerance is too large"):
+        load_settings(None, {"mark_tolerance": 200})

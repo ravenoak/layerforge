@@ -82,8 +82,54 @@ CI runs all three on every pull request.
 
 `scripts/check_specs.sh` runs `allium check` on every file in `specs/`. It needs
 `allium` and `jq` on the path. CI runs it as the `specs` job with a pinned allium
-version and a pinned SHA-256 for the tarball. To bump the version, change both
-values in `.github/workflows/tests.yaml`.
+version and a pinned SHA-256 for the Linux tarball, and with a read-only token.
+
+### Where the allium binary comes from
+
+Checked on 2026-09-25 (allium v3.6.1, `juxt/allium-tools`, and the Allium site):
+
+- Upstream does not sign the release binaries. Its README says "not yet signed".
+  The release has no signature, no SBOM and no build attestation
+  (`gh attestation verify` returns 404), and the workflow has no signing step.
+- `SHA256SUMS.txt` in the release lists only the vsix and the LSP tarball, not the
+  binaries. The Homebrew formula has an empty `sha256 ""` for both x86_64 targets.
+- The site's installation page says nothing about checksums or signing.
+- The release workflow builds the binaries in GitHub Actions from the tagged
+  commit, then attaches them to the release. A release asset can be replaced
+  afterwards. A pinned hash catches that.
+
+Decision: keep the release tarball with a pinned SHA-256, and set the pin only
+after comparing the asset with the tarball its own release run built from the
+tagged commit. For v3.6.1 the two matched (`e00c99ae...`, run 33000128435, commit
+`190ea5ce`). This shows the pin is what upstream CI built. It does not show the
+source is trustworthy, and no option here does. `cargo install allium-cli --locked`
+would check the crate against the crates.io index, but it adds a compile step to
+every run for the same trust in upstream, so it was not chosen. The job needs no
+secrets and only reads the repository. The workflow sets `permissions: contents: read`
+for all jobs, which the repository default (`read`) already gives.
+
+### Bumping allium
+
+Do this within 90 days of the upstream release, while its build artifacts exist.
+Set `V` to the new version. The commands assume a lightweight tag, as v3.6.1 has
+(`.object.type` is `commit`). For an annotated tag, dereference it first.
+
+```bash
+V=3.6.1
+tag=$(gh api repos/juxt/allium-tools/git/ref/tags/v$V --jq .object.sha)
+run=$(gh run list -R juxt/allium-tools -w release-artifacts.yml -e push --status success \
+  --json databaseId,headSha,headBranch \
+  --jq "map(select(.headBranch==\"v$V\" and .headSha==\"$tag\"))[0].databaseId")
+gh run download "$run" -R juxt/allium-tools -n allium-x86_64-unknown-linux-gnu -D ci
+gh release download "v$V" -R juxt/allium-tools -p allium-x86_64-unknown-linux-gnu.tar.gz -D rel
+shasum -a 256 ci/*.tar.gz rel/*.tar.gz   # the two hashes must match
+```
+
+Then set `ALLIUM_VERSION` and `ALLIUM_SHA256` in `.github/workflows/tests.yaml`,
+upgrade the local `allium`, run `./scripts/check_specs.sh`, and read any new
+diagnostics. If the hashes differ, do not bump. Nothing notices a new release, and
+being behind does not affect the check. Look at
+`gh release list -R juxt/allium-tools` when you change a spec.
 
 The script fails on an `error` diagnostic or a non-empty `findings` list. It does
 not use the exit code, because `allium check` exits 1 on warnings and infos too.

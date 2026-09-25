@@ -47,17 +47,17 @@ Sizes are my estimates: S under an hour, M one session, L several sessions. Noth
 | 29 | #109 | Run `allium check` in CI and clear or accept its warnings (done, #114: CI runs `scripts/check_specs.sh`; the three warnings on `layerforge.allium` are accepted) | S to M | none | The check is manual today, and its exit code is 1 on warnings. Investigate the CI install first. | no |
 | 30 | #108 | Harden the mark snapping path | S | #103 | One tolerance source, a containment check in the adjuster. Fits with rank 11 and 12. | no |
 | 31 | #107 | Stored marks never retire (acceptance for #63) | part of #63 | #63 | Not separate work: add its sheared-cylinder test to rank 19 and 21. | no |
-| 32 | #120 | The test suite reads a `layerforge.toml` in the working directory | S | none | Found after #87. A plausible file fails 2 to 46 tests. Do it before session C adds more keys. | no |
-| 33 | #117 | G-25: The scale and target conflict check tests truthiness | S | none | `0`, `-1` and `nan` give different exit codes for the same pair. | decide whether a conflict comes before a bad value |
-| 34 | #118 | G-26: A config file is read without a message | S | none | A stray `layerforge.toml` changes a run silently. | no |
-| 35 | #119 | G-27: A bad config file is reported after the STL prompt | S | none | Investigate an eager `--config` first. | no |
-| 36 | #121 | Harden settings.py: the second-stage error lookup | S | none | Latent `KeyError`. Do it before #62 adds the first key without an option. | no |
+| 32 | #120 | The test suite reads a `layerforge.toml` in the working directory (done, #129) | S | none | Found after #87. A plausible file fails 2 to 46 tests. Do it before session C adds more keys. | no |
+| 33 | #117 | G-25: The scale and target conflict check tests truthiness (done, #130) | S | none | `0`, `-1` and `nan` give different exit codes for the same pair. | decided in session A3: the conflict comes before a bad value, and a bad config file comes before the conflict (#131) |
+| 34 | #118 | G-26: A config file is read without a message (done, #132: the file name only) | S | none | A stray `layerforge.toml` changes a run silently. | no |
+| 35 | #119 | G-27: A bad config file is reported after the STL prompt (done, #131: an eager `--config` callback) | S | none | Investigate an eager `--config` first. | no |
+| 36 | #121 | Harden settings.py: the second-stage error lookup (done, #133) | S | none | Latent `KeyError`. Do it before #62 adds the first key without an option. | no |
 | 37 | #125 | Defaults are written by hand in six places | S to M | none | Do it before #62 and #76 change the defaults. | no |
 | 38 | #122 | Test scripts/check_specs.sh and find out what `findings` hold | S | #114 | The CI gate is proven only by hand. | no |
 | 39 | #123 | Verify the allium install in CI; make the bump routine (done, #127: upstream signs nothing, so the pin is checked against the tarball its release run built; the bump steps are in `docs/development.md`) | S | #114 | The pinned hash was trust-on-first-use. There are no attestations. | optional: tell upstream about the empty `sha256` for x86_64 in its Homebrew formula |
 | 40 | #124 | The spec does not model most option checks | S to M | none | Weed found spec faults in #115 only because it was run by hand. | no |
 
-Ranks 27 to 31 were found while doing ranks 1 to 6, and ranks 32 to 40 while doing ranks 7 and 27 to 29. They are appended, so the numbers in the Depends columns stay valid. Ranks 27 to 29 are done. Ranks 32 to 35 are small and independent (session A3 below). Ranks 36 and 37 go before #62 (session D). Ranks 38 to 40 are hygiene and can go any time (session A4).
+Ranks 27 to 31 were found while doing ranks 1 to 6, and ranks 32 to 40 while doing ranks 7 and 27 to 29. They are appended, so the numbers in the Depends columns stay valid. Ranks 27 to 29 and 32 to 36 are done (session A3 below). Rank 37 goes before #62 (session D). Ranks 38 to 40 are hygiene and can go any time (session A4).
 
 Issue #98 holds the same list as a checklist. Tick it as items merge, and keep the order in both places the same.
 
@@ -67,11 +67,11 @@ Issue #98 holds the same list as a checklist. Tick it as items merge, and keep t
 |---|---|---|
 | A | #71, #78, #77, #82 + #72, #97 | Done 2026-09-25 as PRs #100 to #104. #73 was decided: document the limit. |
 | A2 | #106, #110, #109 | Done 2026-09-25 as PRs #112 to #114. |
-| A3 | #120, #117, #118, #119 | Four small fixes before C. #120 first: it makes the test suite independent of the working directory before more keys arrive. |
+| A3 | #120, #117, #118, #119, #121 | Done 2026-09-25 as PRs #129 to #133. #121 moved here from D because #119 reshaped `load_settings`. |
 | A4 | #122, #123 (done), #124 | Spec and CI hygiene. No product code. Run `allium:weed` with #124. Can go between any two sessions. |
 | B | #87 | Done 2026-09-25 as PR #115, narrow: the mechanism plus keys for today's settings. The example file for #96 is not added; `docs/configuration.md` has an example. |
 | C | #74, #84 | Units first, then the shape contract. |
-| D | #121, #125, then #85, #62 + #76, #75, #108 | Uses #84 and #87. #121 and #125 go first, because #62 adds a key without an option and changes a default. |
+| D | #125, then #85, #62 + #76, #75, #108 | Uses #84 and #87. #125 goes first, because #62 changes a default. |
 | E | #83, #89 | Laser output, then adjacency. |
 | F | #90, #91, #61 | Symmetry test and its oracle together, then shape choice. |
 | G | #63 | Alone. It is the largest change. Add the sheared-cylinder test from #107. |
@@ -108,7 +108,7 @@ See memory `layerforge-tooling-gotchas` and [Development](development.md) (Worki
 
 ## Status
 
-Sessions A, A2 and B are done (2026-09-25). A: ranks 1 to 5 merged as #100 to #104, and rank 6 (#73) was decided as a documented limit (#105). A2: #106, #110 and #109 merged as #112 to #114. B: #87 merged as #115, with the mechanism and the keys that exist today (`layer_height`, `marks.size`, `marks.tolerance`, `marks.min_distance`, `marks.shapes`, `marks.angle`). Retrospective 2026-09-25: nine new issues, #117 to #125 (ranks 32 to 40). The next work is session A3, then C (#74, #84). Each later issue adds its own config keys and its own row in TR-16; the default `marks.tolerance` of 0.1 x mark size comes with #62.
+Sessions A, A2 and B are done (2026-09-25). A: ranks 1 to 5 merged as #100 to #104, and rank 6 (#73) was decided as a documented limit (#105). A2: #106, #110 and #109 merged as #112 to #114. B: #87 merged as #115, with the mechanism and the keys that exist today (`layer_height`, `marks.size`, `marks.tolerance`, `marks.min_distance`, `marks.shapes`, `marks.angle`). Retrospective 2026-09-25: nine new issues, #117 to #125 (ranks 32 to 40). Session A3 is done (2026-09-25): #120, #117, #119, #118 and #121 merged as #129 to #133. The next work is session C (#74, #84), or A4 (#122, #124) first. Each later issue adds its own config keys and its own row in TR-16; the default `marks.tolerance` of 0.1 x mark size comes with #62.
 
 ## Open decisions and owner inputs
 

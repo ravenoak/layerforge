@@ -67,6 +67,10 @@ uv run pytest
 hypothesis). Add `--group docs` to build the documentation with
 `uv run mkdocs build --strict`.
 
+Every test runs in an empty temporary directory (an autouse fixture in
+`tests/conftest.py`), so a `layerforge.toml` in your checkout does not change a
+result. A test that needs a file from the repo must use an absolute path.
+
 ## Linting and Type Checking
 
 ```bash

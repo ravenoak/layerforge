@@ -51,6 +51,15 @@ output, the first release will raise the minor version.
 
 ### Added
 
+- A TOML config file. `--config PATH` names it, and `layerforge.toml` in the
+  current directory is read when it exists, so **a `layerforge.toml` you already
+  have there now changes the run**. Keys: `layer_height`, and `size`,
+  `tolerance`, `min_distance`, `shapes` and `angle` under `[marks]`. A value
+  from the command line beats the file, and the file beats the default. An
+  unknown key or a bad value exits with code 2 and names the file and the key.
+  (#87, G-24)
+- `--mark-size` sets the size of every new mark. Without it the size is still
+  3 to 5, by distance from the model origin. (#87)
 - One warning per slice when a contour gets no mark. (#70, G-13)
 
 ### Fixed

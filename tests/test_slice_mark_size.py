@@ -23,3 +23,12 @@ def test_mark_size_ranges():
         size = sl._calculate_mark_size(x, y)
         assert 3 <= size <= 5
         assert size == expected
+
+
+def test_configured_size_replaces_the_distance_rule():
+    manager = ReferenceMarkManager()
+    sl = Slice(
+        0, 0.0, [], origin=(0, 0), mark_manager=manager, config=ReferenceMarkConfig(size=7.0)
+    )
+    assert sl._calculate_mark_size(0, 0) == 7.0
+    assert sl._calculate_mark_size(100, 0) == 7.0

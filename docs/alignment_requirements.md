@@ -104,7 +104,7 @@ All rows are **planned**. "Closes" names the known gaps the row addresses, with 
 
 | ID | Requirement | Closes |
 |---|---|---|
-| TR-16 | Every number in TR-2 to TR-15 that depends on the machine, the material or judgment is a setting. Each has a default and a config-file key (see the table). The common ones also have a command-line option. A setting is taken from the command line first, then from the config file, then from its default. The config file is TOML. Its path is `--config`, or `layerforge.toml` in the current directory if that file exists. Lengths are in `--units`. Unknown keys, wrong types and out-of-range values stop the run before slicing, with exit code 2 and a message that names the file and the key. | G-24 (#87) |
+| TR-16 | Every number in TR-2 to TR-15 that depends on the machine, the material or judgment is a setting. Each has a default and a config-file key (see the table). The common ones also have a command-line option. A setting is taken from the command line first, then from the config file, then from its default. The config file is TOML. Its path is `--config`, or `layerforge.toml` in the current directory if that file exists. Lengths are in `--units`. Unknown keys, wrong types and out-of-range values stop the run before slicing, with exit code 2 and a message that names the file and the key. Status: #87 built the mechanism and the keys `layer_height`, `marks.size`, `marks.tolerance`, `marks.min_distance`, `marks.shapes` and `marks.angle`. Each later issue adds its own keys, and until then a key that is not built is an unknown key. | G-24 (#87, done) |
 
 | Key | Option | Default | Basis | Used by |
 |---|---|---|---|---|
@@ -151,9 +151,9 @@ height = 6.0
 | Option | Change |
 |---|---|
 | `--units` | New. Default `mm`. |
-| `--config` | New. Path to a TOML settings file (TR-16). |
+| `--config` | New (#87). Path to a TOML settings file (TR-16). |
 | `--kerf` | New. Default 0.3 mm (proposed). |
-| `--mark-size` | New. Default from the sheet thickness and kerf (TR-6). |
+| `--mark-size` | New (#87). Sets the size. Without it the size is still the FR-21 rule. The default from the sheet thickness and kerf (TR-6) comes with #62. |
 | `--mark-min-distance` | Default changes from 10 to the mark size. It measures centre to outline. |
 | `--mark-tolerance` | Now a snapping radius. Default 0.1 × mark size (proposed). |
 | `--mark-angle` | Still degrees. 0 points along +x and turns counter-clockwise. |

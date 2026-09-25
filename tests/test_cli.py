@@ -1,3 +1,5 @@
+import math
+
 import pytest
 from click.testing import CliRunner
 
@@ -34,8 +36,11 @@ def test_cli_delegates_to_process_model(monkeypatch):
     assert called["output_folder"] == "out"
     assert called["scale_factor"] == 2.0
     assert called["target_height"] is None
-    assert called["available_shapes"] == "circle,square,triangle,arrow"
-    assert called["mark_angle"] == 0.0
+    # Settings that can come from the config file are None until resolved.
+    assert called["available_shapes"] is None
+    assert called["mark_angle"] is None
+    assert called["mark_size"] is None
+    assert called["config_path"] is None
     assert called["mark_color"] is None
 
 
@@ -182,3 +187,108 @@ def test_cli_non_finite_option_is_a_usage_error(cylinder_stl, tmp_path, option, 
 
     assert result.exit_code == 2
     assert option in result.output
+
+
+class _StopAfterSlicing(Exception):
+    """Raised by the spy so a wiring test does not write files."""
+
+
+@pytest.fixture
+def sliced(monkeypatch, cylinder_stl, tmp_path):
+    """Run the CLI up to slicing and return what ``slice_model`` received."""
+    monkeypatch.chdir(tmp_path)
+    seen = {}
+
+    def spy(model, config=None):
+        seen["layer_height"] = model.layer_height
+        seen["config"] = config
+        raise _StopAfterSlicing
+
+    monkeypatch.setattr(cli_module.SlicerService, "slice_model", staticmethod(spy))
+
+    def run(*args):
+        result = CliRunner().invoke(cli, ["--stl-file", str(cylinder_stl), *args])
+        assert isinstance(result.exception, _StopAfterSlicing), result.output
+        return seen
+
+    return run
+
+
+def test_cli_defaults_reach_the_slicer(sliced):
+    seen = sliced()
+
+    assert seen["layer_height"] == 3.0
+    cfg = seen["config"]
+    assert (cfg.tolerance, cfg.min_distance, cfg.angle, cfg.size) == (10.0, 10.0, 0.0, None)
+    assert cfg.available_shapes == ["circle", "square", "triangle", "arrow"]
+
+
+def test_cli_config_file_values_reach_the_slicer(sliced, tmp_path):
+    (tmp_path / "layerforge.toml").write_text(
+        'layer_height = 2\n[marks]\nsize = 6\ntolerance = 4\nangle = 90\nshapes = ["arrow"]\n'
+    )
+
+    seen = sliced()
+
+    assert seen["layer_height"] == 2.0
+    cfg = seen["config"]
+    assert cfg.size == 6.0
+    assert cfg.tolerance == 4.0
+    assert cfg.angle == pytest.approx(math.pi / 2)  # degrees in the file, radians inside
+    assert cfg.available_shapes == ["arrow"]
+
+
+def test_cli_option_beats_config_file(sliced, tmp_path):
+    (tmp_path / "layerforge.toml").write_text(
+        "layer_height = 2\n[marks]\ntolerance = 4\nmin_distance = 6\n"
+    )
+
+    seen = sliced("--layer-height", "1.5", "--mark-tolerance", "1", "--available-shapes", "circle")
+
+    assert seen["layer_height"] == 1.5
+    assert seen["config"].tolerance == 1.0
+    assert seen["config"].min_distance == 6.0
+    assert seen["config"].available_shapes == ["circle"]
+
+
+def test_cli_config_option_names_the_file(sliced, tmp_path):
+    other = tmp_path / "other.toml"
+    other.write_text("layer_height = 1.25\n")
+
+    assert sliced("--config", str(other))["layer_height"] == 1.25
+
+
+def test_cli_mark_size_reaches_the_slicer(sliced):
+    assert sliced("--mark-size", "7")["config"].size == 7.0
+
+
+def test_cli_bad_config_file_stops_before_the_mesh_is_read(tmp_path, monkeypatch):
+    """Exit 2 with a missing STL shows the settings were checked first."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "layerforge.toml").write_text("[marks]\ntolerance = -1\n")
+
+    result = CliRunner().invoke(cli, ["--stl-file", "missing.stl"])
+
+    assert result.exit_code == 2
+    assert "layerforge.toml: marks.tolerance: must be >= 0" in result.output
+
+
+def test_cli_missing_config_file_is_a_usage_error(cylinder_stl, tmp_path):
+    result = CliRunner().invoke(
+        cli, ["--stl-file", str(cylinder_stl), "--config", str(tmp_path / "missing.toml")]
+    )
+
+    assert result.exit_code == 2
+    assert "Invalid value for '--config'" in result.output
+    assert "does not exist" in result.output
+
+
+@pytest.mark.parametrize("value", ["0", "nan", "-1"])
+def test_cli_bad_mark_size_is_a_usage_error(cylinder_stl, tmp_path, value):
+    result = CliRunner().invoke(
+        cli,
+        ["--stl-file", str(cylinder_stl), "--output-folder", str(tmp_path), "--mark-size", value],
+    )
+
+    assert result.exit_code == 2
+    assert "Invalid value for --mark-size" in result.output

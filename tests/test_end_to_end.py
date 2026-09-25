@@ -112,3 +112,22 @@ def test_cli_warns_when_no_mark_fits(box_stl: Path, tmp_path: Path) -> None:
     assert result.returncode == 0, result.stderr
     assert "--mark-min-distance" in result.stderr
     assert len(list(out.glob("slice_*.svg"))) == 2
+
+
+def test_cli_config_file_sets_every_mark_size(box_stl: Path, tmp_path: Path) -> None:
+    """A circle's radius is half its size, so size 2.5 gives r = 1.25 in every SVG."""
+    config = tmp_path / "settings.toml"
+    config.write_text(
+        'layer_height = 5\n[marks]\nsize = 2.5\nmin_distance = 2\nshapes = ["circle"]\n'
+    )
+    out = tmp_path / "out"
+    result = _run_cli(
+        "--stl-file", str(box_stl), "--config", str(config), "--output-folder", str(out)
+    )
+    assert result.returncode == 0, result.stderr
+    radii = {
+        float(circle.attrib["r"])
+        for svg in out.glob("slice_*.svg")
+        for circle in ET.parse(svg).getroot().iter(f"{SVG}circle")
+    }
+    assert radii == {1.25}

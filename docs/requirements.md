@@ -41,7 +41,7 @@ LayerForge slices a 3D mesh into horizontal layers. It writes one SVG file per l
 
 | ID | Requirement | Code | Tests |
 |---|---|---|---|
-| FR-11 | The model height is maximum z minus minimum z. | `models/model.py::calculate_height` | `test_slicer_service` |
+| FR-11 | The model height is maximum z minus minimum z of the mesh bounds. A mesh with no height is rejected when the model is created (NFR-5). | `models/slicing/slicer_service.py::slice_model`, `models/model_factory.py::create_model` | `test_slicer_service`, `test_process_model_validation` |
 | FR-12 | The mesh is divided from its lowest point upwards into layers of `layer_height`. The last layer is shorter if the height is not a multiple. There are `ceil(height / layer_height)` layers, at least one. Each slice is cut at the middle of its layer, so no cut lies on the bottom or top face. A mesh 10 high from z = 0 with layer height 3 gives the positions 1.5, 4.5, 7.5 and 9.5. A mesh centred on z = 0 is sliced over its whole height. | `models/slicing/slicer_service.py::calculate_slice_positions` | `test_slicer_service`, `test_end_to_end` |
 | FR-13 | Each position is a horizontal plane (normal +z). The cut through the mesh gives closed loops. The loops are combined by the even-odd rule: a loop inside another is a hole, and a loop inside that hole is solid again. Each polygon is in the model's x and y coordinates, so every slice shares one frame. A plane that cuts nothing gives an empty list of polygons. | `models/model.py::calculate_slice_contours` | `test_model_contours`, `test_end_to_end` |
 | FR-14 | One slice is made per position, in order and numbered from 0. Empty slices are kept. | `models/slicing/slicer_service.py::slice_model` | `test_end_to_end` |

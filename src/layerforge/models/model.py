@@ -1,6 +1,4 @@
-from collections.abc import Sequence
 from functools import reduce
-from typing import cast
 
 from shapely.geometry import Polygon
 
@@ -35,18 +33,6 @@ class Model:
         self.mesh = mesh
         self.layer_height = layer_height
         self.origin = origin
-
-    def calculate_height(self) -> float:
-        """Calculate the height of the model.
-
-        Returns
-        -------
-        float
-            The height of the model.
-        """
-        min_bound, max_bound = cast(tuple[Sequence[float], Sequence[float]], self.mesh.bounds)
-        height = float(max_bound[2] - min_bound[2])
-        return height
 
     def calculate_slice_contours(self, position: float) -> list[Polygon]:
         """Calculate the slice contours at a given position.

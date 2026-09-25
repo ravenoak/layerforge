@@ -143,6 +143,7 @@ New pull requests open with a checklist from
   let the strict pydantic model in `settings.py` do it.
 - `gh pr create --body-file` skips `.github/pull_request_template.md`. Copy the
   checklist into the body by hand.
+- Run the checks in the order `ruff format`, `ruff check`, `pyright`, `pytest`, and run `pyright` after the first edit to a model, not at the end. In #106 it reported 31 errors that pytest did not show.
 - A test that passes before the code exists proves nothing. Two CLI tests that
   asserted only "exit 2 and the option name" passed on click's own
   `No such option` message, so they now assert the real message.

@@ -63,7 +63,7 @@ beats the default.
 `--output-folder` are not settings and have no key.
 
 An unknown key, a value of the wrong type, and a number that is not finite or out
-of range stop the run before the mesh is read. The exit code is 2 and the message
+of range stop the run before the command asks for the STL file. The exit code is 2 and the message
 names the file and the key, for example
 `layerforge.toml: marks.tolerance: must be >= 0`. A bad file value fails even when
 an option overrides it. A bad option value names the option.

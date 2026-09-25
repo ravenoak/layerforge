@@ -6,7 +6,7 @@ import click
 from layerforge.models import ModelFactory, SlicerService
 from layerforge.models.loading import LoaderFactory
 from layerforge.models.reference_marks import ReferenceMarkConfig
-from layerforge.settings import load_settings
+from layerforge.settings import find_config_file, load_settings, read_config_file
 from layerforge.svg import SVGGenerator
 from layerforge.svg.drawing import StrategyContext
 from layerforge.utils import register_shape_strategies
@@ -26,6 +26,22 @@ def _check_positive(value: float | None, hint: str) -> None:
         raise click.BadParameter("must be a finite number", param_hint=hint)
     if value <= 0:
         raise click.BadParameter("must be > 0", param_hint=hint)
+
+
+def _check_config_file(
+    ctx: click.Context, param: click.Parameter, value: Path | None
+) -> Path | None:
+    """Check the config file before the ``--stl-file`` prompt, and return the one to use.
+
+    The option is eager, so this runs even when ``--config`` is not given. Then it
+    checks ``layerforge.toml`` in the current directory, if that exists.
+    """
+    if ctx.resilient_parsing:  # shell completion must not fail on a bad file
+        return value
+    path = find_config_file(value)
+    if path is not None:
+        read_config_file(path)
+    return path
 
 
 def process_model(
@@ -138,6 +154,8 @@ def process_model(
     "--config",
     "config_path",
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    is_eager=True,
+    callback=_check_config_file,
     help="A TOML settings file. Default: layerforge.toml in the current directory, if it exists. "
     "The command line overrides the file.",
 )

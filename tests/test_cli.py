@@ -296,6 +296,28 @@ def test_cli_bad_config_file_stops_before_the_mesh_is_read(tmp_path, monkeypatch
     assert "layerforge.toml: marks.tolerance: must be >= 0" in result.output
 
 
+def test_cli_bad_config_file_is_reported_before_the_stl_prompt(tmp_path, monkeypatch):
+    """The person is not asked for a path when the settings file is already bad (#119)."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "layerforge.toml").write_text("[marks]\ntolerance = -1\n")
+
+    result = CliRunner().invoke(cli, [], input="box.stl\n")
+
+    assert result.exit_code == 2
+    assert "layerforge.toml: marks.tolerance: must be >= 0" in result.output
+    assert "STL file path" not in result.output
+
+
+def test_cli_help_works_with_a_bad_config_file(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "layerforge.toml").write_text("[marks]\ntolerance = -1\n")
+
+    result = CliRunner().invoke(cli, ["--help"])
+
+    assert result.exit_code == 0
+    assert "--config" in result.output
+
+
 def test_cli_missing_config_file_is_a_usage_error(cylinder_stl, tmp_path):
     result = CliRunner().invoke(
         cli, ["--stl-file", str(cylinder_stl), "--config", str(tmp_path / "missing.toml")]

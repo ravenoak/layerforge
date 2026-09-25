@@ -42,6 +42,13 @@ Sizes are my estimates: S under an hour, M one session, L several sessions. Noth
 | 24 | #80 | MkDocs 2 notice | S | none | Low priority. | decide whether to pin |
 | 25 | #94 | Cut-through numbers, numbers as outlines | M | #75, #83, #87 | Later. | choose an approach |
 | 26 | #93 | Design dowel holes | M | #96, #87 | Later. Design work, no code. | **yes**: process and sizes |
+| 27 | #106 | Non-finite option values (`nan`, `inf`) pass the input checks | S | none | Found after #71: `nan` gives a traceback or a silent wrong run. #87 reuses the check. Cheap: do it before rank 7. | no |
+| 28 | #110 | Pull request template with the changelog and checks list | S | #97 | The reminders live in this page and the dev notes only. Cheap: do it before rank 7. | no |
+| 29 | #109 | Run `allium check` in CI and clear or accept its warnings | S to M | none | The check is manual today, and its exit code is 1 on warnings. Investigate the CI install first. | no |
+| 30 | #108 | Harden the mark snapping path | S | #103 | One tolerance source, a containment check in the adjuster. Fits with rank 11 and 12. | no |
+| 31 | #107 | Stored marks never retire (acceptance for #63) | part of #63 | #63 | Not separate work: add its sheared-cylinder test to rank 19 and 21. | no |
+
+Ranks 27 to 31 were found while doing ranks 1 to 6 and appended, so the numbers in the Depends columns stay valid. Ranks 27 to 29 are small and independent, so do them first (see session A2 below).
 
 Issue #98 holds the same list as a checklist. Tick it as items merge, and keep the order in both places the same.
 
@@ -50,12 +57,13 @@ Issue #98 holds the same list as a checklist. Tick it as items merge, and keep t
 | Session | Items | Note |
 |---|---|---|
 | A | #71, #78, #77, #82 + #72, #97 | Done 2026-09-25 as PRs #100 to #104. #73 was decided: document the limit. |
+| A2 | #106, #110, #109 | Three small PRs before B. #106 first, because #87 reuses its check. |
 | B | #87 | Settings model, precedence, config file, validation. Add the example file for #96. |
 | C | #74, #84 | Units first, then the shape contract. |
-| D | #85, #62 + #76, #75 | Uses #84 and #87. |
+| D | #85, #62 + #76, #75, #108 | Uses #84 and #87. |
 | E | #83, #89 | Laser output, then adjacency. |
 | F | #90, #91, #61 | Symmetry test and its oracle together, then shape choice. |
-| G | #63 | Alone. It is the largest change. |
+| G | #63 | Alone. It is the largest change. Add the sheared-cylinder test from #107. |
 | H | #92, #60, #79, #95 | The check, the proof, tests, docs. |
 
 ## Rules for every session
@@ -68,10 +76,13 @@ Start:
 
 While working:
 - One branch and one PR per issue. Commit message ends with `Fixes #N`, or `Refs #N` when part of the issue stays open.
-- Write the failing test first. Run the checks without pipes: `uv run ruff format && uv run ruff check && uv run pyright && uv run pytest -q`.
+- Write the failing test first, and watch it fail for the right reason. A property test that passes on the first run proves nothing: shrink the input space until it fails on the bug. Run the checks without pipes: `uv run ruff format && uv run ruff check && uv run pyright && uv run pytest -q`.
 - In the same PR: update the FR row in `docs/requirements.md`, remove the fixed Known gaps row, and update `specs/layerforge.allium`. Add or update the matching target row if the target changed. Run `allium check` on both specs, and `uv run mkdocs build --strict`.
 - Run `allium:weed` after spec edits, and `/code-review` before opening the PR.
 - Ask before pushing, merging or editing issues unless the owner has said to.
+- State in the docs, the changelog and the PR text only what was measured. "Unchanged at the defaults" was true for one model and false in general (session A, #103).
+- `allium check` exits 1 on warnings, even on `main`. Read its `findings` and any `error` diagnostics, not the exit code (#109).
+- Merge with squash, oldest PR first. After `gh pr merge`, `mergeable` reads `UNKNOWN` for about 15 s: run `git fetch` and look again in a separate command. Two PRs that each delete one of two adjacent Known-gaps rows conflict. Drop both rows and continue the rebase.
 
 Finish:
 - Merge on green CI, delete the branch (local and remote), confirm a clean tree.
@@ -80,6 +91,10 @@ Finish:
 ## Known traps
 
 See memory `layerforge-tooling-gotchas` and [Development](development.md) (Working Notes): trimesh `section` argument order, `to_2D` re-centring, no triangulation engine, BSD `sed -i`, `qlmanage` hangs (use `rsvg-convert`), and `| tail` hiding failed checks. In shell heredocs, do not put backslashes before backticks: build issue and PR bodies in Python or from a file.
+
+## Status
+
+Session A is done (2026-09-25): ranks 1 to 5 merged as #100 to #104, and rank 6 (#73) was decided as a documented limit (#105). The next work is session A2, then B.
 
 ## Open decisions and owner inputs
 

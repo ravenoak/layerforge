@@ -95,6 +95,14 @@ use stops working or gives different output.
   positional arguments. Pass both by keyword.
 - `Path3D.to_2D()` without a transform re-centres every cut. Slices must use the
   transform in `Model.calculate_slice_contours` to share one frame.
+- Hypothesis draws floats such as 1e-200. A hull edge that short makes GEOS divide by
+  zero in `boundary.distance`. Round generated coordinates (issue #77).
+- `nan < 0` and `nan <= 0` are false, so a sign check lets `nan` through. Use
+  `math.isfinite` too (issue #106).
+- `allium check` exits 1 on warnings, even on `main`. Read its `findings` and any
+  `error` diagnostics (issue #109).
+- After `gh pr merge`, `mergeable` reads `UNKNOWN` for about 15 s. Fetch and check
+  again in a separate command.
 - `trimesh.creation.extrude_polygon` needs a triangulation engine that is not
   installed. Tests build shapes with `extrude_triangulation` or the primitives
   in `trimesh.creation` instead.

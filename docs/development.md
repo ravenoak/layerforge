@@ -86,6 +86,9 @@ A pull request that changes options, defaults, exit codes, output files or publi
 functions adds a line under `Unreleased` and marks it **Breaking** when existing
 use stops working or gives different output.
 
+New pull requests open with a checklist from
+`.github/pull_request_template.md`. It lists the checks and the changelog line.
+
 ## Working Notes
 
 - Run the checks so that a failure is not hidden. Do not pipe them through

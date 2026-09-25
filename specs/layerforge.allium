@@ -178,8 +178,11 @@ rule FR30_RejectBadConfigFile {
     ensures: run.status = rejected
     @guidance
         -- The file is --config, or layerforge.toml in the current directory if
-        -- it exists. Message: "<file>: <key>: <reason>". Exit code 2, before the
-        -- mesh is read. A bad file value fails even when an option overrides it.
+        -- it exists. Message: "<file>: <key>: <reason>". Exit code 2. The file is
+        -- checked before the --stl-file prompt and before the value checks of the
+        -- other options, so it comes before FR4_RejectConflictingScaling. An
+        -- unknown option or a missing --config path is refused first, also with
+        -- exit code 2. A bad file value fails even when an option overrides it.
         -- A bad option value is reported by the next rules and names the option.
 }
 
@@ -191,7 +194,7 @@ rule FR4_RejectConflictingScaling {
         -- Message: "Only one of scale_factor or target_height can be provided."
         -- Exit code 1. Any value counts as given, including 0, a negative
         -- number, nan and inf, so the conflict is reported before a bad value
-        -- (FR-2, FR-3).
+        -- (FR-2, FR-3). A bad config file is reported before it (FR-30).
 }
 
 rule FR2_FR3_RejectNonPositiveValues {
@@ -452,6 +455,5 @@ surface Command {
 -- G-21 Clearance and spacing use the mark centre, not the whole hole.
 -- G-23 The output suits a screen, not a laser.
 -- G-26 A config file is read without a message.
--- G-27 A bad config file is reported after the --stl-file prompt.
 -- G-4 to G-7, G-17 to G-19, G-20, G-21 and G-23 have targets in
 -- docs/alignment_requirements.md (TR-1 to TR-16).

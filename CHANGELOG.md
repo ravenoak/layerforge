@@ -75,6 +75,9 @@ output, the first release will raise the minor version.
 - `--scale-factor` with `--target-height` exits with code 1 and the conflict
   message for every value. `--scale-factor 0` used to count as not given and
   exited with code 2. (#117, G-25)
+- A bad config file (`layerforge.toml` or `--config`) is reported before the
+  command asks for `--stl-file`, and before an option conflict. It was reported
+  after the person typed the path. (#119, G-27)
 
 ### Removed
 

@@ -93,14 +93,8 @@ def load_settings(path: Path | None, overrides: Mapping[str, object]) -> Setting
     click.BadParameter
         If a command line value is bad. The parameter hint names the option.
     """
-    if path is None and DEFAULT_FILE.is_file():
-        path = DEFAULT_FILE
-    data = _read(path) if path is not None else {}
-    try:
-        settings = Settings.model_validate(data)
-    except ValidationError as exc:
-        error = exc.errors()[0]
-        raise click.UsageError(f"{path}: {_key(error)}: {_message(error)}") from exc
+    path = find_config_file(path)
+    settings = read_config_file(path) if path is not None else Settings()
 
     merged = settings.model_dump()
     for option, value in overrides.items():
@@ -118,6 +112,29 @@ def load_settings(path: Path | None, overrides: Mapping[str, object]) -> Setting
         error = exc.errors()[0]
         hint = _OPTION_HINTS[tuple(str(part) for part in error["loc"])]
         raise click.BadParameter(_message(error), param_hint=hint) from exc
+
+
+def find_config_file(path: Path | None) -> Path | None:
+    """Return the config file to use: ``path``, else ``layerforge.toml`` if it exists."""
+    if path is None and DEFAULT_FILE.is_file():
+        return DEFAULT_FILE
+    return path
+
+
+def read_config_file(path: Path) -> Settings:
+    """Read and check a config file on its own, without any command line values.
+
+    Raises
+    ------
+    click.UsageError
+        If the file cannot be read or holds a bad key or value. The message names
+        the file and the key.
+    """
+    try:
+        return Settings.model_validate(_read(path))
+    except ValidationError as exc:
+        error = exc.errors()[0]
+        raise click.UsageError(f"{path}: {_key(error)}: {_message(error)}") from exc
 
 
 def _read(path: Path) -> dict[str, Any]:

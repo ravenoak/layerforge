@@ -51,6 +51,12 @@ output, the first release will raise the minor version.
 - The command prints `Using settings from <file>` to stderr when it reads a
   config file, from `--config` or from `layerforge.toml` in the current
   directory. Before, a stray file changed a run in silence. (#118, G-26)
+- A wrong type (`--layer-height abc`) or a `--config` path that does not exist is
+  reported before a bad config file, whichever is typed first. Both exit with
+  code 2. (#136)
+- `process_model` reports a bad config file before the scale and target conflict,
+  as the command does. It reported the conflict first. The command's behavior is
+  the same. (#136)
 
 ### Added
 
@@ -81,6 +87,16 @@ output, the first release will raise the minor version.
 - A bad config file (`layerforge.toml` or `--config`) is reported before the
   command asks for `--stl-file`, and before an option conflict. It was reported
   after the person typed the path. (#119, G-27)
+- Every bad option value, and `--scale-factor` with `--target-height`, is reported
+  before the command asks for `--stl-file`. The exit codes are the same as before
+  (2 for a bad value, 1 for the conflict). The person used to type the path
+  first. (#135, G-28)
+- An `--output-folder` that is a file, a dangling symlink, or lies inside a file,
+  exits with code 2 and names the option. It ended in a traceback after the slicing.
+  (#144, G-29)
+- `--help` shows the help and exits with code 0 when the config file is bad, and
+  `--config FILE --help` no longer prints `Using settings from FILE`. The first
+  case exited with code 2. (#136)
 
 ### Removed
 

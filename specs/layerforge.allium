@@ -164,7 +164,9 @@ rule FR1_StartRun {
             status: requested
         )
     @guidance
-        -- The file is required (the command prompts if it is missing). A file
+        -- The file is required. The command prompts for it only after the config
+        -- file and every option have been checked (the rules below), so a bad
+        -- option is reported before the person types a path. A file
         -- with more than one geometry is rejected (FR-7). Defaults are the
         -- config values above (FR-6). Each of layer_height, mark_size,
         -- tolerance, min_distance, shapes and angle is the option if given,
@@ -180,10 +182,15 @@ rule FR30_RejectBadConfigFile {
     @guidance
         -- The file is --config, or layerforge.toml in the current directory if
         -- it exists. Message: "<file>: <key>: <reason>". Exit code 2. The file is
-        -- checked before the --stl-file prompt and before the value checks of the
-        -- other options, so it comes before FR4_RejectConflictingScaling. An
-        -- unknown option or a missing --config path is refused first, also with
-        -- exit code 2. A bad file value fails even when an option overrides it.
+        -- read once. It is checked before the --stl-file prompt and before the
+        -- value checks of the other options, so it comes before
+        -- FR4_RejectConflictingScaling. click's own errors come first, whatever
+        -- order the options are typed: an unknown option, a value of the wrong
+        -- type (--layer-height abc), a missing value, a --config path that does
+        -- not exist. They also exit with code 2. --help shows the help and exits
+        -- with code 0 even when the file is bad, and it prints no "Using
+        -- settings" line; it loses only to a click error (--help --bogus exits 2).
+        -- A bad file value fails even when an option overrides it.
         -- A bad option value is reported by the next rules and names the option.
 }
 
@@ -195,7 +202,8 @@ rule FR4_RejectConflictingScaling {
         -- Message: "Only one of scale_factor or target_height can be provided."
         -- Exit code 1. Any value counts as given, including 0, a negative
         -- number, nan and inf, so the conflict is reported before a bad value
-        -- (FR-2, FR-3). A bad config file is reported before it (FR-30).
+        -- (FR-2, FR-3). A bad config file is reported before it (FR-30). It is
+        -- reported before the --stl-file prompt.
 }
 
 rule FR2_FR3_RejectNonPositiveValues {
@@ -212,8 +220,9 @@ rule FR2_FR3_RejectNonPositiveValues {
         -- "must be a finite number". Exit code 2.
         -- --available-shapes is checked in the same way: an empty list or an
         -- unknown shape name gives "Invalid value for --available-shapes" and
-        -- exit code 2, before the mesh is read. The checks apply to the merged
-        -- value, so a value from the config file is checked in the same way.
+        -- exit code 2, before the --stl-file prompt and before the mesh is read.
+        -- The checks apply to the merged value, so a value from the config file
+        -- is checked in the same way.
 }
 
 -- Scaling (FR-8 to FR-10) -------------------------------------------------
@@ -436,8 +445,12 @@ surface Command {
         LayerforgeInvoked(person, stl_file, options)
 
     @guarantee OptionsCheckedBeforeWork
-        -- Bad option values are reported before the mesh is sliced. A usage
-        -- error exits with code 2, an option conflict with code 1.
+        -- Bad option values are reported before the --stl-file prompt and before
+        -- the mesh is sliced. A usage error exits with code 2, an option conflict
+        -- with code 1. An output folder that is a file, or that would have to be
+        -- made inside one, is a usage error: "Invalid value for --output-folder: <file> is
+        -- not a folder", where <file> is the existing path in the way. A dangling
+        -- symlink counts.
 }
 
 ------------------------------------------------------------
@@ -455,6 +468,6 @@ surface Command {
 -- G-20 Shapes have no common definition; the arrow cannot be cut as a hole.
 -- G-21 Clearance and spacing use the mark centre, not the whole hole.
 -- G-23 The output suits a screen, not a laser.
--- G-28 Bad option values and the option conflict are reported after the --stl-file prompt.
+-- G-30 A bad --mark-color ends in a traceback while the SVG is drawn.
 -- G-4 to G-7, G-17 to G-19, G-20, G-21 and G-23 have targets in
 -- docs/alignment_requirements.md (TR-1 to TR-16).

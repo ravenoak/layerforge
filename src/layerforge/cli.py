@@ -1,4 +1,5 @@
 import math
+import os
 from pathlib import Path
 
 import click
@@ -6,7 +7,7 @@ import click
 from layerforge.models import ModelFactory, SlicerService
 from layerforge.models.loading import LoaderFactory
 from layerforge.models.reference_marks import ReferenceMarkConfig
-from layerforge.settings import find_config_file, load_settings, read_config_file
+from layerforge.settings import Settings, find_config_file, merge_settings, read_config_file
 from layerforge.svg import SVGGenerator
 from layerforge.svg.drawing import StrategyContext
 from layerforge.utils import register_shape_strategies
@@ -28,22 +29,101 @@ def _check_positive(value: float | None, hint: str) -> None:
         raise click.BadParameter("must be > 0", param_hint=hint)
 
 
-def _check_config_file(
-    ctx: click.Context, param: click.Parameter, value: Path | None
-) -> Path | None:
-    """Check the config file before the ``--stl-file`` prompt, and return the one to use.
+def _check_output_folder(folder: str) -> None:
+    """Reject an output folder that is not a folder, or that would have to be made inside one.
 
-    The option is eager, so this runs even when ``--config`` is not given. Then it
-    checks ``layerforge.toml`` in the current directory, if that exists. A file that
-    is used is named on stderr, so a stray file cannot change a run in silence.
+    ``lexists`` sees a dangling symlink, which ``exists`` does not and ``mkdir`` still fails on.
     """
-    if ctx.resilient_parsing:  # shell completion must not fail on a bad file
-        return value
-    path = find_config_file(value)
-    if path is not None:
-        read_config_file(path)
-        click.echo(f"Using settings from {path}", err=True)
-    return path
+    path = Path(folder)
+    blocker = next((p for p in (path, *path.parents) if os.path.lexists(p)), None)
+    if blocker is not None and not blocker.is_dir():
+        raise click.BadParameter(f"{blocker} is not a folder", param_hint="--output-folder")
+
+
+def _read_settings_file(config_path: Path | None) -> tuple[Settings, Path | None]:
+    """Read and check the config file once. Return its settings, and the file that was used."""
+    path = find_config_file(config_path)
+    return (read_config_file(path) if path is not None else Settings()), path
+
+
+def resolve_settings(
+    file_settings: Settings,
+    *,
+    output_folder: str,
+    layer_height: float | None = None,
+    scale_factor: float | None = None,
+    target_height: float | None = None,
+    mark_size: float | None = None,
+    mark_tolerance: float | None = None,
+    mark_min_distance: float | None = None,
+    available_shapes: str | None = None,
+    mark_angle: float | None = None,
+) -> Settings:
+    """Check every option against the settings of the config file, and return the run's settings.
+
+    The command calls this before it asks for the STL path, so nothing is asked
+    for when a check fails. The file was checked first (``_read_settings_file``, exit 2).
+    The order here is the scale and target conflict (exit 1), then the bad values (exit 2).
+    """
+    if scale_factor is not None and target_height is not None:
+        raise ConflictingOptionsError("Only one of scale_factor or target_height can be provided.")
+    _check_positive(scale_factor, "--scale-factor")
+    _check_positive(target_height, "--target-height")
+
+    shapes = None
+    if available_shapes is not None:
+        shapes = [s.strip() for s in available_shapes.split(",") if s.strip()]
+    settings = merge_settings(
+        file_settings,
+        {
+            "layer_height": layer_height,
+            "mark_size": mark_size,
+            "mark_tolerance": mark_tolerance,
+            "mark_min_distance": mark_min_distance,
+            "available_shapes": shapes,
+            "mark_angle": mark_angle,
+        },
+    )
+    _check_output_folder(output_folder)
+    return settings
+
+
+def _run(
+    settings: Settings,
+    *,
+    stl_file: str,
+    output_folder: str,
+    scale_factor: float | None,
+    target_height: float | None,
+    mark_color: str | None,
+) -> None:
+    """Load the model, slice it and write the SVG files. The settings are already checked."""
+    shape_context = StrategyContext()
+    register_shape_strategies(shape_context)
+    initialize_loaders()
+    mesh_loader = LoaderFactory.get_loader("trimesh")
+    model_factory = ModelFactory(mesh_loader)
+    try:
+        model = model_factory.create_model(
+            stl_file, settings.layer_height, scale_factor, target_height
+        )
+    except ValueError as exc:
+        raise click.ClickException(f"Cannot load '{stl_file}': {exc}") from exc
+
+    marks = settings.marks
+    config = ReferenceMarkConfig(
+        tolerance=marks.tolerance,
+        min_distance=marks.min_distance,
+        available_shapes=marks.shapes,
+        angle=math.radians(marks.angle),
+        size=marks.size,
+        color=mark_color,
+    )
+
+    slices = SlicerService.slice_model(model, config=config)
+    svg_writer = SVGFileWriter()
+    svg_generator = SVGGenerator(output_folder, svg_writer, shape_context)
+    svg_generator.generate_svgs(slices)
 
 
 def process_model(
@@ -101,65 +181,41 @@ def process_model(
     -------
     None
     """
-    if scale_factor is not None and target_height is not None:
-        raise ConflictingOptionsError("Only one of scale_factor or target_height can be provided.")
-
-    _check_positive(scale_factor, "--scale-factor")
-    _check_positive(target_height, "--target-height")
-
-    shapes = None
-    if available_shapes is not None:
-        shapes = [s.strip() for s in available_shapes.split(",") if s.strip()]
-    settings = load_settings(
-        config_path,
-        {
-            "layer_height": layer_height,
-            "mark_size": mark_size,
-            "mark_tolerance": mark_tolerance,
-            "mark_min_distance": mark_min_distance,
-            "available_shapes": shapes,
-            "mark_angle": mark_angle,
-        },
+    file_settings, _ = _read_settings_file(config_path)
+    settings = resolve_settings(
+        file_settings,
+        output_folder=output_folder,
+        layer_height=layer_height,
+        scale_factor=scale_factor,
+        target_height=target_height,
+        mark_size=mark_size,
+        mark_tolerance=mark_tolerance,
+        mark_min_distance=mark_min_distance,
+        available_shapes=available_shapes,
+        mark_angle=mark_angle,
     )
-
-    shape_context = StrategyContext()
-    register_shape_strategies(shape_context)
-    initialize_loaders()
-    mesh_loader = LoaderFactory.get_loader("trimesh")
-    model_factory = ModelFactory(mesh_loader)
-    try:
-        model = model_factory.create_model(
-            stl_file, settings.layer_height, scale_factor, target_height
-        )
-    except ValueError as exc:
-        raise click.ClickException(f"Cannot load '{stl_file}': {exc}") from exc
-
-    marks = settings.marks
-    config = ReferenceMarkConfig(
-        tolerance=marks.tolerance,
-        min_distance=marks.min_distance,
-        available_shapes=marks.shapes,
-        angle=math.radians(marks.angle),
-        size=marks.size,
-        color=mark_color,
+    _run(
+        settings,
+        stl_file=stl_file,
+        output_folder=output_folder,
+        scale_factor=scale_factor,
+        target_height=target_height,
+        mark_color=mark_color,
     )
-
-    slices = SlicerService.slice_model(model, config=config)
-    svg_writer = SVGFileWriter()
-    svg_generator = SVGGenerator(output_folder, svg_writer, shape_context)
-    svg_generator.generate_svgs(slices)
 
 
 @click.command()
-@click.option("--stl-file", prompt="STL file path", help="The path to the STL file.")
+@click.option(
+    "--stl-file",
+    default=None,
+    help="The path to the STL file. Asked for, after the options are checked, if not given.",
+)
 @click.option(
     "--config",
     "config_path",
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
-    is_eager=True,
-    callback=_check_config_file,
     help="A TOML settings file. Default: layerforge.toml in the current directory, if it exists. "
-    "The command line overrides the file.",
+    "The command line overrides the file. The file that is used is named on stderr.",
 )
 @click.option("--layer-height", default=None, type=float, help="The layer height. Default 3.0.")
 @click.option("--output-folder", default="output", help="The output folder for SVG files.")
@@ -209,7 +265,7 @@ def process_model(
     help="Outline color for marks. See docs/reference_mark_algorithm.md#parameter-effects.",
 )
 def cli(
-    stl_file: str,
+    stl_file: str | None,
     config_path: Path | None,
     layer_height: float | None,
     output_folder: str,
@@ -222,38 +278,20 @@ def cli(
     mark_angle: float | None,
     mark_color: str | None,
 ) -> None:
-    """Entry point for the CLI.
+    """Slice an STL model into one SVG file per layer.
 
-    This function wraps all the logic for processing an STL file and
-    generating SVG slices while accepting commandline arguments.
-    See ``README.md`` for example usage.
-
-    Parameters
-    ----------
-    stl_file : str
-        The path to the STL file.
-    config_path : Path, optional
-        The TOML settings file.
-    layer_height : float, optional
-        The height of each layer that is sliced from the model.
-    output_folder : str
-        The output folder for slice files in SVG format.
-    scale_factor : float, optional
-        The scale factor to apply to the model before slicing.
-    target_height : float, optional
-        The target height for the model before slicing.
-
-    Returns
-    -------
-    None
+    A setting comes from the command line first, then from a TOML file (--config,
+    or layerforge.toml in the current directory), then from its default. Every
+    option and the file are checked before the STL path is asked for.
     """
-
     try:
-        process_model(
-            stl_file=stl_file,
-            config_path=config_path,
-            layer_height=layer_height,
+        file_settings, used_file = _read_settings_file(config_path)
+        if used_file is not None:
+            click.echo(f"Using settings from {used_file}", err=True)
+        settings = resolve_settings(
+            file_settings,
             output_folder=output_folder,
+            layer_height=layer_height,
             scale_factor=scale_factor,
             target_height=target_height,
             mark_size=mark_size,
@@ -261,11 +299,20 @@ def cli(
             mark_min_distance=mark_min_distance,
             available_shapes=available_shapes,
             mark_angle=mark_angle,
-            mark_color=mark_color,
         )
     except ConflictingOptionsError as exc:
         click.echo(str(exc))
         raise SystemExit(1) from exc
+    if stl_file is None:
+        stl_file = click.prompt("STL file path", type=str)
+    _run(
+        settings,
+        stl_file=stl_file,
+        output_folder=output_folder,
+        scale_factor=scale_factor,
+        target_height=target_height,
+        mark_color=mark_color,
+    )
 
 
 if __name__ == "__main__":

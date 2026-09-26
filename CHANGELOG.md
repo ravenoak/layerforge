@@ -128,6 +128,9 @@ output, the first release will raise the minor version.
 
 ### Added
 
+- `adjacent_pairs` in `layerforge.models.slicing.adjacency` (Python API). For each two adjacent
+  layers it returns the pairs of overlapping pieces, each with its overlap and the overlap moved
+  in by a clearance. Nothing in the command uses it yet. (#89)
 - `--number-height` and the config-file table `[number]` with `height` and `width_factor`.
   `place_number` in `layerforge.models.slicing.number` returns where the number of a piece
   goes. (#75)

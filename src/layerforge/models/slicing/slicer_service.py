@@ -81,7 +81,6 @@ class SlicerService:
                 index=index,
                 position=position,
                 contours=contours,
-                origin=model.origin,
                 mark_manager=mark_manager,
                 config=cfg,
                 layer_height=model.layer_height,

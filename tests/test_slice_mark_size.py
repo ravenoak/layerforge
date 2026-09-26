@@ -16,9 +16,7 @@ from layerforge.models.slicing.slice import Slice
 def _slice(contours, layer_height, **config) -> Slice:
     cfg = ReferenceMarkConfig(**config)
     manager = ReferenceMarkManager(config=cfg.resolved(layer_height))
-    return Slice(
-        0, 0.0, contours, origin=(0, 0), mark_manager=manager, config=cfg, layer_height=layer_height
-    )
+    return Slice(0, 0.0, contours, mark_manager=manager, config=cfg, layer_height=layer_height)
 
 
 NEAR = box(0, 0, 20, 20)
@@ -62,7 +60,7 @@ def test_a_slice_needs_its_layer_height():
     """#165 item 1: without it there is no web and no derived size, so it is required."""
     with pytest.raises(TypeError, match="layer_height"):
         Slice(  # pyright: ignore[reportCallIssue]
-            0, 0.0, [], origin=(0, 0), mark_manager=ReferenceMarkManager()
+            0, 0.0, [], mark_manager=ReferenceMarkManager()
         )
 
 
@@ -76,7 +74,6 @@ def test_a_size_below_the_least_hole_size_warns_once_and_still_runs(caplog):
     model = Model(
         TrimeshMesh(trimesh.creation.box(extents=(30, 30, 12))),
         layer_height=3.0,
-        origin=(0.0, 0.0),
     )
     with caplog.at_level(logging.WARNING):
         slices = SlicerService.slice_model(model, ReferenceMarkConfig(size=1.0))
@@ -96,7 +93,6 @@ def test_a_default_size_does_not_warn(caplog):
     model = Model(
         TrimeshMesh(trimesh.creation.box(extents=(30, 30, 12))),
         layer_height=3.0,
-        origin=(0.0, 0.0),
     )
     with caplog.at_level(logging.WARNING):
         SlicerService.slice_model(model, ReferenceMarkConfig())

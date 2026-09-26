@@ -13,7 +13,7 @@ from layerforge.models.model import Model
 
 
 def _model(geometry: trimesh.Trimesh) -> Model:
-    return Model(TrimeshMesh(geometry), layer_height=5.0, origin=(0.0, 0.0))
+    return Model(TrimeshMesh(geometry), layer_height=5.0)
 
 
 def _combined(*meshes: trimesh.Trimesh) -> trimesh.Trimesh:

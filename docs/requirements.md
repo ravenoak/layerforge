@@ -37,7 +37,7 @@ LayerForge slices a 3D mesh into horizontal layers. It writes one SVG file per l
 | FR-7 | The mesh is read with trimesh. A file that holds more than one geometry, no geometry, or a mesh with no height is rejected with a `ValueError`. The command turns it into `Cannot load '<file>': <reason>` with exit code 1. A missing or unreadable file fails the same way. | `models/loading/implementations/trimesh_loader.py`, `models/model_factory.py` | `test_trimesh_loader`, `test_model_factory`, `test_process_model_validation` |
 | FR-8 | With `--scale-factor`, the mesh is scaled uniformly by that factor about the coordinate origin. | `models/model_factory.py::_scale_mesh` | `test_model_factory`, `test_end_to_end` |
 | FR-9 | With `--target-height`, the mesh is scaled uniformly so its height (maximum z minus minimum z) equals the target. | `models/model_factory.py::_scale_mesh` | `test_model_factory`, `test_end_to_end` |
-| FR-10 | The model origin is the centre of the mesh bounding box in x and y, taken after scaling. The mesh is not moved. | `models/model_factory.py::_calculate_origin` | `test_model_factory` |
+| FR-10 | The mesh is not moved after scaling: every slice keeps the x and y of the model, wherever the mesh lies. | `models/model.py::Model.calculate_slice_contours` | `test_model_contours` |
 
 ### Slicing
 

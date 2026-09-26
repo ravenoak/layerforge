@@ -42,7 +42,7 @@ flowchart LR
 |---|---|
 | `cli` | The `layerforge` command, `resolve_settings` (checks every option) and `_read_settings_file` (reads the config file) and `process_model`. Runs the pipeline. |
 | `models.loading` | `LoaderFactory`, the `Mesh` interface, and the trimesh loader. |
-| `models` | `ModelFactory` builds a `Model` (scaled mesh, height, origin). |
+| `models` | `ModelFactory` builds a `Model` (scaled mesh and layer height). |
 | `models.slicing` | `SlicerService` computes positions and builds `Slice` objects. |
 | `models.reference_marks` | Mark configuration, calculator, manager (shared registry), adjuster. |
 | `svg` | `SVGGenerator` and `SliceSVGDrawer` draw one SVG per slice. |

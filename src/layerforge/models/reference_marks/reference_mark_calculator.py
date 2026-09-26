@@ -70,11 +70,7 @@ class ReferenceMarkCalculator:
             x = rng.uniform(minx, maxx)
             y = rng.uniform(miny, maxy)
             candidate = Point(x, y)
-            try:
-                inside = poly.contains(candidate)
-            except Exception:
-                inside = False
-            if inside:
+            if poly.contains(candidate):
                 cand_tuple = (candidate.x, candidate.y)
                 if cand_tuple not in pts:
                     pts.append(cand_tuple)

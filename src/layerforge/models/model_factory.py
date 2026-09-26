@@ -61,8 +61,7 @@ class ModelFactory:
         if mesh.bounds[1][2] - mesh.bounds[0][2] <= 0:
             raise ValueError("the mesh has no height, so it cannot be sliced")
         mesh = ModelFactory._scale_mesh(mesh, scale_factor, target_height)
-        origin = ModelFactory._calculate_origin(mesh)
-        return Model(mesh, layer_height, origin)
+        return Model(mesh, layer_height)
 
     @staticmethod
     def _scale_mesh(
@@ -97,20 +96,3 @@ class ModelFactory:
             current_height = mesh.bounds[1][2] - mesh.bounds[0][2]
             mesh.apply_scale(target_height / current_height)
         return mesh
-
-    @staticmethod
-    def _calculate_origin(mesh: Mesh) -> tuple[float, float]:
-        """Calculate the (x,y) origin of the mesh.
-
-        Parameters
-        ----------
-        mesh : Mesh
-            The mesh for which to calculate the origin.
-
-        Returns
-        -------
-        tuple
-            The x,y origin of the mesh.
-        """
-        bounds = mesh.bounds
-        return (bounds[0][0] + bounds[1][0]) / 2, (bounds[0][1] + bounds[1][1]) / 2

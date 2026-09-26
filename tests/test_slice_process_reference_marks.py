@@ -20,7 +20,7 @@ def test_new_mark_added_to_manager():
     square = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)])
     manager = ReferenceMarkManager()
     cfg = ReferenceMarkConfig(min_distance=10)
-    sl = Slice(0, 0.0, [square], origin=(0, 0), mark_manager=manager, config=cfg, layer_height=3.0)
+    sl = Slice(0, 0.0, [square], mark_manager=manager, config=cfg, layer_height=3.0)
     ReferenceMarkService.process_slice(sl)
     assert len(sl.ref_marks) == 1
     # manager should now contain the new mark
@@ -33,17 +33,13 @@ def test_inherited_mark_keeps_angle_and_color():
     square = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)])
     manager = ReferenceMarkManager()
     cfg1 = ReferenceMarkConfig(min_distance=10, angle=math.pi / 4, color="red")
-    sl1 = Slice(
-        0, 0.0, [square], origin=(0, 0), mark_manager=manager, config=cfg1, layer_height=3.0
-    )
+    sl1 = Slice(0, 0.0, [square], mark_manager=manager, config=cfg1, layer_height=3.0)
     ReferenceMarkService.process_slice(sl1)
     assert sl1.ref_marks[0].angle == math.pi / 4
     assert sl1.ref_marks[0].color == "red"
 
     cfg2 = ReferenceMarkConfig(min_distance=10, angle=math.pi / 2, color="blue")
-    sl2 = Slice(
-        1, 0.0, [square], origin=(0, 0), mark_manager=manager, config=cfg2, layer_height=3.0
-    )
+    sl2 = Slice(1, 0.0, [square], mark_manager=manager, config=cfg2, layer_height=3.0)
     ReferenceMarkService.process_slice(sl2)
     assert sl2.ref_marks[0].angle == math.pi / 4
     assert sl2.ref_marks[0].color == "red"
@@ -58,7 +54,6 @@ def test_warning_when_a_contour_gets_no_mark(caplog):
         3,
         0.0,
         [small],
-        origin=(0, 0),
         mark_manager=ReferenceMarkManager(),
         config=cfg,
         layer_height=3.0,
@@ -79,7 +74,6 @@ def test_no_warning_when_every_contour_has_a_mark(caplog):
         0,
         0.0,
         [square],
-        origin=(0, 0),
         mark_manager=ReferenceMarkManager(),
         config=cfg,
         layer_height=3.0,
@@ -109,7 +103,6 @@ def test_point_near_a_stored_mark_takes_its_coordinates(monkeypatch):
         1,
         0.0,
         [square],
-        origin=(0, 0),
         mark_manager=manager,
         config=ReferenceMarkConfig(tolerance=10),
         layer_height=3.0,
@@ -135,7 +128,6 @@ def test_point_between_two_stored_marks_takes_the_nearer_one(monkeypatch):
         1,
         0.0,
         [square],
-        origin=(0, 0),
         mark_manager=manager,
         config=ReferenceMarkConfig(tolerance=10),
         layer_height=3.0,
@@ -155,7 +147,7 @@ def test_unusable_stored_mark_is_not_reused_at_a_nearby_place():
     manager = ReferenceMarkManager()
     manager.marks = [ReferenceMark(x=15, y=25, shape="square", size=4)]
     cfg = ReferenceMarkConfig(min_distance=10, tolerance=10)
-    sl = Slice(1, 0.0, [small], origin=(0, 0), mark_manager=manager, config=cfg, layer_height=3.0)
+    sl = Slice(1, 0.0, [small], mark_manager=manager, config=cfg, layer_height=3.0)
 
     ReferenceMarkService.process_slice(sl)
 
@@ -175,7 +167,7 @@ def test_the_slice_and_the_store_snap_with_the_same_tolerance():
     manager.marks.append(ReferenceMark(0, 30, "square", 3))
     cfg = ReferenceMarkConfig(tolerance=0.3, min_distance=1)
     contour = Polygon([(-20, -20), (20, -20), (20, 20), (-20, 20)])
-    sl = Slice(0, 0.0, [contour], origin=(0, 0), mark_manager=manager, config=cfg, layer_height=3.0)
+    sl = Slice(0, 0.0, [contour], mark_manager=manager, config=cfg, layer_height=3.0)
     sl.process_reference_marks()
     assert [(m.x, m.y) for m in sl.ref_marks] == [(0, 0)]
     assert [(m.shape, m.x, m.y) for m in manager.marks] == [("square", 0, 30), ("circle", 0, 0)]

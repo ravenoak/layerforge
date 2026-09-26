@@ -7,3 +7,5 @@ Fixes #N (use `Refs #N` when part of the issue stays open)
 - [ ] `./scripts/check_specs.sh` passes (no `error` diagnostics, no `findings`)
 - [ ] `uv run mkdocs build --strict` passes
 - [ ] A line under `Unreleased` in `CHANGELOG.md` when a user can see the change, marked **Breaking** where it is
+
+A box that does not apply stays unticked and says `not needed: <reason>`.

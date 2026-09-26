@@ -37,10 +37,10 @@ def _table_rows() -> dict[tuple[str, ...], tuple[str, str]]:
     """Return the keys table of docs/configuration.md as {key path: (option, default cell)}."""
     rows: dict[tuple[str, ...], tuple[str, str]] = {}
     for line in CONFIGURATION.read_text().splitlines():
-        match = re.fullmatch(r"\| `([\w.]+)` \| `(--[\w-]+)` \| (.+) \|", line)
+        match = re.fullmatch(r"\| `([\w.]+)` \| (`--[\w-]+`|none) \| (.+) \|", line)
         if match:
             key, option, default = match.groups()
-            rows[tuple(key.split("."))] = (option, default)
+            rows[tuple(key.split("."))] = (option.strip("`"), default)
     return rows
 
 
@@ -64,11 +64,11 @@ def test_the_keys_table_states_the_default_of_each_setting(key):
 
 
 @pytest.mark.parametrize(
-    "key", sorted(_OPTION_HINTS), ids=[".".join(k) for k in sorted(_OPTION_HINTS)]
+    "key", sorted(_leaves(Settings())), ids=[".".join(k) for k in sorted(_leaves(Settings()))]
 )
 def test_the_keys_table_names_the_option_of_each_setting(key):
     option, _ = _table_rows()[key]
-    assert option == _OPTION_HINTS[key]
+    assert option == _OPTION_HINTS.get(key, "none")  # a setting with no option says none
 
 
 def _spec_config() -> dict[str, object]:
@@ -90,6 +90,7 @@ def _spec_config() -> dict[str, object]:
         ("default_layer_height", ("layer_height",)),
         ("default_tolerance", ("marks", "tolerance")),
         ("default_min_distance", ("marks", "min_distance")),
+        ("default_min_web_ratio", ("marks", "min_web_ratio")),
         ("default_shapes", ("marks", "shapes")),
     ],
 )
@@ -104,6 +105,7 @@ def test_every_default_of_the_spec_config_block_is_compared():
         "default_layer_height",
         "default_tolerance",
         "default_min_distance",
+        "default_min_web_ratio",
         "default_shapes",
     }
 

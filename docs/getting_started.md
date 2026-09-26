@@ -46,12 +46,13 @@ exit 0
 files [demo_output/slice_000.svg, ..., demo_output/slice_003.svg]
 ```
 
-Opening the first SVG shows the slice label and contour:
+Opening the first SVG shows the contour, one reference mark (the red circle) and the slice label:
 
 ```xml
 <?xml version="1.0" encoding="utf-8" ?>
 <svg ...>
   <polygon fill="none" ... />
+  <circle ... stroke="red" />
   <text ...>Slice 0</text>
 </svg>
 ```
@@ -79,10 +80,11 @@ starts with `Error:` and exits with code 2 is also preceded by a `Usage:` line.
 - ``Error: Cannot load 'nope.stl': string is not a file: `nope.stl` `` (exit code 1)
   – check the `--stl-file` path. A file that is not a mesh gives
   ``Error: Cannot load 'junk.stl': the mesh contains no geometry``.
-- ``WARNING:root:No reference mark fits 1 of 1 contours in slice 0. Try a smaller --mark-min-distance.``
+- ``WARNING:root:No reference mark fits 1 of 1 contours in slice 0. Try a smaller --mark-min-distance or --mark-size.``
   (the run continues, exit code 0; the numbers vary) – the default mark
-  clearance of 10 leaves no room on a small model. Use a smaller
-  `--mark-min-distance`.
+  clearance of 10 leaves no room on a small model, or the mark is too big for the
+  piece, or too big for the layer height (by default a hole needs half the layer height of
+  material around it). Use a smaller `--mark-min-distance` or `--mark-size`.
 - A slice shows a hole where two parts of the model overlap – the STL holds
   overlapping closed shells, for example two boxes saved as one file without a
   union. LayerForge cuts loops by the even-odd rule, so the overlap becomes a

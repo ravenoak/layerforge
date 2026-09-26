@@ -17,8 +17,8 @@ import click
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 from pydantic_core import ErrorDetails
 
+from layerforge.domain.shapes.registry import registered_shapes
 from layerforge.models.reference_marks import ReferenceMarkConfig
-from layerforge.svg.drawing.shape_factory import registered_shapes
 
 DEFAULT_FILE = Path("layerforge.toml")
 
@@ -50,6 +50,7 @@ class MarkSettings(BaseModel):
     min_distance: float = Field(default=_DEFAULTS.min_distance, ge=0)
     shapes: list[str] = Field(default_factory=lambda: list(_DEFAULTS.available_shapes))
     angle: float = math.degrees(_DEFAULTS.angle)  # degrees, as the option takes them
+    min_web_ratio: float = Field(default=_DEFAULTS.min_web_ratio, ge=0)  # no option (TR-16)
 
     @field_validator("shapes")
     @classmethod

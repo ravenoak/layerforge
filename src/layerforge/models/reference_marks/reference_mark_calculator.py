@@ -9,6 +9,7 @@ from shapely.geometry import Point, Polygon
 from layerforge.utils import calculate_distance
 
 from .config import ReferenceMarkConfig
+from .footprint import mark_size_at
 
 if TYPE_CHECKING:
     from layerforge.models.slicing.slice import Slice
@@ -85,9 +86,28 @@ class ReferenceMarkCalculator:
         existing_marks: list[tuple[float, float]],
         config: ReferenceMarkConfig | None = None,
     ) -> list[tuple[float, float]]:
-        """Return stable mark positions for ``layer`` respecting ``config.min_distance``."""
+        """Return stable mark positions for ``layer`` respecting ``config.min_distance``.
+
+        The hole of a mark must fit too (TR-5). Its size is not known yet for a new
+        mark, so a mark is taken as a disc of its size, which holds the hole at any angle.
+        The disc must lie inside the piece with ``layer.min_web`` to spare, and two
+        discs must be ``layer.min_web`` apart.
+        """
         cfg = config or ReferenceMarkConfig()
         min_distance = cfg.min_distance
+        min_web = layer.min_web
+
+        def radius(x: float, y: float) -> float:
+            return mark_size_at(cfg, layer.origin, x, y) / 2
+
+        def clear_of_outline(x: float, y: float, poly: Polygon) -> bool:
+            edge = poly.boundary.distance(Point(x, y))
+            return edge >= min_distance and edge >= radius(x, y) + min_web
+
+        def clear_of(x: float, y: float, other: tuple[float, float]) -> bool:
+            gap = radius(x, y) + radius(*other) + min_web
+            return calculate_distance(x, y, other[0], other[1]) >= max(min_distance, gap)
+
         selected: list[tuple[float, float]] = []
         for poly in layer.contours:
             # Try to inherit an existing mark that is inside the polygon
@@ -96,8 +116,8 @@ class ReferenceMarkCalculator:
                 pt = Point(x, y)
                 if (
                     poly.contains(pt)
-                    and poly.boundary.distance(pt) >= min_distance
-                    and all(calculate_distance(x, y, sx, sy) >= min_distance for sx, sy in selected)
+                    and clear_of_outline(x, y, poly)
+                    and all(clear_of(x, y, other) for other in selected)
                 ):
                     inherited = (x, y)
                     break
@@ -111,9 +131,9 @@ class ReferenceMarkCalculator:
             for cand in candidates:
                 x, y = cand
                 pt = Point(x, y)
-                if poly.boundary.distance(pt) < min_distance:
+                if not clear_of_outline(x, y, poly):
                     continue
-                if any(calculate_distance(x, y, sx, sy) < min_distance for sx, sy in selected):
+                if not all(clear_of(x, y, other) for other in selected):
                     continue
                 # A point within the snapping range of a stored mark, or of a mark
                 # chosen in this slice, would be taken for that mark (TR-10). The

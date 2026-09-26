@@ -35,6 +35,8 @@ def test_marks_inside_polygon(coords):
         pt = Point(x, y)
         assert poly.contains(pt)
         assert poly.boundary.distance(pt) >= cfg.min_distance
+        # The whole hole fits: a disc of the mark's size lies inside the piece (TR-5).
+        assert poly.boundary.distance(pt) >= sl._calculate_mark_size(x, y) / 2
     for i, m1 in enumerate(marks):
         for m2 in marks[i + 1 :]:
             assert calculate_distance(m1[0], m1[1], m2[0], m2[1]) >= cfg.min_distance

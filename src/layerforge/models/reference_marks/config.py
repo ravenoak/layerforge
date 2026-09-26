@@ -14,6 +14,7 @@ class ReferenceMarkConfig(BaseModel):
     angle: float = Field(default=0.0, allow_inf_nan=False)
     size: float | None = Field(default=None, gt=0, allow_inf_nan=False)
     color: str | None = None
+    min_web_ratio: float = Field(default=0.5, ge=0, allow_inf_nan=False)
 
     @field_validator("available_shapes")
     @classmethod

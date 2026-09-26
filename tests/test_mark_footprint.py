@@ -1,0 +1,160 @@
+"""A mark is a hole with an extent (TR-5). Clearance is checked on the whole hole."""
+
+import logging
+import math
+
+import pytest
+from click.testing import CliRunner
+from shapely.geometry import Polygon, box
+
+pytest.importorskip("trimesh")
+import trimesh
+
+from layerforge.cli import cli
+from layerforge.models.reference_marks import (
+    ReferenceMark,
+    ReferenceMarkAdjuster,
+    ReferenceMarkCalculator,
+    ReferenceMarkConfig,
+    ReferenceMarkManager,
+    ReferenceMarkService,
+)
+from layerforge.models.slicing.slice import Slice
+
+PIECE = box(0, 0, 20, 20)
+
+
+def _adjust(marks, contours=None, **config):
+    cfg = ReferenceMarkConfig(**config)
+    return ReferenceMarkAdjuster.adjust_marks(marks, contours or [PIECE], config=cfg)
+
+
+def test_an_arrow_whose_tip_touches_the_outline_is_dropped():
+    # The centre is 4 from the edge, so the centre rule alone keeps it.
+    arrow = ReferenceMark(16, 10, "arrow", 8, angle=0.0)
+    assert _adjust([arrow], min_distance=2) == []
+
+
+def test_the_same_arrow_turned_away_from_the_outline_is_kept():
+    arrow = ReferenceMark(16, 10, "arrow", 8, angle=math.pi)
+    assert _adjust([arrow], min_distance=2) == [arrow]
+
+
+def test_a_circle_that_crosses_the_outline_is_dropped():
+    circle = ReferenceMark(3, 10, "circle", 8)
+    assert _adjust([circle], min_distance=1) == []
+
+
+def test_two_holes_that_overlap_are_not_both_kept():
+    # Centres 3 apart pass min_distance 1, but two holes of size 4 overlap.
+    first, second = ReferenceMark(8, 10, "circle", 4), ReferenceMark(11, 10, "circle", 4)
+    assert _adjust([first, second], min_distance=1) == [first]
+
+
+def test_a_mark_outside_every_contour_is_dropped_even_with_min_distance_zero():
+    """#108 item 2."""
+    assert _adjust([ReferenceMark(30, 10, "circle", 2)], min_distance=0) == []
+
+
+def test_a_mark_inside_a_hole_of_the_piece_is_dropped_even_with_min_distance_zero():
+    plate = Polygon([(0, 0), (40, 0), (40, 40), (0, 40)], [box(10, 10, 30, 30).exterior.coords])
+    assert _adjust([ReferenceMark(20, 20, "circle", 2)], [plate], min_distance=0) == []
+
+
+def test_a_hole_too_close_to_the_outline_for_the_web_is_dropped():
+    # Size 4 at x = 3: the hole reaches x = 1, so 1 unit of material is left.
+    circle = ReferenceMark(3, 10, "circle", 4)
+    cfg = ReferenceMarkConfig(min_distance=1)
+    assert ReferenceMarkAdjuster.adjust_marks([circle], [PIECE], cfg, min_web=1.5) == []
+    assert ReferenceMarkAdjuster.adjust_marks([circle], [PIECE], cfg, min_web=0.5) == [circle]
+
+
+def test_two_holes_closer_than_the_web_are_not_both_kept():
+    # Size 4, centres 4.5 apart: 0.5 of material is left between the holes.
+    first, second = ReferenceMark(8, 10, "circle", 4), ReferenceMark(12.5, 10, "circle", 4)
+    cfg = ReferenceMarkConfig(min_distance=1)
+    kept = ReferenceMarkAdjuster.adjust_marks([first, second], [PIECE], cfg, min_web=1.5)
+    assert kept == [first]
+    kept = ReferenceMarkAdjuster.adjust_marks([first, second], [PIECE], cfg, min_web=0.4)
+    assert kept == [first, second]
+
+
+def test_the_web_ratio_defaults_to_half_the_layer_height():
+    assert ReferenceMarkConfig().min_web_ratio == 0.5
+
+
+BAR = box(0, 0, 40, 6)
+
+
+def _slice(polygon, layer_height=None, **config):
+    cfg = ReferenceMarkConfig(**config)
+    return Slice(
+        0,
+        0.0,
+        [polygon],
+        origin=(0, 0),
+        mark_manager=ReferenceMarkManager(config=cfg),
+        config=cfg,
+        layer_height=layer_height,
+    )
+
+
+def test_the_calculator_does_not_choose_a_point_whose_hole_would_cross_the_outline():
+    # The centre of the bar is 3 from each edge, so the centre rule passes for size 8.
+    layer = _slice(BAR, size=8, min_distance=1)
+    assert ReferenceMarkCalculator.get_stable_marks(layer, [], config=layer.config) == []
+
+
+def test_the_calculator_does_not_inherit_a_mark_whose_hole_would_cross_the_outline():
+    layer = _slice(BAR, size=8, min_distance=1)
+    assert ReferenceMarkCalculator.get_stable_marks(layer, [(20, 3)], config=layer.config) == []
+
+
+def test_the_web_comes_from_the_layer_height_and_the_ratio():
+    # Size 3 has a radius of 1.5. The bar leaves 3 - 1.5 = 1.5 from hole to edge.
+    thick = _slice(BAR, layer_height=4.0, min_distance=1)  # web 0.5 * 4 = 2
+    thin = _slice(BAR, layer_height=2.0, min_distance=1)  # web 0.5 * 2 = 1
+    unknown = _slice(BAR, layer_height=None, min_distance=1)  # web 0
+    for layer in (thick, thin, unknown):
+        ReferenceMarkService.process_slice(layer)
+    assert (len(thick.ref_marks), len(thin.ref_marks), len(unknown.ref_marks)) == (0, 1, 1)
+
+
+def test_the_warning_for_a_slice_without_marks_names_the_mark_size_too(caplog):
+    layer = _slice(BAR, size=8, min_distance=1)
+    with caplog.at_level(logging.WARNING):
+        ReferenceMarkService.process_slice(layer)
+    (record,) = [r for r in caplog.records if r.levelno == logging.WARNING]
+    assert "--mark-min-distance" in record.getMessage()
+    assert "--mark-size" in record.getMessage()
+
+
+def _run_bar(tmp_path, width, *args, config=None):
+    """Slice a 20 x ``width`` x 10 bar in two layers of 5 and return slice 0 as text."""
+    stl = tmp_path / "bar.stl"
+    trimesh.creation.box(extents=(20, width, 10)).export(stl)
+    out = tmp_path / "out"
+    options = ["--stl-file", str(stl), "--layer-height", "5", "--output-folder", str(out)]
+    if config is not None:
+        (tmp_path / "web.toml").write_text(config)
+        options += ["--config", str(tmp_path / "web.toml")]
+    result = CliRunner().invoke(
+        cli, [*options, "--mark-size", "2", "--mark-min-distance", "1", *args]
+    )
+    assert result.exit_code == 0, result.output
+    return (out / "slice_000.svg").read_text()
+
+
+def test_the_command_keeps_a_hole_with_enough_material_around_it(tmp_path):
+    # A bar 8 wide: the hole (size 2) is 3 from each edge, and the web is 0.5 x 5 = 2.5.
+    assert "<circle" in _run_bar(tmp_path, 8)
+
+
+def test_the_command_drops_a_hole_with_too_little_material_around_it(tmp_path):
+    # A bar 6 wide: the hole is 2 from each edge, less than the web of 2.5.
+    assert "<circle" not in _run_bar(tmp_path, 6)
+
+
+def test_the_web_ratio_of_the_config_file_reaches_the_slices(tmp_path):
+    assert "<circle" in _run_bar(tmp_path, 6, config="[marks]\nmin_web_ratio = 0.2\n")
+    assert "<circle" not in _run_bar(tmp_path, 8, config="[marks]\nmin_web_ratio = 0.7\n")

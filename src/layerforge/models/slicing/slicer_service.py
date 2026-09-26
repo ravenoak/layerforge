@@ -74,6 +74,7 @@ class SlicerService:
                 origin=model.origin,
                 mark_manager=mark_manager,
                 config=cfg,
+                layer_height=model.layer_height,
             )
             # Process and adjust reference marks outside of the slicing logic
             ReferenceMarkService.process_slice(slice_)

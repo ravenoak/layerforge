@@ -25,6 +25,7 @@ def test_defaults_without_a_file(tmp_path, monkeypatch):
     assert s.marks.min_distance == 10.0
     assert s.marks.shapes == ["circle", "square", "triangle", "arrow"]
     assert s.marks.angle == 0.0
+    assert s.marks.min_web_ratio == 0.5
 
 
 def test_precedence_is_command_line_then_file_then_default(tmp_path):
@@ -57,7 +58,7 @@ def test_all_keys_are_read(tmp_path):
     cfg = _write(
         tmp_path,
         "layer_height = 2\n[marks]\nsize = 4\ntolerance = 1\nmin_distance = 2\n"
-        'shapes = ["circle", "arrow"]\nangle = 90\n',
+        'shapes = ["circle", "arrow"]\nangle = 90\nmin_web_ratio = 0.75\n',
     )
 
     s = load_settings(cfg, {})
@@ -70,6 +71,7 @@ def test_all_keys_are_read(tmp_path):
     )
     assert s.marks.shapes == ["circle", "arrow"]
     assert s.marks.angle == 90.0
+    assert s.marks.min_web_ratio == 0.75
 
 
 @pytest.mark.parametrize(
@@ -83,6 +85,8 @@ def test_all_keys_are_read(tmp_path):
         ("[marks]\ntolerance = -1\n", "marks.tolerance", "must be >= 0"),
         ("[marks]\nmin_distance = -1\n", "marks.min_distance", "must be >= 0"),
         ("[marks]\nsize = 0\n", "marks.size", "must be > 0"),
+        ("[marks]\nmin_web_ratio = -1\n", "marks.min_web_ratio", "must be >= 0"),
+        ("[marks]\nmin_web_ratio = nan\n", "marks.min_web_ratio", "must be a finite number"),
         ("[marks]\ntolerance = nan\n", "marks.tolerance", "must be a finite number"),
         ("[marks]\nangle = inf\n", "marks.angle", "must be a finite number"),
         ('[marks]\nshapes = ["hexagon"]\n', "marks.shapes", "unknown shape hexagon"),

@@ -8,8 +8,8 @@ from layerforge.models.reference_marks import (
     ReferenceMarkCalculator,
     ReferenceMarkConfig,
     ReferenceMarkManager,
+    mark_size_at,
 )
-from layerforge.utils import calculate_distance
 
 
 class Slice:
@@ -39,6 +39,7 @@ class Slice:
         origin: tuple[float, float],
         mark_manager: ReferenceMarkManager,
         config: ReferenceMarkConfig | None = None,
+        layer_height: float | None = None,
     ):
         """Initialize the slice.
 
@@ -54,7 +55,11 @@ class Slice:
             The origin of the model.
         mark_manager : ReferenceMarkManager
             The reference mark manager for the slice.
+        layer_height : float, optional
+            The thickness of the layer. It sets the least material between holes
+            (``config.min_web_ratio`` times it). Without it that is 0.
         """
+        self.layer_height = layer_height
         self.contours = contours
         self.index = index
         self.mark_manager = mark_manager
@@ -63,6 +68,13 @@ class Slice:
         self.position = position
 
         self.ref_marks: list[ReferenceMark] = []
+
+    @property
+    def min_web(self) -> float:
+        """The least material between two holes, or between a hole and an outline."""
+        if self.layer_height is None:
+            return 0.0
+        return self.config.min_web_ratio * self.layer_height
 
     def process_reference_marks(self) -> None:
         """Process reference marks for the slice.
@@ -134,7 +146,7 @@ class Slice:
         logging.debug(f"model_contours type: {type(self.contours)}, content: {self.contours}")
         try:
             self.ref_marks = ReferenceMarkAdjuster.adjust_marks(
-                self.ref_marks, self.contours, config=self.config
+                self.ref_marks, self.contours, config=self.config, min_web=self.min_web
             )
         except ValueError as e:
             logging.error(f"Error in adjusting marks for slice {self.index}: {e}")
@@ -147,7 +159,7 @@ class Slice:
         if unmarked:
             logging.warning(
                 f"No reference mark fits {len(unmarked)} of {len(self.contours)} contours "
-                f"in slice {self.index}. Try a smaller --mark-min-distance."
+                f"in slice {self.index}. Try a smaller --mark-min-distance or --mark-size."
             )
 
     def _select_unique_shape(self) -> str:
@@ -166,24 +178,5 @@ class Slice:
         return available_shapes[0]
 
     def _calculate_mark_size(self, x: float, y: float) -> float:
-        """Calculate the size of a mark.
-
-        A configured ``size`` is used as it is. Otherwise the size follows the
-        distance from the origin, limited to a range of 3 to 5.
-
-        Parameters
-        ----------
-        x : float
-            The x-coordinate of the mark.
-        y : float
-            The y-coordinate of the mark.
-
-        Returns
-        -------
-        float
-            The size of the mark.
-        """
-        if self.config.size is not None:
-            return self.config.size
-        distance = calculate_distance(x, y, self.origin[0], self.origin[1])
-        return max(3, min(int(distance / 10), 5))
+        """Calculate the size of a mark at ``(x, y)``. See :func:`mark_size_at`."""
+        return mark_size_at(self.config, self.origin, x, y)

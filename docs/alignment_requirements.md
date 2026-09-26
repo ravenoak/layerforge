@@ -6,7 +6,7 @@ The same target is written as a formal specification in [`specs/alignment.allium
 
 ## What the owner decided
 
-These facts drive every requirement below. They came from the project owner on 2026-09-24.
+These facts drive every requirement below. They came from the project owner on 2026-09-24 and 2026-09-25.
 
 - Layers are cut from flat sheet, for example with a laser. A person stacks the cut layers to rebuild the solid.
 - A reference mark is a hole cut through the sheet. Holes let a person align opaque layers by eye.
@@ -15,6 +15,7 @@ These facts drive every requirement below. They came from the project owner on 2
 - Each layer carries its number. The person cutting chooses to engrave it (marked on one side only) or to cut it through (readable only from the correct side).
 - Units are configurable and default to millimetres.
 - A later version may set aside some holes as **dowel holes**. They carry a size and shape of their own and are separate from the alignment marks.
+- The tool must not suit one machine only. It should work with hobby and professional lasers, CNC routers and hand methods (cutting, engraving, drilling). The owner's own machine is an xTool bought around 2022 (model to confirm). It is one test machine, not the design target.
 
 ## Terms
 
@@ -92,13 +93,29 @@ All rows are **planned**. "Closes" names the known gaps the row addresses, with 
 | ID | Requirement | Closes |
 |---|---|---|
 | TR-13 | `--units` sets the unit of the mesh and of every length option: layer height, target height, mark size, distances, tolerance and number height. The choices are `mm`, `cm` and `in`. The default is `mm`. Every SVG has the same `width` and `height`, given with that unit, and a `viewBox` in the same numbers. `--scale-factor` still rescales the mesh. | G-17 (#74) |
-| TR-14 | Cut geometry (piece outlines and holes) is drawn in one colour, default red, with a stroke of `output.hairline_width` and no fill. The default width is a hairline of 0.01 mm, converted to the chosen unit. The number is drawn in black, filled, with no stroke. `--cut-color` and `--engrave-color` (`output.cut_color`, `output.engrave_color`) change the colours. `--mark-color` and the per-shape default colours are removed. The root `stroke-width` and `font-size` of the current output are removed. | G-23 (#83) |
+| TR-14 | Cut geometry (piece outlines and holes) is drawn in one colour, default red, with a stroke of `output.hairline_width` and no fill. The default width is a hairline of 0.01 mm, converted to the chosen unit. The number is drawn in black, filled, with no stroke. `--cut-color` and `--engrave-color` (`output.cut_color`, `output.engrave_color`) change the colours. `--mark-color` and the per-shape default colours are removed. The root `stroke-width` and `font-size` of the current output are removed. Colour groups objects. It does not set the operation in every program (TR-17). | G-23 (#83) |
 
 ### Dowel holes (later)
 
 | ID | Requirement | Closes |
 |---|---|---|
-| TR-15 | A later version may mark some holes as dowel holes. A dowel hole has its own size, shape and fit clearance, and uses the `kerf` setting. It is not counted in TR-2, so dowels stay optional hardware. Nothing is built for this now. | Later |
+| TR-15 | A later version may mark some holes as dowel holes, for a dowel or pin that holds the stack in line. A dowel hole is separate from the alignment marks and is not counted in TR-2, so dowels stay optional hardware. **Proposed design, waiting for the owner's review (#93). Nothing is built (#142).** (1) Shape: a circle, or a slot with fully round ends. No corners, because a CNC bit leaves an inside corner with the radius of the bit, and a hand drill makes only round holes. (2) Size: `dowel.diameter` is the measured diameter of the dowel, in `--units`. Any positive number is allowed, so there is no list of sizes. Measure the dowel, because a wooden dowel varies by about 0.13 mm (0.005 in). (3) Fit: `dowel.fit` is `slip` or `press`, and `dowel.clearance` (hole size minus dowel size) overrides the preset. (4) Kerf: a laser hole comes out larger than its path by the kerf, so the path is drawn at the wanted hole size minus `kerf`. `kerf = 0` draws the path at the wanted size, for CNC software that offsets the tool itself and for hand work. (5) Marking: dowel holes use the cut colour and hairline of TR-14, so the person sets no extra operation, and carry `class="dowel"` in the SVG. `dowel.color` may set another colour. With `dowel.mode = centre` the tool draws a small cross in the engrave colour at each centre instead of a hole, for a hand drill or a CNC drilling operation. (6) Checks: a dowel hole below the minimum hole size of TR-6 is a warning. (7) Position and count are open. Two dowels fix the position and rotation of a stack, and one fixes position only. Each dowel hole must lie inside the overlap of every layer its dowel passes through. | Later |
+
+### Machine and process neutrality
+
+| ID | Requirement | Closes |
+|---|---|---|
+| TR-17 | The output does not assume one machine or one program. (1) Geometry is exact: closed shapes at true size in physical units (TR-13). No size depends on a stroke width. (2) Colour never carries the operation alone, because a program may ignore it. xTool Creative Space groups objects by colour and asks the person to set the operation for each group. The colours of TR-14 are default groups. (3) Every number that depends on the machine or the material is a setting (TR-16). `kerf = 0` gives true-size paths for CNC and hand work. (4) A check that depends on the machine is a warning, as in TR-6. (5) The tool writes a calibration sheet (#141), so a person measures kerf, the smallest clean hole, dowel fit and number height on their own machine and material. (6) SVG is the only output format. Another format, for example DXF, is added only when a named tool cannot read SVG. (7) The number is `<text>` and depends on the fonts of the receiving program. Converting it to outlines (#94) makes it portable. | G-23 (#83), TR-15 (#93), #96, #141 |
+
+How common tools read the output, which TR-17 rests on:
+
+| Tool | How it picks the operation | What the output needs |
+|---|---|---|
+| xTool Creative Space | Colour makes a layer. The layer does not set parameters, so the person sets the operation for each layer. | Consistent colours. The guide (#95) says to set the operation per layer. |
+| LightBurn | Colour makes a layer. Stroke width is ignored. | Consistent colours. |
+| Epilog, Trotec and Universal drivers | An RGB red stroke of 0.001 in (0.025 mm) or thinner is a vector cut. A thicker stroke is engraved. | A red hairline of 0.01 mm or thinner, no fill (TR-14). |
+| CNC software | The person selects geometry and assigns toolpaths. The software offsets by the bit radius. | Closed paths at true size, `kerf = 0`, round holes and rounded slot ends. |
+| Hand tools | None. | A print at 1:1 scale (TR-13). Centre crosses for drilling (TR-15). |
 
 ### Settings
 
@@ -128,6 +145,11 @@ All rows are **planned**. "Closes" names the known gaps the row addresses, with 
 | `output.hairline_width` | | 0.01 mm | Sourced | TR-14 |
 | `checks.allow_unaligned` | `--allow-unaligned` | false | Decision | TR-12 |
 | `checks.min_overlap_area` | | 0 | Decision. Any overlap counts. | TR-2 |
+| `dowel.diameter` | `--dowel-diameter` | none (dowels are off) | Measured by the person | TR-15 |
+| `dowel.fit` | `--dowel-fit` | `slip` | Proposed | TR-15 |
+| `dowel.clearance` | | from the fit: 0.2 mm for `slip`, 0 for `press` | Proposed (from #93). Confirm with the fit ladder of #141. | TR-15 |
+| `dowel.mode` | | `hole` (or `centre`) | Decision | TR-15 |
+| `dowel.color` | | the cut colour | Decision | TR-15 |
 
 Defaults given in mm are converted to the chosen unit. A default that depends on another setting (for example the mark size) follows that setting.
 
@@ -178,6 +200,14 @@ Search results from design guides gave these starting points. They are not measu
 | Text under about 5 mm needs a bold sans font. Strokes of 0.3 mm or more. | [The Laser Co](https://thelaserco.com/laser-engraving-font-sizes/) | Sourced |
 | STL has no units. Millimetres is the convention. | [UnitFYI](https://unitfyi.com/blog/unit-conversions-for-3d-printing/) | Sourced |
 | Through holes for dowels in stacked models | [Tulane makerspace](https://makerspace.tulane.edu/index.php/Creating_Stacked_3d_Models_using_the_Laser_Cutter) | Sourced |
+| A laser hole comes out larger than its path. Offset hole paths inward by half the kerf on each side. | [MFG Workbench](https://mfgworkbench.com/laser-kerf-compensation-inside-outside-offset/) | Sourced |
+| XCS colours make layers, and layers do not set the operation. | [xTool support](https://support.xtool.com/article/778) | Sourced |
+| LightBurn maps colour to a layer and ignores stroke width. | [LightBurn documentation](https://github.com/LightBurnSoftware/Documentation/blob/master/ImportingExternalVectors.md) | Sourced (search result, not fetched) |
+| Epilog, Trotec and Universal read an RGB red stroke of 0.001 in or thinner as a cut. | [Epilog file guide](https://www.newpaltz.edu/media/dfl/2023%20File%20Preparation%20for%20the%20Epilog%20Laser%20Cutter.pdf) | Sourced (search result, not fetched) |
+| A wooden dowel diameter varies by 0.005 in (0.13 mm). Precision steel pins are held to hundredths of a millimetre. | [Chicago Dowel](https://www.chicagodowel.com/products/technical-information/), [DIN 6325 charts](https://www.rivcut.com/resources/dowel-pin-chart) | Sourced (the second is a search result, not fetched) |
+| A CNC inside corner has at least the radius of the cutter. | [eMachineShop](https://www.emachineshop.com/cnc-inside-corner-radius/) | Sourced (search result, not fetched) |
+| An SVG needs `width` and `height` in mm or in plus a matching `viewBox`, because Illustrator writes 72 px per inch and Inkscape reads 96. | [Inkscape wiki](https://wiki.inkscape.org/wiki/Units_In_Inkscape) | Sourced (search result, not fetched) |
+| Dowel slip fit about 0.15 to 0.25 mm over the pin | Search result recorded in #93 | Proposed |
 | Warnings do not change the exit code. Errors do. | [Command Line Interface Guidelines](https://clig.dev/) | Sourced |
 | Minimum baseline factor 4 | Judgment | Proposed |
 | Snapping radius 0.1 × mark size | Judgment | Proposed |
@@ -191,3 +221,5 @@ Search results from design guides gave these starting points. They are not measu
 - The default text is a bold sans font written as `<text>`. Converting the number to outlines comes later.
 - The default kerf of 0.3 mm is a proposal inside the sourced range of 0.25 to 0.5 mm.
 - Cut numbers (`--number-mode cut`) are not built. The number is always drawn to engrave.
+- The dowel design of TR-15 is a proposal for the owner's review (#93). Position and count are open, and the fit numbers need the fit ladder of #141.
+- The owner's machine is an xTool bought around 2022. xTool's site lists the X1 as upcoming, so the model is to confirm. The design does not depend on it.

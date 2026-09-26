@@ -130,6 +130,11 @@ output, the first release will raise the minor version.
 - An `--output-folder` that is a file, a dangling symlink, or lies inside a file,
   exits with code 2 and names the option. It ended in a traceback after the slicing.
   (#144, G-29)
+- An `--output-folder` that is empty or blank, that cannot be written (or would have to be
+  made in a folder that cannot be written), or whose name the system refuses (over 255
+  characters), exits with code 2 and names the option, before the `--stl-file` prompt.
+  They ended in a traceback after the slicing, and an empty one pointed at the
+  filesystem root. The check makes no folder. (#149, G-31)
 - `--help` shows the help and exits with code 0 when the config file is bad, and
   `--config FILE --help` no longer prints `Using settings from FILE`. The first
   case exited with code 2. (#136)

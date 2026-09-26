@@ -485,7 +485,11 @@ surface Command {
         -- with code 1. An output folder that is a file, or that would have to be
         -- made inside one, is a usage error: "Invalid value for --output-folder: <file> is
         -- not a folder", where <file> is the existing path in the way. A dangling
-        -- symlink counts.
+        -- symlink counts. An empty or blank output folder is a usage error ("must
+        -- not be empty"). So is a folder that cannot be written, or that would have
+        -- to be made in a folder that cannot be written ("cannot write to <folder>"),
+        -- or a name the system refuses. The check makes and removes a temporary file
+        -- in the nearest folder that exists and makes no folder.
 }
 
 ------------------------------------------------------------
@@ -501,6 +505,5 @@ surface Command {
 -- G-19 The default min_distance ignores the model size.
 -- G-23 The output suits a screen, not a laser.
 -- G-30 A bad --mark-color ends in a traceback while the SVG is drawn.
--- G-31 An output folder that cannot be written, or an empty one, is not checked before the slicing.
 -- G-4 to G-7, G-18, G-19 and G-23 have targets in
 -- docs/alignment_requirements.md (TR-1 to TR-16).

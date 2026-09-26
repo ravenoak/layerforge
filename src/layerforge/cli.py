@@ -1,5 +1,5 @@
 import math
-import os
+import tempfile
 from pathlib import Path
 
 import click
@@ -32,15 +32,45 @@ def _check_positive(value: float | None, hint: str) -> None:
         raise click.BadParameter("must be > 0", param_hint=hint)
 
 
-def _check_output_folder(folder: str) -> None:
-    """Reject an output folder that is not a folder, or that would have to be made inside one.
+def _lexists(path: Path) -> bool:
+    """Return whether ``path`` exists, a dangling symlink included. Other errors are raised."""
+    try:
+        path.lstat()
+    except (FileNotFoundError, NotADirectoryError):
+        return False
+    return True
 
-    ``lexists`` sees a dangling symlink, which ``exists`` does not and ``mkdir`` still fails on.
+
+def _check_output_folder(folder: str) -> None:
+    """Reject an output folder that is empty, that is not a folder, or that cannot be written.
+
+    ``lstat`` sees a dangling symlink, which ``exists`` does not and ``mkdir`` still fails on.
+    Unlike ``lexists`` it does not hide an error such as a name that is too long.
+    The folder is not made here, so a run that fails later leaves nothing behind. Instead a
+    temporary file is made and removed in the nearest folder that exists: that is the real
+    operation, which an ``os.access`` guess misses for ACLs, and it is the folder the writer
+    would have to make the new one in.
     """
+    if not folder.strip():
+        raise click.BadParameter("must not be empty", param_hint="--output-folder")
     path = Path(folder)
-    blocker = next((p for p in (path, *path.parents) if os.path.lexists(p)), None)
-    if blocker is not None and not blocker.is_dir():
+    try:
+        blocker = next((p for p in (path, *path.parents) if _lexists(p)), None)
+    except OSError as exc:
+        raise click.BadParameter(
+            f"cannot use {folder}: {exc.strerror}", param_hint="--output-folder"
+        ) from exc
+    if blocker is None:
+        return
+    if not blocker.is_dir():
         raise click.BadParameter(f"{blocker} is not a folder", param_hint="--output-folder")
+    try:
+        with tempfile.TemporaryFile(dir=blocker):
+            pass
+    except OSError as exc:
+        raise click.BadParameter(
+            f"cannot write to {blocker}: {exc.strerror}", param_hint="--output-folder"
+        ) from exc
 
 
 def _read_settings_file(config_path: Path | None) -> tuple[Settings, Path | None]:

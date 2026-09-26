@@ -104,4 +104,4 @@ an option overrides it. A bad option value names the option.
 
 ## Planned options
 
-The target adds more settings to the file, each with its own key: `--number-height` and `--allow-unaligned`. See [Alignment requirements](alignment_requirements.md#settings).
+The target adds one more option, `--allow-unaligned`, with its own key. See [Alignment requirements](alignment_requirements.md#settings).

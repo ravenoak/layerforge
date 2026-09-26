@@ -263,6 +263,13 @@ New pull requests open with a checklist from
   asserted only "exit 2 and the option name" passed on click's own
   `No such option` message, so they now assert the real message.
 
+- The intersection of two polygons can be a `GeometryCollection` of a polygon and a line
+  when the pieces also touch along an edge elsewhere. Keep the polygon parts
+  (`shapely.get_parts`) before you take an area (#89).
+- The tiny profile of svgwrite has no `dominant-baseline`, so the number is centred by
+  `text-anchor="middle"` and a baseline shift of 0.35 x the font size. That shift and the
+  width factor 0.6 were checked by eye only (#191).
+
 ## Common Error Messages
 
 - `ModuleNotFoundError: No module named 'networkx'` or `'scipy'` – `trimesh`

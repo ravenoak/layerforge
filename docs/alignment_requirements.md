@@ -180,9 +180,9 @@ height = 6.0
 | `--mark-tolerance` | Now a snapping radius. Default 0.1 × mark size (proposed; built in #62). |
 | `--mark-angle` | Still degrees. 0 points along +x and turns counter-clockwise. |
 | `--available-shapes` | Limits the shapes. It no longer sets the order. |
-| `--number-height` | New. Default 5 units (proposed). |
+| `--number-height` | Built in #75. Default 5 mm (proposed), stated in `--units`. |
 | `--allow-unaligned` | New. Turns alignment errors into warnings. |
-| `--cut-color`, `--engrave-color` | New. Replace `--mark-color`. |
+| `--cut-color`, `--engrave-color` | Built in #83. Replace `--mark-color`. |
 
 The project is at version 0.1.0, so removing `--mark-color` and changing defaults is acceptable.
 

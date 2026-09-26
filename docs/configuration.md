@@ -38,6 +38,7 @@ changes the result. The command prints `Using settings from <file>` to stderr
 when it uses a file.
 
 ```toml
+units = "mm"              # the unit of the model and of every length: mm, cm or in
 layer_height = 3.0        # the sheet thickness
 
 [marks]
@@ -53,6 +54,7 @@ beats the default.
 
 | Key | Option | Default |
 |---|---|---|
+| `units` | `--units` | `mm` |
 | `layer_height` | `--layer-height` | `3.0` |
 | `marks.size` | `--mark-size` | none: 3 to 5, by distance from the model origin |
 | `marks.tolerance` | `--mark-tolerance` | `10.0` |
@@ -71,4 +73,4 @@ an option overrides it. A bad option value names the option.
 
 ## Planned options
 
-The target adds more settings to the file, each with its own key: `--units`, `--kerf`, `--number-height`, `--allow-unaligned`, `--cut-color` and `--engrave-color`. It changes the defaults and meaning of `--mark-min-distance` and `--mark-tolerance`, sets the default mark size from the sheet thickness, and removes `--mark-color`. See [Alignment requirements](alignment_requirements.md#settings).
+The target adds more settings to the file, each with its own key: `--kerf`, `--number-height`, `--allow-unaligned`, `--cut-color` and `--engrave-color`. It changes the defaults and meaning of `--mark-min-distance` and `--mark-tolerance`, sets the default mark size from the sheet thickness, and removes `--mark-color`. See [Alignment requirements](alignment_requirements.md#settings).

@@ -57,9 +57,18 @@ output, the first release will raise the minor version.
 - `process_model` reports a bad config file before the scale and target conflict,
   as the command does. It reported the conflict first. The command's behavior is
   the same. (#136)
+- **Breaking:** Every SVG has a physical size. The root `width` and `height` were
+  `100%`. They are now the `viewBox` width and height with a unit (`mm` unless
+  `--units` says otherwise), for example `33.0cm`. A laser program or a printer
+  now reads the size from the file, and every layer has the same size. The
+  numbers in the file do not change. (#74, G-17)
 
 ### Added
 
+- `--units` (`mm`, `cm` or `in`, default `mm`) and the `units` key of the config file.
+  An STL file has no unit, so the option states the unit of the model and of every
+  length option, and labels the size of each SVG. Nothing is converted. With
+  `--units in`, the default mark distances of 10 are 10 inches. (#74, G-17)
 - A TOML config file. `--config PATH` names it, and `layerforge.toml` in the
   current directory is read when it exists, so **a `layerforge.toml` you already
   have there now changes the run**. Keys: `layer_height`, and `size`,

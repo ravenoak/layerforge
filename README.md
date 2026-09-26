@@ -75,6 +75,7 @@ python -c "import layerforge; print(layerforge.__version__)"
 The CLI exposes parameters for tuning reference mark generation:
 
 - `--config` – a TOML settings file. Without it, `layerforge.toml` in the current directory is read if it exists, and the command says so on stderr. The command line beats the file. See [docs/configuration.md](docs/configuration.md#config-file).
+- `--units` – the unit of the model and of every length option: `mm`, `cm` or `in`. It sets the physical size of each SVG, so a laser program imports it at the right scale. An STL file has no unit, so this states it and nothing is converted. Defaults to `mm`.
 - `--mark-size` – size of every new mark. Without it the size is 3 to 5, by distance from the model origin.
 - `--mark-tolerance` – distance used when matching an existing mark. Defaults to `10.0`.
 - `--mark-min-distance` – minimum distance from contours and between marks. Defaults to `10.0`.

@@ -29,6 +29,7 @@ BAD_FILE_MESSAGE = "bad.toml: marks.tolerance: must be >= 0"
         (["--mark-tolerance", "-1"], 2, "Invalid value for --mark-tolerance: must be >= 0"),
         (["--mark-min-distance", "-1"], 2, "Invalid value for --mark-min-distance: must be >= 0"),
         (["--mark-angle", "nan"], 2, "Invalid value for --mark-angle: must be a finite"),
+        (["--units", "ft"], 2, "Invalid value for '--units'"),
         (["--available-shapes", "hexagon"], 2, "Invalid value for --available-shapes: unknown"),
         (["--scale-factor", "0"], 2, "Invalid value for --scale-factor: must be > 0"),
         (["--scale-factor", "nan"], 2, "Invalid value for --scale-factor: must be a finite"),

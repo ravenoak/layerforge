@@ -87,6 +87,8 @@ def test_all_keys_are_read(tmp_path):
         ("[marks]\nangle = inf\n", "marks.angle", "must be a finite number"),
         ('[marks]\nshapes = ["hexagon"]\n', "marks.shapes", "unknown shape hexagon"),
         ("[marks]\nshapes = []\n", "marks.shapes", "must name at least one shape"),
+        ('units = "ft"\n', "units", "Input should be"),
+        ("units = 5\n", "units", "Input should be"),
     ],
 )
 def test_a_bad_file_names_the_file_and_the_key(tmp_path, text, key, reason):
@@ -172,3 +174,17 @@ def test_a_check_across_keys_is_a_usage_error_that_names_settings(monkeypatch):
 
     with pytest.raises(click.UsageError, match=r"^settings: tolerance is too large"):
         load_settings(None, {"mark_tolerance": 200})
+
+
+def test_units_default_to_millimetres(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
+    assert load_settings(None, {}).units == "mm"
+
+
+def test_units_come_from_the_file_and_the_option_beats_it(tmp_path):
+    cfg = _write(tmp_path, 'units = "cm"\n')
+
+    assert load_settings(cfg, {}).units == "cm"
+    assert load_settings(cfg, {"units": "in"}).units == "in"
+    assert load_settings(cfg, {"units": None}).units == "cm"

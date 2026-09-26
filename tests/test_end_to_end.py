@@ -89,6 +89,50 @@ def test_cli_writes_one_svg_per_slice(
     assert len(set(marks)) == 1
 
 
+@pytest.mark.parametrize(
+    ("file_units", "option_units", "expected"),
+    [
+        (None, None, "mm"),
+        (None, "in", "in"),
+        ("cm", None, "cm"),
+        ("cm", "in", "in"),
+    ],
+)
+def test_cli_svg_size_is_the_view_box_size_in_the_unit(
+    box_stl: Path,
+    tmp_path: Path,
+    file_units: str | None,
+    option_units: str | None,
+    expected: str,
+) -> None:
+    """A laser program reads the size from width and height (TR-13, #74)."""
+    out = tmp_path / "out"
+    args = ["--stl-file", str(box_stl), "--layer-height", str(LAYER_HEIGHT)]
+    args += ["--output-folder", str(out)]
+    if file_units is not None:
+        config = tmp_path / "settings.toml"
+        config.write_text(f'units = "{file_units}"\n')
+        args += ["--config", str(config)]
+    if option_units is not None:
+        args += ["--units", option_units]
+
+    result = _run_cli(*args)
+
+    assert result.returncode == 0, result.stderr
+    files = sorted(out.glob("slice_*.svg"))
+    assert files
+    sizes = set()
+    for path in files:
+        root = ET.parse(path).getroot()
+        view_box = root.get("viewBox")
+        assert view_box is not None
+        _, _, view_width, view_height = view_box.split(",")
+        assert root.get("width") == f"{view_width}{expected}"
+        assert root.get("height") == f"{view_height}{expected}"
+        sizes.add((root.get("width"), root.get("height")))
+    assert len(sizes) == 1  # every layer has the same size, so they print at the same scale
+
+
 def test_cli_missing_file_fails_without_output(tmp_path: Path) -> None:
     out = tmp_path / "out"
     result = _run_cli("--stl-file", str(tmp_path / "missing.stl"), "--output-folder", str(out))

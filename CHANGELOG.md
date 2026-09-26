@@ -30,6 +30,9 @@ output, the first release will raise the minor version.
   its tail, with an open head. Angle 0 now points along +x for every shape. The
   triangle pointed up. In the SVG the square and the arrow are `<polygon>`
   elements, and the arrow no longer has a `<line>`. (#84, G-20)
+- **Breaking:** `BaseShape` has an abstract `outline()` and a `symmetry_order`. A shape
+  registered with `register_shape` must define `outline()`, or it can no longer be created.
+  (#84)
 - **Breaking:** Slices are cut at the middle of each layer, counted from the
   mesh's lowest z, not from z = 0. A mesh 10 high with layer height 3 was cut at
   0, 3, 6, 9 and 10, and is now cut at 1.5, 4.5, 7.5 and 9.5. The number of

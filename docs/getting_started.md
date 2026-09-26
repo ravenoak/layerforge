@@ -58,13 +58,33 @@ Opening the first SVG shows the slice label and contour:
 
 ## Common Errors
 
-- `ModuleNotFoundError: No module named 'trimesh'` – the environment is missing
-  the dependencies. Run `uv sync`, or reinstall with `uv tool install`.
-- `FileNotFoundError: [Errno 2] No such file or directory` – check the
-  provided `--stl-file` path.
+Each message below was copied from a run of the command. The command checks the
+options and the settings file before it asks for the STL path. A message that
+starts with `Error:` and exits with code 2 is also preceded by a `Usage:` line.
+
+- ``Error: Invalid value for --layer-height: must be > 0`` (exit code 2) – a
+  number option is 0 or less. The message names the option. `nan` and `inf` give
+  `must be a finite number`. `--mark-tolerance` and `--mark-min-distance` may be 0,
+  and give `must be >= 0` below that.
+- ``Error: bad.toml: marks.tolerance: must be >= 0`` (exit code 2) – the
+  [config file](configuration.md#config-file) has a bad value. The message is
+  `<file>: <key>: <reason>`. An unknown key gives
+  ``Error: typo.toml: layer_hieght: Extra inputs are not permitted``.
+- ``Error: Invalid value for '--units': 'ft' is not one of 'mm', 'cm', 'in'.``
+  (exit code 2) – `--units` takes `mm`, `cm` or `in`.
+- ``Error: Invalid value for --output-folder: ofile is not a folder`` (exit code 2)
+  – the output folder is a file, or would have to be made inside one.
+- ``Only one of scale_factor or target_height can be provided.`` (exit code 1, on
+  standard output) – give `--scale-factor` or `--target-height`, not both.
+- ``Error: Cannot load 'nope.stl': string is not a file: `nope.stl` `` (exit code 1)
+  – check the `--stl-file` path. A file that is not a mesh gives
+  ``Error: Cannot load 'junk.stl': the mesh contains no geometry``.
+- ``WARNING:root:No reference mark fits 1 of 1 contours in slice 0. Try a smaller --mark-min-distance.``
+  (the run continues, exit code 0; the numbers vary) – the default mark
+  clearance of 10 leaves no room on a small model. Use a smaller
+  `--mark-min-distance`.
 - A slice shows a hole where two parts of the model overlap – the STL holds
   overlapping closed shells, for example two boxes saved as one file without a
   union. LayerForge cuts loops by the even-odd rule, so the overlap becomes a
   hole. Merge the bodies with a boolean union in your CAD or mesh tool before
   export. See G-16 in the [known gaps](requirements.md#known-gaps).
-- `ConflictingOptionsError: Only one of scale_factor or target_height can be provided.`

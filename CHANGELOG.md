@@ -21,6 +21,16 @@ output, the first release will raise the minor version.
 
 ### Changed
 
+- **Breaking:** The label is the layer number alone (`0`, `1`, ...), not `Slice N`. It is
+  `--number-height` tall (5 mm by default), centred, in bold sans-serif, and placed where its
+  box is farthest from the outline, the holes and every mark, the kerf away from each. Before,
+  it sat at the centroid at 1/20 of the drawing and could cross an outline or a hole. When it
+  fits nowhere, it is drawn at the middle of the piece and one warning names the slice.
+  Measured at the defaults, a 10 mm cube warns in all 4 slices, since the mark (3 mm) and the
+  number (5 mm) do not fit in 10 mm, and 20 mm and 40 mm cubes give no warning. (#75, G-18)
+- **Breaking:** Python API. `SliceSVGDrawer.draw_slice` no longer takes `padding` or
+  `font_size`; the number comes from `SVGStyle` (`number_height`, `number_width_factor`,
+  `number_clearance`). (#75, #171)
 - **Breaking:** The SVG is laser output. Outlines and holes are hairlines of 0.01 mm
   (`output.hairline_width`, in the unit of the run) in the cut colour, red by default, with no
   fill and a `class` of `outline` or `mark`. Before, outlines were black, each mark shape had
@@ -118,6 +128,9 @@ output, the first release will raise the minor version.
 
 ### Added
 
+- `--number-height` and the config-file table `[number]` with `height` and `width_factor`.
+  `place_number` in `layerforge.models.slicing.number` returns where the number of a piece
+  goes. (#75)
 - `--cut-color` and `--engrave-color` (default red and black), and the config-file table
   `[output]` with `cut_color`, `engrave_color` and `hairline_width`. A colour is a name, `#rgb`,
   `#rrggbb` or `rgb(r,g,b)`. (#83)

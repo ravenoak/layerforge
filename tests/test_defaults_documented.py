@@ -98,6 +98,8 @@ def _spec_config() -> dict[str, object]:
         ("default_cut_color", ("output", "cut_color")),
         ("default_engrave_color", ("output", "engrave_color")),
         ("default_hairline_width", ("output", "hairline_width")),  # millimetres in both
+        ("default_number_height", ("number", "height")),  # millimetres in both
+        ("default_number_width_factor", ("number", "width_factor")),
     ],
 )
 def test_the_spec_config_block_states_the_default_of_each_setting(name, key):
@@ -137,6 +139,8 @@ def test_every_default_of_the_spec_config_block_is_compared():
         "default_cut_color",
         "default_engrave_color",
         "default_hairline_width",
+        "default_number_height",
+        "default_number_width_factor",
     }
 
 
@@ -158,6 +162,7 @@ def _help_text(option: str) -> str:
         ("--mark-angle", ("marks", "angle"), lambda v: f"Default {v}."),
         ("--cut-color", ("output", "cut_color"), lambda v: f"Default {v}."),
         ("--engrave-color", ("output", "engrave_color"), lambda v: f"Default {v}."),
+        ("--number-height", ("number", "height"), lambda v: f"Default {v:g} mm"),
     ],
 )
 def test_the_help_text_states_the_default_of_each_option(option, key, shown):

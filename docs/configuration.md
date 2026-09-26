@@ -60,6 +60,10 @@ angle = 0                 # degrees
 cut_color = "red"         # outlines and holes
 engrave_color = "black"   # the number
 hairline_width = 0.01     # stroke width of a cut line, in the unit above
+
+[number]
+height = 5.0              # height of the layer number, in the unit above
+width_factor = 0.6        # estimated width of one character, times the height
 ```
 
 Every key is optional. A value from the command line beats the file, and the file
@@ -81,8 +85,10 @@ beats the default.
 | `output.cut_color` | `--cut-color` | `"red"` |
 | `output.engrave_color` | `--engrave-color` | `"black"` |
 | `output.hairline_width` | none | `0.01` |
+| `number.height` | `--number-height` | `5.0` |
+| `number.width_factor` | none | `0.6` |
 
-The defaults of `layer_height` (3 mm), `kerf` (0.3 mm) and `output.hairline_width` (0.01 mm) are millimetres. With `--units cm` or
+The defaults of `layer_height` (3 mm), `kerf` (0.3 mm) and `output.hairline_width` (0.01 mm) and `number.height` (5 mm) are millimetres. With `--units cm` or
 `--units in` they are stated in that unit: 3 mm is 0.3 cm or 0.118 in. A value that you give, in the
 file or on the command line, is already in the units and is not converted. The three mark numbers
 with no default number (size, tolerance and minimum distance) are worked out from the sheet, so they follow `--units` too.

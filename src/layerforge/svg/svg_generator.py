@@ -68,7 +68,6 @@ class SVGGenerator:
         None
         """
         view_box = self._view_box(slices)
-        font_size = None
         for slice_obj in slices:
             if view_box is None:
                 dwg = svgwrite.Drawing(profile="tiny")
@@ -79,12 +78,7 @@ class SVGGenerator:
                 size = (f"{width}{self.units}", f"{height}{self.units}")
                 dwg = svgwrite.Drawing(profile="tiny", size=size)
                 dwg.viewbox(x, y, width, height)
-                # The default 16 unit text would swamp a model that is a few units across,
-                # so scale it with the model. The lines are hairlines, whatever the model.
-                font_size = max(width, height) / 20
-            SliceSVGDrawer.draw_slice(
-                dwg, slice_obj, self.shape_context, style=self.style, font_size=font_size
-            )
+            SliceSVGDrawer.draw_slice(dwg, slice_obj, self.shape_context, style=self.style)
             self.svg_writer.write(dwg, self.output_folder, slice_obj.index)
 
     @staticmethod

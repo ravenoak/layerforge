@@ -2,7 +2,7 @@ from shapely.geometry import Point, Polygon
 
 from layerforge.utils import calculate_distance
 
-from .config import ReferenceMarkConfig
+from .config import ReferenceMarkConfig, require
 from .reference_mark import ReferenceMark
 
 
@@ -27,7 +27,7 @@ class ReferenceMarkManager:
         When two marks are equally near, the earlier one wins.
         """
         if tolerance is None:
-            tolerance = self.config.tolerance
+            tolerance = require(self.config.tolerance, "tolerance")
         in_range = [
             (distance, mark)
             for mark in self.marks
@@ -68,7 +68,7 @@ class ReferenceMarkManager:
     ) -> ReferenceMark | None:
         """Return a stored mark inside ``polygon`` respecting ``min_distance``."""
         if min_distance is None:
-            min_distance = self.config.min_distance
+            min_distance = require(self.config.min_distance, "min_distance")
         for mark in self.marks:
             pt = Point(mark.x, mark.y)
             if polygon.contains(pt) and polygon.boundary.distance(pt) >= min_distance:

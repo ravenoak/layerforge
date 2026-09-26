@@ -11,6 +11,7 @@ from layerforge.models.reference_marks import (
     ReferenceMarkConfig,
     ReferenceMarkManager,
 )
+from layerforge.models.reference_marks.config import require
 from layerforge.models.slicing.slice import Slice
 from layerforge.utils import calculate_distance
 
@@ -29,17 +30,19 @@ def test_marks_inside_polygon(coords):
     poly = cast(Polygon, hull)
     cfg = ReferenceMarkConfig(min_distance=1)
     manager = ReferenceMarkManager(config=cfg)
-    sl = Slice(0, 0.0, [poly], origin=(0, 0), mark_manager=manager, config=cfg)
+    sl = Slice(0, 0.0, [poly], origin=(0, 0), mark_manager=manager, config=cfg, layer_height=3.0)
     marks = ReferenceMarkCalculator.get_stable_marks(sl, [], config=cfg)
+    min_distance = require(sl.config.min_distance, "min_distance")
+    size = require(sl.config.size, "size")
     for x, y in marks:
         pt = Point(x, y)
         assert poly.contains(pt)
-        assert poly.boundary.distance(pt) >= cfg.min_distance
+        assert poly.boundary.distance(pt) >= min_distance
         # The whole hole fits: a disc of the mark's size lies inside the piece (TR-5).
-        assert poly.boundary.distance(pt) >= sl._calculate_mark_size(x, y) / 2
+        assert poly.boundary.distance(pt) >= size / 2
     for i, m1 in enumerate(marks):
         for m2 in marks[i + 1 :]:
-            assert calculate_distance(m1[0], m1[1], m2[0], m2[1]) >= cfg.min_distance
+            assert calculate_distance(m1[0], m1[1], m2[0], m2[1]) >= min_distance
 
 
 def test_stability_score_permutation():

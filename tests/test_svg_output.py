@@ -38,7 +38,7 @@ def _create_slice(idx: int, shape: str) -> Slice:
     poly = box(0, 0, 10, 10)
     manager = ReferenceMarkManager()
     cfg = ReferenceMarkConfig()
-    sl = Slice(idx, 0.0, [poly], origin=(0, 0), mark_manager=manager, config=cfg)
+    sl = Slice(idx, 0.0, [poly], origin=(0, 0), mark_manager=manager, config=cfg, layer_height=3.0)
     sl.ref_marks = [ReferenceMark(x=5, y=5, shape=shape, size=4)]
     return sl
 
@@ -124,7 +124,15 @@ def _plate_with_hole_slice() -> Slice:
     hole = [(20, 20), (80, 20), (80, 80), (20, 80)]
     plate = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)], [hole])
     manager = ReferenceMarkManager()
-    return Slice(0, 0.0, [plate], origin=(0, 0), mark_manager=manager, config=ReferenceMarkConfig())
+    return Slice(
+        0,
+        0.0,
+        [plate],
+        origin=(0, 0),
+        mark_manager=manager,
+        config=ReferenceMarkConfig(),
+        layer_height=3.0,
+    )
 
 
 def test_holes_are_drawn_as_outlines():
@@ -155,7 +163,15 @@ def test_label_is_not_placed_in_a_hole():
 def _draw(polygon: Polygon, *marks: ReferenceMark) -> svgwrite.Drawing:
     ctx = StrategyContext()
     register_shape_strategies(ctx)
-    sl = Slice(0, 0.0, [polygon], origin=(0, 0), mark_manager=ReferenceMarkManager(), config=None)
+    sl = Slice(
+        0,
+        0.0,
+        [polygon],
+        origin=(0, 0),
+        mark_manager=ReferenceMarkManager(),
+        config=None,
+        layer_height=3.0,
+    )
     sl.ref_marks = list(marks)
     dwg = svgwrite.Drawing()
     SliceSVGDrawer.draw_slice(dwg, sl, ctx)
@@ -198,7 +214,15 @@ def test_every_svg_has_the_same_view_box_around_all_slices(tmp_path):
     writer = CaptureWriter()
     big, small = box(90, 40, 110, 60), box(95, 45, 105, 55)
     slices = [
-        Slice(i, 0.0, [poly], (100, 50), ReferenceMarkManager(), ReferenceMarkConfig())
+        Slice(
+            i,
+            0.0,
+            [poly],
+            (100, 50),
+            ReferenceMarkManager(),
+            ReferenceMarkConfig(),
+            layer_height=3.0,
+        )
         for i, poly in enumerate([big, small])
     ]
     SVGGenerator(str(tmp_path), writer, ctx).generate_svgs(slices)
@@ -211,7 +235,9 @@ def test_no_view_box_when_nothing_was_cut(tmp_path):
     ctx = StrategyContext()
     register_shape_strategies(ctx)
     writer = CaptureWriter()
-    empty = Slice(0, 0.0, [], (0, 0), ReferenceMarkManager(), ReferenceMarkConfig())
+    empty = Slice(
+        0, 0.0, [], (0, 0), ReferenceMarkManager(), ReferenceMarkConfig(), layer_height=3.0
+    )
     SVGGenerator(str(tmp_path), writer, ctx).generate_svgs([empty])
     assert "viewBox" not in writer.saved[0].attribs
 
@@ -221,7 +247,9 @@ def _generate(tmp_path, polygons, **kwargs):
     register_shape_strategies(ctx)
     writer = CaptureWriter()
     slices = [
-        Slice(i, 0.0, [poly], (0, 0), ReferenceMarkManager(), ReferenceMarkConfig())
+        Slice(
+            i, 0.0, [poly], (0, 0), ReferenceMarkManager(), ReferenceMarkConfig(), layer_height=3.0
+        )
         for i, poly in enumerate(polygons)
     ]
     SVGGenerator(str(tmp_path), writer, ctx, **kwargs).generate_svgs(slices)
@@ -257,7 +285,9 @@ def test_svg_without_a_view_box_keeps_a_relative_size(tmp_path):
     ctx = StrategyContext()
     register_shape_strategies(ctx)
     writer = CaptureWriter()
-    empty = Slice(0, 0.0, [], (0, 0), ReferenceMarkManager(), ReferenceMarkConfig())
+    empty = Slice(
+        0, 0.0, [], (0, 0), ReferenceMarkManager(), ReferenceMarkConfig(), layer_height=3.0
+    )
 
     SVGGenerator(str(tmp_path), writer, ctx, units="cm").generate_svgs([empty])
 

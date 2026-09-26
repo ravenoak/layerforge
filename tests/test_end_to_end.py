@@ -41,10 +41,10 @@ def _run_cli(*args: str) -> subprocess.CompletedProcess[str]:
     ("extra_args", "final_height"),
     [
         ([], 20.0),
-        # A 10 mm cube is 5 mm from centre to edge, so shrink the default
-        # 10 mm mark clearance or no mark fits.
-        (["--target-height", "10", "--mark-min-distance", "2"], 10.0),
-        (["--scale-factor", "0.5", "--mark-min-distance", "2"], 10.0),
+        # A 10 mm cube is 5 mm from centre to edge. The default mark is as big as the layer
+        # height (5), and with its web (2.5) it does not fit, so use a smaller mark.
+        (["--target-height", "10", "--mark-size", "3"], 10.0),
+        (["--scale-factor", "0.5", "--mark-size", "3"], 10.0),
     ],
 )
 def test_cli_writes_one_svg_per_slice(
@@ -141,7 +141,7 @@ def test_cli_missing_file_fails_without_output(tmp_path: Path) -> None:
 
 
 def test_cli_warns_when_no_mark_fits(box_stl: Path, tmp_path: Path) -> None:
-    """A 10 mm cube is too small for the default 10 mm mark clearance."""
+    """At layer height 5 the default mark (size 5, web 2.5) does not fit a 10 mm cube."""
     out = tmp_path / "out"
     result = _run_cli(
         "--stl-file",
@@ -156,6 +156,59 @@ def test_cli_warns_when_no_mark_fits(box_stl: Path, tmp_path: Path) -> None:
     assert result.returncode == 0, result.stderr
     assert "--mark-min-distance" in result.stderr
     assert len(list(out.glob("slice_*.svg"))) == 2
+
+
+def test_cli_a_10_mm_cube_gets_marks_with_the_default_options(tmp_path: Path) -> None:
+    """#76: the default minimum distance is the mark size, so a small model is not skipped.
+
+    Before, the default of 10 was larger than the 5 mm from the centre to the edge, and this
+    cube got no marks.
+    """
+    stl = tmp_path / "cube.stl"
+    trimesh.creation.box(extents=(10, 10, 10)).export(stl)
+    out = tmp_path / "out"
+
+    result = _run_cli("--stl-file", str(stl), "--output-folder", str(out))
+
+    assert result.returncode == 0, result.stderr
+    assert "--mark-min-distance" not in result.stderr
+    files = sorted(out.glob("slice_*.svg"))
+    assert len(files) == 4  # 10 mm at the default sheet of 3 mm
+    for path in files:
+        assert list(ET.parse(path).getroot().iter(f"{SVG}circle")), f"{path.name} has no mark"
+
+
+def test_cli_units_in_give_marks_of_a_sensible_size_without_setting_a_length(
+    tmp_path: Path,
+) -> None:
+    """#62: with --units in the default sheet is 3 mm in inches, so a 1 inch cube gets marks."""
+    stl = tmp_path / "inch.stl"
+    trimesh.creation.box(extents=(1, 1, 1)).export(stl)
+    out = tmp_path / "out"
+
+    result = _run_cli("--stl-file", str(stl), "--units", "in", "--output-folder", str(out))
+
+    assert result.returncode == 0, result.stderr
+    assert "--mark-min-distance" not in result.stderr
+    files = sorted(out.glob("slice_*.svg"))
+    assert files
+    for path in files:
+        radii = [float(c.attrib["r"]) for c in ET.parse(path).getroot().iter(f"{SVG}circle")]
+        assert radii == [pytest.approx(3 / 25.4 / 2, rel=1e-3)], path.name
+
+
+def test_cli_a_mark_size_below_the_least_hole_size_warns_and_still_runs(
+    box_stl: Path, tmp_path: Path
+) -> None:
+    """TR-6: the person knows the machine, so a small size is a warning and not an error."""
+    out = tmp_path / "out"
+
+    result = _run_cli("--stl-file", str(box_stl), "--mark-size", "1", "--output-folder", str(out))
+
+    assert result.returncode == 0, result.stderr
+    assert "below the least hole size" in result.stderr
+    assert result.stderr.count("below the least hole size") == 1
+    assert list(out.glob("slice_*.svg"))
 
 
 def test_cli_config_file_sets_every_mark_size(box_stl: Path, tmp_path: Path) -> None:

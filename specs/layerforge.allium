@@ -49,14 +49,16 @@ value Appearance {
 
 config {
     default_units: String = "mm"
-    default_layer_height: Decimal = 3.0
-    default_tolerance: Decimal = 10.0
-    default_min_distance: Decimal = 10.0
+    default_layer_height: Decimal = 3.0 -- millimetres, stated in the units of the run (TR-13)
+    default_kerf: Decimal = 0.3         -- millimetres, stated in the units of the run (TR-6)
+    default_angle: Decimal = 0.0        -- degrees, as the option takes them; the run holds radians
     default_min_web_ratio: Decimal = 0.5
+    default_min_hole_ratio: Decimal = 1.0
+    default_min_hole_kerf_factor: Decimal = 1.5
     default_shapes: List<String> = ["circle", "square", "triangle", "arrow"]
-    min_mark_size: Integer = 3
-    max_mark_size: Integer = 5
-    mark_size_step: Decimal = 10.0      -- distance from origin per size unit
+    -- No default number for mark size, minimum distance and tolerance: each follows
+    -- the sheet unless it is set (FR-21). The tolerance is this fraction of the size.
+    tolerance_factor: Decimal = 0.1
     candidate_points_wanted: Integer = 4
     candidate_attempts: Integer = 40
 }
@@ -67,15 +69,18 @@ config {
 
 entity Run {
     units: String                       -- mm, cm or in: the unit of the mesh and of every length (FR-31)
-    layer_height: Decimal
+    layer_height: Decimal               -- the sheet thickness
+    kerf: Decimal                       -- the width of material the tool removes (TR-6)
     scale_factor: Decimal?
     target_height: Decimal?
-    tolerance: Decimal
-    min_distance: Decimal
+    requested_tolerance: Decimal?       -- null: follows the mark size (TR-10)
+    requested_min_distance: Decimal?    -- null: the mark size (TR-6)
+    requested_mark_size: Decimal?       -- null: the least hole size for the sheet (TR-6)
     min_web_ratio: Decimal              -- times layer_height: the least material between holes and outlines (TR-5)
+    min_hole_ratio: Decimal             -- times layer_height: a term of the least hole size (TR-6)
+    min_hole_kerf_factor: Decimal       -- times kerf: the other term (TR-6)
     available_shapes: List<String>
     angle: Decimal                      -- radians; the command takes degrees
-    mark_size: Decimal?                 -- null: the size follows the distance from the origin (FR-21)
     config_error: String?               -- set when the config file is unreadable or has a bad key or value (FR-30)
     color: String?
     mesh: Mesh
@@ -87,6 +92,12 @@ entity Run {
     origin: Point?                      -- x, y centre of the scaled mesh bounding box
     slices: Slice with run = this
     marks: RegisteredMark with run = this   -- shared by every slice in the run
+
+    -- FR-21: none of these depends on the model or on where a mark lies.
+    min_mark_size: max(min_hole_ratio * layer_height, min_hole_kerf_factor * kerf)
+    mark_size: requested_mark_size ?? min_mark_size
+    min_distance: requested_min_distance ?? mark_size
+    tolerance: requested_tolerance ?? config.tolerance_factor * mark_size
 
     transitions status {
         requested -> rejected
@@ -156,14 +167,17 @@ rule FR1_StartRun {
             mesh: load_single_mesh(stl_file),
             units: options.units,
             layer_height: options.layer_height,
+            kerf: options.kerf,
             scale_factor: options.scale_factor,
             target_height: options.target_height,
-            tolerance: options.mark_tolerance,
-            min_distance: options.mark_min_distance,
+            requested_tolerance: options.mark_tolerance,
+            requested_min_distance: options.mark_min_distance,
+            requested_mark_size: options.mark_size,
             min_web_ratio: config.default_min_web_ratio,
+            min_hole_ratio: config.default_min_hole_ratio,
+            min_hole_kerf_factor: config.default_min_hole_kerf_factor,
             available_shapes: options.available_shapes,
             angle: radians(options.mark_angle),
-            mark_size: options.mark_size,
             config_error: settings_file_error(options),
             color: options.mark_color,
             output_folder: options.output_folder,
@@ -174,12 +188,17 @@ rule FR1_StartRun {
         -- file and every option have been checked (the rules below), so a bad
         -- option is reported before the person types a path. A file
         -- with more than one geometry is rejected (FR-7). Defaults are the
-        -- config values above (FR-6). Each of units, layer_height, mark_size,
-        -- tolerance, min_distance, shapes and angle is the option if given,
-        -- else the config file value, else the default (FR-30). A config file
+        -- config values above (FR-6). Each of units, layer_height, kerf,
+        -- mark_size, tolerance, min_distance, shapes and angle is the option if
+        -- given, else the config file value, else the default (FR-30). The
+        -- defaults of layer_height and kerf are millimetres, stated in the
+        -- units of the run when nobody set them (FR-31); a value that is given
+        -- is already in those units. Mark size, tolerance and min_distance have
+        -- no default number: they follow the sheet (FR-21). A config file
         -- that passes its check and is used is named once on stderr: "Using
-        -- settings from <file>". min_web_ratio has no option: it is the config
-        -- file value, else the default. Options are checked by the next rules.
+        -- settings from <file>". min_web_ratio, min_hole_ratio and
+        -- min_hole_kerf_factor have no option: each is the config file value,
+        -- else the default. Options are checked by the next rules.
 }
 
 rule FR30_RejectBadConfigFile {
@@ -223,8 +242,9 @@ rule FR2_FR3_RejectNonPositiveValues {
     @guidance
         -- Message: "Invalid value for --<option>: must be > 0". Exit code 2.
         -- A value that is nan or infinite is rejected first, for these options
-        -- and for --mark-tolerance, --mark-min-distance and --mark-angle:
-        -- "must be a finite number". Exit code 2.
+        -- and for --kerf, --mark-size, --mark-tolerance, --mark-min-distance
+        -- and --mark-angle: "must be a finite number". Exit code 2.
+        -- --kerf must be >= 0 and --mark-size must be > 0.
         -- --available-shapes is checked in the same way: an empty list or an
         -- unknown shape name gives "Invalid value for --available-shapes" and
         -- exit code 2, before the --stl-file prompt and before the mesh is read.
@@ -335,7 +355,7 @@ rule FR15_FR21_PlaceMarks {
                     -- FR-20, FR-21: new mark.
                     let appearance = Appearance{
                         shape: next_shape(slice.run.marks, slice.run.available_shapes),
-                        size: slice.run.mark_size ?? mark_size(distance(chosen, slice.run.origin)),
+                        size: slice.run.mark_size,
                         angle: slice.run.angle,
                         color: slice.run.color
                     }
@@ -362,8 +382,9 @@ rule FR15_FR21_PlaceMarks {
         -- little over half the size for the circle, FR-27): the disc lies inside
         -- the boundary by at least the web, and two discs are at least the web apart.
         -- next_shape gives the first shape not yet registered, else the first
-        -- shape (G-5). mark_size is run.mark_size when set, else
-        -- int(d / mark_size_step) clamped to min_mark_size .. max_mark_size (G-6). Registered marks are shared by
+        -- shape (G-5). mark_size is the requested size, else the least hole
+        -- size for the sheet (FR-21). A mark_size below min_mark_size logs one
+        -- warning for the run and the run goes on (TR-6). Registered marks are shared by
         -- every slice, not only neighbours (G-7).
 }
 
@@ -452,11 +473,7 @@ invariant FR22_MarksClearOfEachOther {
 
 invariant FR21_MarkSize {
     for m in RegisteredMarks:
-        (m.run.mark_size != null implies m.appearance.size = m.run.mark_size)
-        and (m.run.mark_size = null implies (
-            m.appearance.size >= config.min_mark_size
-            and m.appearance.size <= config.max_mark_size
-        ))
+        m.appearance.size = m.run.mark_size
 }
 
 invariant FR14_OneSliceEveryPosition {
@@ -500,12 +517,10 @@ surface Command {
 
 -- G-4  One mark per contour cannot fix rotation.
 -- G-5  Shapes do not cycle once all are used.
--- G-6  Mark size is fixed at 3 to 5, not proportional to the model.
 -- G-7  Marks are inherited from any earlier slice, not only neighbours.
 -- G-16 Overlapping shells in one mesh give false holes.
 -- G-18 The slice label can cross an outline.
--- G-19 The default min_distance ignores the model size.
 -- G-23 The output suits a screen, not a laser.
 -- G-30 A bad --mark-color ends in a traceback while the SVG is drawn.
--- G-4 to G-7, G-18, G-19 and G-23 have targets in
+-- G-4, G-5, G-7, G-18 and G-23 have targets in
 -- docs/alignment_requirements.md (TR-1 to TR-16).

@@ -129,12 +129,21 @@ may improve visibility in the output SVGs.
 
 #### Tips for Different Model Scales
 
-- **Small models (<10&nbsp;cm)** – use a `min_distance` around 2&ndash;5 units and
-  a lower `tolerance` to prevent clutter.
-- **Medium models (10&ndash;30&nbsp;cm)** – the defaults (10 units) usually work
-  well.
-- **Large models (>30&nbsp;cm)** – increase both `min_distance` and `tolerance`
-  proportionally (15&ndash;25 units) so marks remain distinct.
+The defaults follow the sheet, not the model. The mark size is the larger of the layer height and
+1.5 times the kerf, the minimum distance is the mark size, and the tolerance is a tenth of it. With
+a 3&nbsp;mm sheet and a 0.3&nbsp;mm kerf that is a size of 3, a distance of 3 and a tolerance of 0.3, whatever
+the size of the model. So set `--layer-height` and `--kerf` for your material and machine, and leave
+the rest.
+
+- **Small pieces** – a mark needs room for its hole and for the web on each side. At the defaults a
+  square piece must be a little over 6&nbsp;mm wide (6.003 gets no mark and 6.004 gets one; measured on a
+  3&nbsp;mm sheet). A 10&nbsp;mm cube gets a mark in every layer. If a contour gets no mark, the warning names
+  the slice: use a smaller `--mark-size`, or a thinner sheet.
+- **Thick sheet** – the mark grows with the sheet (a 5&nbsp;mm sheet gives a size of 5, and its web is
+  2.5), so a 10&nbsp;mm cube gets no marks at that sheet. Set a smaller `--mark-size`; a size below the
+  least hole size for the sheet is a warning, not an error.
+- **Large models** – the defaults need no change. Raise `--mark-tolerance` only if a mark drifts between
+  layers.
 
 ## Planned changes
 

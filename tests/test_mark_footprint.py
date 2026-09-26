@@ -87,7 +87,7 @@ def test_the_web_ratio_defaults_to_half_the_layer_height():
 BAR = box(0, 0, 40, 6)
 
 
-def _slice(polygon, layer_height=None, **config):
+def _slice(polygon, layer_height=3.0, **config):
     cfg = ReferenceMarkConfig(**config)
     return Slice(
         0,
@@ -113,12 +113,12 @@ def test_the_calculator_does_not_inherit_a_mark_whose_hole_would_cross_the_outli
 
 def test_the_web_comes_from_the_layer_height_and_the_ratio():
     # Size 3 has a radius of 1.5. The bar leaves 3 - 1.5 = 1.5 from hole to edge.
-    thick = _slice(BAR, layer_height=4.0, min_distance=1)  # web 0.5 * 4 = 2
-    thin = _slice(BAR, layer_height=2.0, min_distance=1)  # web 0.5 * 2 = 1
-    unknown = _slice(BAR, layer_height=None, min_distance=1)  # web 0
-    for layer in (thick, thin, unknown):
+    thick = _slice(BAR, layer_height=4.0, size=3, min_distance=1)  # web 0.5 * 4 = 2
+    thin = _slice(BAR, layer_height=2.0, size=3, min_distance=1)  # web 0.5 * 2 = 1
+    no_web = _slice(BAR, layer_height=4.0, size=3, min_distance=1, min_web_ratio=0)  # web 0
+    for layer in (thick, thin, no_web):
         ReferenceMarkService.process_slice(layer)
-    assert (len(thick.ref_marks), len(thin.ref_marks), len(unknown.ref_marks)) == (0, 1, 1)
+    assert (len(thick.ref_marks), len(thin.ref_marks), len(no_web.ref_marks)) == (0, 1, 1)
 
 
 def test_the_warning_for_a_slice_without_marks_names_the_mark_size_too(caplog):

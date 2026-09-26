@@ -1,6 +1,6 @@
 from shapely.geometry import Point, Polygon
 
-from .config import ReferenceMarkConfig
+from .config import ReferenceMarkConfig, require
 from .footprint import mark_footprint
 from .reference_mark import ReferenceMark
 
@@ -25,7 +25,7 @@ class ReferenceMarkAdjuster:
         already kept. The earlier mark stays.
         """
         cfg = config or ReferenceMarkConfig()
-        min_distance = cfg.min_distance
+        min_distance = require(cfg.min_distance, "min_distance")
         adjusted_marks: list[ReferenceMark] = []
         kept_footprints: list[Polygon] = []
         for mark in marks:

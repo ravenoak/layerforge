@@ -19,11 +19,15 @@ from pydantic_core import ErrorDetails
 
 from layerforge.domain.shapes.registry import registered_shapes
 from layerforge.models.reference_marks import ReferenceMarkConfig
+from layerforge.units import from_mm
 
 DEFAULT_FILE = Path("layerforge.toml")
 
 _DEFAULTS = ReferenceMarkConfig()
 _STRICT = ConfigDict(extra="forbid", strict=True, allow_inf_nan=False)
+
+# Lengths whose default is stated in millimetres and converted to the run's units (TR-13).
+_MM_DEFAULTS = ("layer_height", "kerf")
 
 # Command line option name -> key path in the file. Options not listed here
 # (--mark-color, --scale-factor, --target-height, --stl-file, --output-folder)
@@ -31,6 +35,7 @@ _STRICT = ConfigDict(extra="forbid", strict=True, allow_inf_nan=False)
 _OPTION_KEYS: dict[str, tuple[str, ...]] = {
     "units": ("units",),
     "layer_height": ("layer_height",),
+    "kerf": ("kerf",),
     "mark_size": ("marks", "size"),
     "mark_tolerance": ("marks", "tolerance"),
     "mark_min_distance": ("marks", "min_distance"),
@@ -45,12 +50,15 @@ class MarkSettings(BaseModel):
 
     model_config = _STRICT
 
+    # No number for these three: they come from the sheet, unless set (TR-6, TR-10).
     size: float | None = Field(default=None, gt=0)
-    tolerance: float = Field(default=_DEFAULTS.tolerance, ge=0)
-    min_distance: float = Field(default=_DEFAULTS.min_distance, ge=0)
+    tolerance: float | None = Field(default=None, ge=0)
+    min_distance: float | None = Field(default=None, ge=0)
     shapes: list[str] = Field(default_factory=lambda: list(_DEFAULTS.available_shapes))
     angle: float = math.degrees(_DEFAULTS.angle)  # degrees, as the option takes them
     min_web_ratio: float = Field(default=_DEFAULTS.min_web_ratio, ge=0)  # no option (TR-16)
+    min_hole_ratio: float = Field(default=_DEFAULTS.min_hole_ratio, gt=0)  # no option (TR-16)
+    min_hole_kerf_factor: float = Field(default=_DEFAULTS.min_hole_kerf_factor, ge=0)  # no option
 
     @field_validator("shapes")
     @classmethod
@@ -67,12 +75,17 @@ class MarkSettings(BaseModel):
 
 
 class Settings(BaseModel):
-    """Every setting of a run."""
+    """Every setting of a run.
+
+    ``layer_height`` and ``kerf`` default to millimetres here. :func:`merge_settings` states a
+    default that was not set in the units of the run, so read them from its result.
+    """
 
     model_config = _STRICT
 
     units: Literal["mm", "cm", "in"] = "mm"
     layer_height: float = Field(default=3.0, gt=0)
+    kerf: float = Field(default=_DEFAULTS.kerf, ge=0)
     marks: MarkSettings = Field(default_factory=MarkSettings)
 
 
@@ -123,17 +136,18 @@ def merge_settings(file_settings: Settings, overrides: Mapping[str, object]) -> 
         A bad merged value for a key that has no option raises ``click.UsageError``
         and names the key instead, or ``settings`` when the error has no key.
     """
-    merged = file_settings.model_dump()
+    # Only what was set: a default is applied again below, in the units of the run.
+    merged = file_settings.model_dump(exclude_unset=True)
     for option, value in overrides.items():
         if value is None:
             continue
         *parents, leaf = _OPTION_KEYS[option]
         table = merged
         for name in parents:
-            table = table[name]
+            table = table.setdefault(name, {})
         table[leaf] = value
     try:
-        return Settings.model_validate(merged)
+        return _in_units(Settings.model_validate(merged))
     except ValidationError as exc:
         # The file values passed above, so the bad value came from an option or from
         # a check across keys. A key that has no option is named by its key.
@@ -142,6 +156,16 @@ def merge_settings(file_settings: Settings, overrides: Mapping[str, object]) -> 
         if hint is None:
             raise click.UsageError(f"{_key(error) or 'settings'}: {_message(error)}") from exc
         raise click.BadParameter(_message(error), param_hint=hint) from exc
+
+
+def _in_units(settings: Settings) -> Settings:
+    """State the millimetre defaults that nobody set in the units of the run (TR-13)."""
+    updates = {
+        name: from_mm(settings.units, getattr(settings, name))
+        for name in _MM_DEFAULTS
+        if name not in settings.model_fields_set
+    }
+    return settings.model_copy(update=updates) if updates else settings
 
 
 def find_config_file(path: Path | None) -> Path | None:

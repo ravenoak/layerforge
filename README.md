@@ -75,10 +75,11 @@ python -c "import layerforge; print(layerforge.__version__)"
 The CLI exposes parameters for tuning reference mark generation:
 
 - `--config` – a TOML settings file. Without it, `layerforge.toml` in the current directory is read if it exists, and the command says so on stderr. The command line beats the file. See [docs/configuration.md](docs/configuration.md#config-file).
-- `--units` – the unit of the model and of every length option: `mm`, `cm` or `in`. It sets the physical size of each SVG, so a laser program imports it at the right scale. An STL file has no unit, so this states it and nothing is converted.
-- `--mark-size` – size of every new mark. Without it the size is 3 to 5, by distance from the model origin.
-- `--mark-tolerance` – distance used when matching an existing mark.
-- `--mark-min-distance` – minimum distance from contours and between marks.
+- `--units` – the unit of the model and of every length option: `mm`, `cm` or `in`. It sets the physical size of each SVG, so a laser program imports it at the right scale. An STL file has no unit, so this states it. A length that you give is not converted; the defaults for the layer height (3 mm) and the kerf (0.3 mm) are stated in this unit.
+- `--kerf` – the width of material the tool removes. It sets the smallest default mark size. Default 0.3 mm, stated in `--units`. Use 0 for a CNC router or hand work.
+- `--mark-size` – size of every new mark. Without it the size is the larger of the layer height (the sheet thickness) and 1.5 times the kerf, so it does not depend on the size of the model.
+- `--mark-tolerance` – distance used when matching an existing mark. Without it, 0.1 times the mark size.
+- `--mark-min-distance` – minimum distance from contours and between marks. Without it, the mark size.
 - `--available-shapes` – comma separated list of shapes to choose from when creating marks.
 - `--mark-angle` – default orientation angle for generated marks in degrees.
 - `--mark-color` – outline color for reference marks.

@@ -12,7 +12,7 @@ from layerforge.models.reference_marks import (
 
 
 def test_add_and_update_mark():
-    manager = ReferenceMarkManager()
+    manager = ReferenceMarkManager(config=ReferenceMarkConfig(tolerance=10))
     manager.add_or_update_mark(10, 20, "circle", 3, angle=math.pi / 4, color="red")
     assert len(manager.marks) == 1
     assert manager.marks[0].shape == "circle"
@@ -35,7 +35,7 @@ def test_add_and_update_mark():
 
 def _manager_with(*marks: tuple[float, float, str]) -> ReferenceMarkManager:
     """A manager holding marks at the given places, whatever their spacing."""
-    manager = ReferenceMarkManager()
+    manager = ReferenceMarkManager(config=ReferenceMarkConfig(tolerance=10))
     manager.marks = [ReferenceMark(x=x, y=y, shape=shape, size=3) for x, y, shape in marks]
     return manager
 

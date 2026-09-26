@@ -48,8 +48,7 @@ def _cell_value(cell: str) -> object:
     """Read a Default cell: a TOML value in backticks, or `none` followed by an explanation."""
     if cell.startswith("none"):
         return None
-    text = cell.strip("`")
-    return tomllib.loads(f"v = {text}")["v"] if text not in {"mm", "cm", "in"} else text
+    return tomllib.loads(f"v = {cell.strip('`')}")["v"]
 
 
 def test_the_keys_table_lists_every_setting_and_no_other():
@@ -98,6 +97,17 @@ def test_the_spec_config_block_states_the_default_of_each_setting(name, key):
     assert _spec_config()[name] == _leaves(Settings())[key]
 
 
+def test_every_default_of_the_spec_config_block_is_compared():
+    """A new `default_*` entry in the spec needs a row in the test above."""
+    assert set(_spec_config()) == {
+        "default_units",
+        "default_layer_height",
+        "default_tolerance",
+        "default_min_distance",
+        "default_shapes",
+    }
+
+
 def _help_text(option: str) -> str:
     """Return the help of ``option`` from ``--help``, with the line breaks joined."""
     text = " ".join(CliRunner().invoke(cli, ["--help"]).output.split())
@@ -109,12 +119,12 @@ def _help_text(option: str) -> str:
 @pytest.mark.parametrize(
     ("option", "key", "shown"),
     [
-        ("--units", ("units",), lambda v: f"Default {v}"),
-        ("--layer-height", ("layer_height",), lambda v: f"Default {v}"),
-        ("--mark-tolerance", ("marks", "tolerance"), lambda v: f"Default {v}"),
-        ("--mark-min-distance", ("marks", "min_distance"), lambda v: f"Default {v}"),
-        ("--available-shapes", ("marks", "shapes"), lambda v: f"Default {','.join(v)}"),
-        ("--mark-angle", ("marks", "angle"), lambda v: f"Default {v}"),
+        ("--units", ("units",), lambda v: f"Default {v}."),
+        ("--layer-height", ("layer_height",), lambda v: f"Default {v}."),
+        ("--mark-tolerance", ("marks", "tolerance"), lambda v: f"Default {v}."),
+        ("--mark-min-distance", ("marks", "min_distance"), lambda v: f"Default {v}."),
+        ("--available-shapes", ("marks", "shapes"), lambda v: f"Default {','.join(v)}."),
+        ("--mark-angle", ("marks", "angle"), lambda v: f"Default {v}."),
     ],
 )
 def test_the_help_text_states_the_default_of_each_option(option, key, shown):

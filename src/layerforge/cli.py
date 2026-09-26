@@ -15,7 +15,7 @@ from layerforge.utils.loader_initialization import initialize_loaders
 from layerforge.writers import SVGFileWriter
 
 # The help text states each default from here, so it cannot drift from the settings.
-_D = Settings()
+_DEFAULTS = Settings()
 
 
 class ConflictingOptionsError(ValueError):
@@ -233,10 +233,13 @@ def process_model(
     type=click.Choice(["mm", "cm", "in"]),
     help="The unit of the model and of every length option. It sets the physical size "
     "of each SVG. An STL file has no unit, so this states it and nothing is converted. "
-    f"Default {_D.units}.",
+    f"Default {_DEFAULTS.units}.",
 )
 @click.option(
-    "--layer-height", default=None, type=float, help=f"The layer height. Default {_D.layer_height}."
+    "--layer-height",
+    default=None,
+    type=float,
+    help=f"The layer height. Default {_DEFAULTS.layer_height}.",
 )
 @click.option("--output-folder", default="output", help="The output folder for SVG files.")
 @click.option(
@@ -256,28 +259,29 @@ def process_model(
     "--mark-tolerance",
     default=None,
     type=float,
-    help=f"Tolerance when matching existing marks. Default {_D.marks.tolerance}. "
+    help=f"Tolerance when matching existing marks. Default {_DEFAULTS.marks.tolerance}. "
     "See docs/reference_mark_algorithm.md#parameter-effects.",
 )
 @click.option(
     "--mark-min-distance",
     default=None,
     type=float,
-    help=f"Minimum distance from contours and between marks. Default {_D.marks.min_distance}. "
+    help="Minimum distance from contours and between marks. "
+    f"Default {_DEFAULTS.marks.min_distance}. "
     "See docs/reference_mark_algorithm.md#parameter-effects.",
 )
 @click.option(
     "--available-shapes",
     default=None,
     help="Comma separated list of mark shapes. "
-    f"Default {','.join(_D.marks.shapes)}. "
+    f"Default {','.join(_DEFAULTS.marks.shapes)}. "
     "See docs/reference_mark_algorithm.md#parameter-effects.",
 )
 @click.option(
     "--mark-angle",
     default=None,
     type=float,
-    help=f"Default mark orientation in degrees. Default {_D.marks.angle}. "
+    help=f"Default mark orientation in degrees. Default {_DEFAULTS.marks.angle}. "
     "See docs/reference_mark_algorithm.md#parameter-effects.",
 )
 @click.option(

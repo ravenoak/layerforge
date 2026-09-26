@@ -230,6 +230,12 @@ New pull requests open with a checklist from
   `settings.py:120`). The project venv holds no second copy of layerforge: a `.pth` file
   points at `src`. I did not reproduce the errors, so "stale state after edits made
   outside the editor" is a guess. Trust `uv run pyright` and the CI lint job.
+- `Path.exists()` is False for a dangling symlink, but `mkdir` still fails on it. Use
+  `os.path.lexists` when a check must match what the writer does (#144, found by
+  `/code-review`).
+- svgwrite 1.4.3, tiny profile: a `size` given as floats is written rounded to 4 decimals
+  (`33.1235` for `33.123456789`), and the `viewBox` in full. Pass the size as text built
+  from the same floats, or `width` will not equal the `viewBox` width (#74).
 - `gh pr checks N` right after `gh pr create` can say `no checks reported`. Wait a few
   seconds, then use `--watch`.
 - A test that passes before the code exists proves nothing. Two CLI tests that

@@ -473,5 +473,6 @@ surface Command {
 -- G-21 Clearance and spacing use the mark centre, not the whole hole.
 -- G-23 The output suits a screen, not a laser.
 -- G-30 A bad --mark-color ends in a traceback while the SVG is drawn.
+-- G-31 An output folder that cannot be written, or an empty one, is not checked before the slicing.
 -- G-4 to G-7, G-18, G-19, G-20, G-21 and G-23 have targets in
 -- docs/alignment_requirements.md (TR-1 to TR-16).

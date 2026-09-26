@@ -4,6 +4,8 @@
 check, and #136 makes ``--help`` win over a bad config file.
 """
 
+import os
+
 import pytest
 from click.testing import CliRunner
 
@@ -200,3 +202,68 @@ def test_cli_names_a_config_file_even_when_a_later_check_fails(tmp_path, monkeyp
 
     assert result.exit_code != 0
     assert "Using settings from layerforge.toml" in result.stderr
+
+
+# Root can write to a read-only folder, and Windows has no such mode (and no geteuid).
+needs_permission_checks = pytest.mark.skipif(
+    getattr(os, "geteuid", lambda: 0)() == 0, reason="the process can write to a mode 555 folder"
+)
+
+
+@pytest.fixture
+def read_only_folder(tmp_path):
+    """A folder with mode 555. The mode is restored, so pytest can remove it."""
+    folder = tmp_path / "ro"
+    folder.mkdir()
+    folder.chmod(0o555)
+    yield folder
+    folder.chmod(0o755)
+
+
+def _assert_output_folder_refused_before_the_prompt(folder):
+    result = CliRunner().invoke(cli, ["--output-folder", str(folder)], input="box.stl\n")
+
+    assert result.exit_code == 2, result.output
+    assert "Invalid value for --output-folder" in result.output
+    assert "STL file path" not in result.output
+    assert "Traceback" not in result.output
+
+
+@pytest.mark.parametrize("text", ["", "  "])
+def test_cli_empty_output_folder_is_reported_before_the_stl_prompt(text):
+    """An empty name would write to the root: the first file would be ``/slice_000.svg``."""
+    _assert_output_folder_refused_before_the_prompt(text)
+
+
+@needs_permission_checks
+@pytest.mark.parametrize("below", ["", "new", "new/deeper"])
+def test_cli_output_folder_that_cannot_be_written_is_reported_before_the_stl_prompt(
+    read_only_folder, below
+):
+    """An existing read-only folder, and a new folder at any depth under one."""
+    _assert_output_folder_refused_before_the_prompt(read_only_folder / below)
+
+
+def test_cli_output_folder_check_leaves_nothing_behind(tmp_path):
+    new = tmp_path / "a" / "b"
+    existing = tmp_path / "existing"
+    existing.mkdir()
+
+    for folder in (new, existing):
+        result = CliRunner().invoke(
+            cli, ["--stl-file", str(tmp_path / "nope.stl"), "--output-folder", str(folder)]
+        )
+        assert "Cannot load" in result.output  # the output folder check passed
+
+    assert not (tmp_path / "a").exists()
+    assert list(existing.iterdir()) == []
+
+
+def test_cli_output_folder_name_that_is_too_long_is_reported_before_the_stl_prompt(tmp_path):
+    """``lexists`` hides ``File name too long`` as "does not exist", and ``mkdir`` then fails."""
+    _assert_output_folder_refused_before_the_prompt(tmp_path / ("a" * 300))
+
+
+def test_cli_output_folder_with_a_null_byte_is_reported_before_the_stl_prompt(tmp_path):
+    """``Path.lstat`` raises ``ValueError``, not ``OSError``, for it. ``lexists`` hid that."""
+    _assert_output_folder_refused_before_the_prompt(str(tmp_path / "a\0b"))

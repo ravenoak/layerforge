@@ -4,7 +4,7 @@ import pytest
 from shapely.geometry import Polygon, box
 
 from layerforge.models.reference_marks import ReferenceMark
-from layerforge.models.slicing.number import number_box, place_number
+from layerforge.models.slicing.number import largest_fitting_height, number_box, place_number
 
 H = 2.0  # number height
 W = 0.6  # width factor
@@ -99,3 +99,55 @@ def test_the_clearance_can_decide_whether_the_number_fits():
     strip = box(0, 0, 10, 2.5)  # 2.5 tall: a number 2 tall fits, but not with 0.5 clear each side
     assert _place(strip, clearance=0.0).fits
     assert not _place(strip, clearance=0.5).fits
+
+
+def _largest(contour, marks=(), *, digits=1, clearance=0.0, ceiling=5.0):
+    return largest_fitting_height(
+        contour, list(marks), digits=digits, ceiling=ceiling, width_factor=W, clearance=clearance
+    )
+
+
+def _fits(contour, marks, height, *, digits=1, clearance=0.0):
+    return place_number(
+        contour, list(marks), digits=digits, height=height, width_factor=W, clearance=clearance
+    ).fits
+
+
+def test_the_largest_fitting_height_of_a_square_is_its_side():
+    square = box(0, 0, 4, 4)  # a box of height h is 0.6 h wide, so the height is the limit
+
+    height = _largest(square)
+
+    assert 3.9 <= height <= 4.0
+    assert _fits(square, [], height)
+    assert not _fits(square, [], height * 1.02)
+
+
+def test_the_clearance_lowers_the_largest_fitting_height():
+    square = box(0, 0, 4, 4)
+
+    height = _largest(square, clearance=0.5)
+
+    assert 2.9 <= height <= 3.0  # 4 - 2 x 0.5
+
+
+def test_a_mark_lowers_the_largest_fitting_height():
+    strip = box(0, 0, 20, 4)
+    mark = ReferenceMark(10, 2, "circle", 2.0, 0.0)
+
+    height = _largest(strip, [mark], ceiling=4.0)
+
+    assert 0 < height < 4.0
+    assert _fits(strip, [mark], height)
+    assert not _fits(strip, [mark], height * 1.05)
+
+
+def test_when_no_height_fits_the_largest_is_zero():
+    square = box(0, 0, 4, 4)
+    mark = ReferenceMark(2, 2, "circle", 6.0, 0.0)  # radius 3 covers the corners at 2.83
+
+    assert _largest(square, [mark]) == 0.0
+
+
+def test_a_height_that_already_fits_is_returned_as_it_is():
+    assert _largest(box(0, 0, 40, 40), ceiling=5.0) == 5.0

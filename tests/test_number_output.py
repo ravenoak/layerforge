@@ -1,17 +1,24 @@
 """The layer number in the SVG (TR-11, #75): the index, engraved, clear of every cut."""
 
 import logging
+import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import pytest
 
 pytest.importorskip("trimesh")
+import svgwrite
 import trimesh
 from click.testing import CliRunner
 from shapely.geometry import Point, Polygon, box
 
 from layerforge.cli import cli
+from layerforge.models.reference_marks import ReferenceMarkManager
+from layerforge.models.slicing import Slice
+from layerforge.svg.drawing.strategy_context import StrategyContext
+from layerforge.svg.slice_svg_drawer import SliceSVGDrawer
+from layerforge.utils.shape_strategies import register_shape_strategies
 
 SVG = "{http://www.w3.org/2000/svg}"
 
@@ -156,3 +163,80 @@ def test_the_config_file_sets_the_number_height(cube_stl, tmp_path):
     for root in _slices(cube_stl, tmp_path / "out", "--config", str(cfg)):
         (text,) = root.iter(f"{SVG}text")
         assert float(text.get("font-size", "")) == pytest.approx(3.0)
+
+
+def _number_warnings(stl: Path, out: Path, caplog: pytest.LogCaptureFixture, *args: str):
+    caplog.clear()
+    with caplog.at_level(logging.WARNING):
+        result = CliRunner().invoke(
+            cli, ["--stl-file", str(stl), "--output-folder", str(out), *args]
+        )
+    assert result.exit_code == 0, result.output
+    return [r.getMessage() for r in caplog.records if "number of slice" in r.getMessage()]
+
+
+def test_the_warning_gives_a_height_that_makes_it_go_away(tmp_path, caplog):
+    """The hint is a number that you can use: applied, no piece is left without room."""
+    stl = tmp_path / "small.stl"
+    trimesh.creation.box(extents=(10, 10, 10)).export(stl)
+
+    messages = _number_warnings(stl, tmp_path / "a", caplog)
+    assert len(messages) == 4  # one for each slice
+    hints = {re.search(r"--number-height ([0-9.]+)", m)[1] for m in messages}  # type: ignore[index]
+    hint = min(hints, key=float)
+    assert 0 < float(hint) < 5
+
+    assert _number_warnings(stl, tmp_path / "b", caplog, "--number-height", hint) == []
+
+
+def test_the_warning_names_the_key_of_the_config_file_too(tmp_path, caplog):
+    stl = tmp_path / "small.stl"
+    trimesh.creation.box(extents=(10, 10, 10)).export(stl)
+
+    (message, *_) = _number_warnings(stl, tmp_path / "a", caplog)
+
+    assert "number.height" in message
+    assert "--number-height" in message
+
+
+def test_the_warning_says_when_no_height_fits(caplog):
+    """A mark that covers a small piece leaves the number no room at any height."""
+    ctx = StrategyContext()
+    register_shape_strategies(ctx)
+    piece = box(0, 0, 0.001, 0.001)  # the smallest test height, 0.005, is larger than the piece
+    slice_obj = Slice(3, 0.0, [piece], mark_manager=ReferenceMarkManager(), layer_height=3.0)
+    slice_obj.ref_marks = []
+
+    with caplog.at_level(logging.WARNING):
+        SliceSVGDrawer.draw_slice(svgwrite.Drawing(), slice_obj, ctx)
+
+    (message,) = [r.getMessage() for r in caplog.records]
+    assert message.startswith("The number of slice 3 does not fit")
+    assert "No height fits" in message
+    assert "Try --number-height" not in message
+
+
+@pytest.mark.parametrize(
+    ("value", "text"),
+    [
+        (4.8349, "4.83"),
+        (0.0123456, "0.0123"),
+        (0.000393700787, "0.000393"),
+        (5.0, "5"),
+        (3210.5, "3210"),
+        (30000.9, "30000"),
+        (99.99, "99.9"),
+    ],
+)
+def test_the_hint_is_rounded_down_to_three_digits_without_float_noise(value, text):
+    assert SliceSVGDrawer._round_down(value) == text  # pyright: ignore[reportPrivateUsage]
+
+
+def test_the_rounded_hint_never_exceeds_the_height_that_was_found():
+    """A hint above the found height might not fit, and large values once printed float noise."""
+    for value in (0.00031, 0.5, 4.8349, 49.999, 1234.5678, 28347477.493658833):
+        text = SliceSVGDrawer._round_down(value)  # pyright: ignore[reportPrivateUsage]
+        assert float(text) <= value
+        assert float(text) > value * 0.99
+        assert "e" not in text.lower()
+        assert len(text.replace(".", "").lstrip("0")) <= 8

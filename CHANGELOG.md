@@ -128,6 +128,12 @@ output, the first release will raise the minor version.
 
 ### Added
 
+- The warning that a number does not fit now gives the tallest height that does fit
+  (`Try --number-height 4.83 (number.height in the config file)`), or says that no height
+  fits. Measured: the 10 mm cube at the defaults needs 4.83 mm, not 5, and warns in all 4
+  slices without it. The warning that no mark fits also names the config keys
+  (`marks.min_distance`, `marks.size`) beside the options. `largest_fitting_height` in
+  `layerforge.models.slicing.number` finds the height. (#190, #189)
 - A warning when `--cut-color` and `--engrave-color` are the same colour (compared as text,
   ignoring case). A laser program gives one operation to a colour, so the number and the
   outlines would share it. (#180)

@@ -149,7 +149,8 @@ class Slice:
         if unmarked:
             logging.warning(
                 f"No reference mark fits {len(unmarked)} of {len(self.contours)} contours "
-                f"in slice {self.index}. Try a smaller --mark-min-distance or --mark-size."
+                f"in slice {self.index}. Try a smaller --mark-min-distance or --mark-size "
+                "(marks.min_distance or marks.size in the config file)."
             )
 
     def _select_unique_shape(self) -> str:

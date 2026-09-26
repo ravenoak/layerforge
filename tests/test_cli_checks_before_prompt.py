@@ -5,12 +5,12 @@ check, and #136 makes ``--help`` win over a bad config file.
 """
 
 import os
+import tomllib
 
 import pytest
 from click.testing import CliRunner
 
 from layerforge import cli as cli_module
-from layerforge import settings as settings_module
 from layerforge.cli import ConflictingOptionsError, process_model
 
 cli = cli_module.cli
@@ -144,10 +144,13 @@ def test_cli_reads_the_config_file_once(cylinder_stl, tmp_path, monkeypatch, via
     else:
         monkeypatch.chdir(tmp_path)
     reads = []
-    real_read = settings_module._read
-    monkeypatch.setattr(
-        settings_module, "_read", lambda path: reads.append(path) or real_read(path)
-    )
+    real_load = tomllib.load
+
+    def counting_load(handle):
+        reads.append(handle.name)
+        return real_load(handle)
+
+    monkeypatch.setattr(tomllib, "load", counting_load)
 
     result = CliRunner().invoke(cli, args)
 

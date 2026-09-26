@@ -24,7 +24,7 @@ Sizes are my estimates: S under an hour, M one session, L several sessions. Noth
 | 6 | #73 | Investigate overlapping shells (decided: document the limit) | M | none | Changes how contours are built, which #89 relies on. Decide before rank 14. | decided 2026-09-25 |
 | 7 | #87 | Settings model and config file (done, #115: the mechanism and the six keys that exist today; each later issue adds its own keys) | M to L | #71 helps | Everything else reads its numbers from here (TR-16). | confirm the file format and key names |
 | 8 | #96 | Calibrate the proposed defaults | owner | none (use with #87) | Turns proposed numbers into measured ones. Do it any time after rank 7, or in parallel. The generated sheet of #141 does the cutting part for any machine. | **yes**: cut the sheet of #141 and record the numbers |
-| 9 | #74 | Units and physical SVG size | M | #87 | Laser software may import at the wrong size. High value. | no |
+| 9 | #74 | Units and physical SVG size (done, #147: `--units`, the `units` key, `width` and `height` with the unit) | M | #87 | Laser software may import at the wrong size. High value. | no |
 | 10 | #84 | Shape contract | M | none | Closed outlines, one size, anchor and angle. Needed by 11, 15, 17. | confirm angle 0 = +x, size = circumscribed diameter (already chosen) |
 | 11 | #85 | Clearance uses the whole hole | S to M | #84 | Cheap once outlines exist. | no |
 | 12 | #62 + #76 | Mark size and default distance from thickness and kerf | S to M | #87 | Small once settings exist. Makes small models get marks. | no |
@@ -56,14 +56,17 @@ Sizes are my estimates: S under an hour, M one session, L several sessions. Noth
 | 38 | #122 | Test scripts/check_specs.sh and find out what `findings` hold | S | #114 | The CI gate is proven only by hand. | no |
 | 39 | #123 | Verify the allium install in CI; make the bump routine (done, #127: upstream signs nothing, so the pin is checked against the tarball its release run built; the bump steps are in `docs/development.md`) | S | #114 | The pinned hash was trust-on-first-use. There are no attestations. | optional: tell upstream about the empty `sha256` for x86_64 in its Homebrew formula |
 | 40 | #124 | The spec does not model most option checks | S to M | none | Weed found spec faults in #115 only because it was run by hand. | no |
-| 41 | #135 | G-28: Bad option values and the scale and target conflict are reported after the STL prompt | S to M | none | #119 fixed only the config file. Do it before session C, which adds `--units` and more options that need the same early checks. Investigate option callbacks against moving the prompt. | no |
-| 42 | #136 | Tidy the eager `--config` callback: a double read and three small inconsistencies | S | none | Found by `/code-review` on #131 and by running the command. Low priority. | decided 2026-09-25 by best practice: `--help` wins over everything, as [clig.dev](https://clig.dev) says ("you should be able to add `-h` to the end of anything and it should show help") |
-| 43 | #137 | `getting_started.md` lists error messages the command does not print | S | none | Two lines are wrong and the two most common messages are missing. Can be folded into #95. | no |
-| 44 | #138 | The PR template has no way to say a box does not apply | S | #110 | One line. | no |
+| 41 | #135 | G-28: Bad option values and the scale and target conflict are reported after the STL prompt (done, #146: `--stl-file` has no `prompt=`, `cli` asks after the checks) | S to M | none | #119 fixed only the config file. Do it before session C, which adds `--units` and more options that need the same early checks. Investigate option callbacks against moving the prompt. | no |
+| 42 | #136 | Tidy the eager `--config` callback: a double read and three small inconsistencies (done, #146: `--config` is not eager, the file is read once, `--help` wins over a bad file) | S | none | Found by `/code-review` on #131 and by running the command. Low priority. | decided 2026-09-25 by best practice: `--help` wins over everything, as [clig.dev](https://clig.dev) says ("you should be able to add `-h` to the end of anything and it should show help") |
+| 43 | #137 | `getting_started.md` lists error messages the command does not print (done, #148) | S | none | Two lines are wrong and the two most common messages are missing. Can be folded into #95. | no |
+| 44 | #138 | The PR template has no way to say a box does not apply (done, #148) | S | #110 | One line. | no |
 | 45 | #141 | Write a calibration sheet SVG so any machine can measure its own kerf, hole, fit and number sizes | M | #74, #83 | Machine-neutral way to get the numbers of #96 and the dowel fit of #93. | cut it on your machine |
 | 46 | #142 | Implement dowel holes (TR-15), after the design in #93 is accepted | M | #93, #84, #83, #74, #89, #141 | Later. Do not start before #93 is accepted. | no |
+| 47 | #144 | G-29: An output folder that is a file ends in a traceback after slicing (done, #146) | S | none | Found by probing the class of #135. | no |
+| 48 | #145 | G-30: A bad `--mark-color` ends in a traceback while the SVG is drawn | S | #83 | #83 removes `--mark-color` and adds `--cut-color` and `--engrave-color`. Build the colour check there, for all three. | no |
+| 49 | #149 | G-31: An output folder that cannot be written ends in a traceback, and an empty one points at the root | S | none | Same class as #144. Create the folder early, so the check is the real operation. Can go any time. | no |
 
-Ranks 27 to 31 were found while doing ranks 1 to 6, and ranks 32 to 40 while doing ranks 7 and 27 to 29. They are appended, so the numbers in the Depends columns stay valid. Ranks 27 to 29 and 32 to 36 are done (session A3 below). Rank 37 goes before #62 (session D). Ranks 41 to 44 were found in the retrospective of session A3 (session A5 below); rank 41 goes before session C. Ranks 38 to 40 are hygiene and can go any time (session A4).
+Ranks 27 to 31 were found while doing ranks 1 to 6, and ranks 32 to 40 while doing ranks 7 and 27 to 29. They are appended, so the numbers in the Depends columns stay valid. Ranks 27 to 29 and 32 to 36 are done (session A3 below). Rank 37 goes before #62 (session D). Ranks 41 to 44 were found in the retrospective of session A3 and are done (session A5, PRs #146 and #148). Ranks 47 to 49 were found by probing the class of #135 in the session of 2026-09-25; rank 47 is done. Ranks 38 to 40 are hygiene and can go any time (session A4).
 
 Issue #98 holds the same list as a checklist. Tick it as items merge, and keep the order in both places the same.
 
@@ -75,9 +78,9 @@ Issue #98 holds the same list as a checklist. Tick it as items merge, and keep t
 | A2 | #106, #110, #109 | Done 2026-09-25 as PRs #112 to #114. |
 | A3 | #120, #117, #118, #119, #121 | Done 2026-09-25 as PRs #129 to #133. #121 moved here from D because #119 reshaped `load_settings`. |
 | A4 | #122, #123 (done), #124 | Spec and CI hygiene. No product code. Run `allium:weed` with #124. Can go between any two sessions. |
-| A5 | #135, #136, #137, #138 | Found in the A3 retrospective. #135 goes before C. #137 can move into H with #95. #136 and #138 are small and can go any time. |
+| A5 | #135, #136, #137, #138 | Done 2026-09-25 as PRs #146 (#135, #136 and #144 together, because removing the eager `--config` callback fixes both) and #148 (#137, #138). |
 | B | #87 | Done 2026-09-25 as PR #115, narrow: the mechanism plus keys for today's settings. The example file for #96 is not added; `docs/configuration.md` has an example. |
-| C | #74, #84 | Units first, then the shape contract. |
+| C | #74, #84 | Units first, then the shape contract. #74 is done (PR #147, 2026-09-25). #84 is next. |
 | D | #125, then #85, #62 + #76, #75, #108 | Uses #84 and #87. #125 goes first, because #62 changes a default. |
 | E | #83, #89, #141 | Laser output, then adjacency. The calibration sheet (#141) follows #83 and #74. |
 | F | #90, #91, #61 | Symmetry test and its oracle together, then shape choice. |
@@ -95,6 +98,8 @@ Start:
 While working:
 - When a fix names one member of a class of inputs, probe the rest of the class before you close the issue. #119 moved a bad config file before the `--stl-file` prompt and left bad option values and the option conflict after it (G-28, #135). Test each member of the class, as with `nan` and `inf` in #106.
 - Before a comment, a spec sentence or a doc line says "every" or "before any", run the case. "Before every other check" was false in #131 (an unknown option is refused first), and a code comment in #133 claimed a case that no test reached.
+- When a check moves or a step is split, compare what the command prints and on which stream, not only the exit code. In #146 the `Using settings from <file>` line stopped printing on a run that failed a later check. My tests covered the success run, and `/code-review` found the loss. Now a test covers it.
+- When a fix covers an option that names a resource (a file, a folder), probe the whole class: missing, a directory where a file is wanted, a file where a directory is wanted, inside a file, a dangling symlink, not writable, empty text. #144 covered a file and a path inside one. A dangling symlink came from the review, and #149 holds the unwritable and empty cases.
 - One branch and one PR per issue. Commit message ends with `Fixes #N`, or `Refs #N` when part of the issue stays open.
 - Write the failing test first, and watch it fail for the right reason. A property test that passes on the first run proves nothing: shrink the input space until it fails on the bug. Run the checks without pipes: `uv run ruff format && uv run ruff check && uv run pyright && uv run pytest -q`.
 - In the same PR: update the FR row in `docs/requirements.md`, remove the fixed Known gaps row, and update `specs/layerforge.allium`. Add or update the matching target row if the target changed. Run `./scripts/check_specs.sh` and `uv run mkdocs build --strict`.
@@ -117,7 +122,7 @@ See memory `layerforge-tooling-gotchas` and [Development](development.md) (Worki
 
 ## Status
 
-Sessions A, A2 and B are done (2026-09-25). A: ranks 1 to 5 merged as #100 to #104, and rank 6 (#73) was decided as a documented limit (#105). A2: #106, #110 and #109 merged as #112 to #114. B: #87 merged as #115, with the mechanism and the keys that exist today (`layer_height`, `marks.size`, `marks.tolerance`, `marks.min_distance`, `marks.shapes`, `marks.angle`). Retrospective 2026-09-25: nine new issues, #117 to #125 (ranks 32 to 40). Session A3 is done (2026-09-25): #120, #117, #119, #118 and #121 merged as #129 to #133. The retrospective found four more issues, #135 to #138 (ranks 41 to 44). The next work is #135 (session A5), then session C (#74, #84), or A4 (#122, #124) first. Each later issue adds its own config keys and its own row in TR-16; the default `marks.tolerance` of 0.1 x mark size comes with #62.
+Sessions A, A2 and B are done (2026-09-25). A: ranks 1 to 5 merged as #100 to #104, and rank 6 (#73) was decided as a documented limit (#105). A2: #106, #110 and #109 merged as #112 to #114. B: #87 merged as #115, with the mechanism and the keys that exist today (`layer_height`, `marks.size`, `marks.tolerance`, `marks.min_distance`, `marks.shapes`, `marks.angle`). Retrospective 2026-09-25: nine new issues, #117 to #125 (ranks 32 to 40). Session A3 is done (2026-09-25): #120, #117, #119, #118 and #121 merged as #129 to #133. The retrospective found four more issues, #135 to #138 (ranks 41 to 44). The next work is #135 (session A5), then session C (#74, #84), or A4 (#122, #124) first. Each later issue adds its own config keys and its own row in TR-16; the default `marks.tolerance` of 0.1 x mark size comes with #62. Session A5 and #74 are done (2026-09-25): #135, #136 and #144 merged as #146, #74 as #147, #137 and #138 as #148. The retrospective found #145 (G-30) and #149 (G-31). The next work is #84 (session C), then session D with #125 first.
 
 ## Open decisions and owner inputs
 

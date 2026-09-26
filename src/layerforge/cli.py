@@ -1,3 +1,4 @@
+import logging
 import math
 import tempfile
 from pathlib import Path
@@ -156,6 +157,15 @@ def _run(
     except ValueError as exc:
         raise click.ClickException(f"Cannot load '{stl_file}': {exc}") from exc
 
+    output = settings.output
+    if output.cut_color.casefold() == output.engrave_color.casefold():
+        logging.warning(
+            f"The cut colour and the engrave colour are both {output.cut_color}. A laser program "
+            "gives one operation to each colour, so the number would be cut like the outlines, "
+            "or the outlines engraved like the number. Set --cut-color or --engrave-color "
+            "(output.cut_color, output.engrave_color) to different colours."
+        )
+
     marks = settings.marks
     config = ReferenceMarkConfig(
         tolerance=marks.tolerance,
@@ -171,7 +181,6 @@ def _run(
 
     slices = SlicerService.slice_model(model, config=config)
     svg_writer = SVGFileWriter()
-    output = settings.output
     style = SVGStyle(
         cut_color=output.cut_color,
         engrave_color=output.engrave_color,

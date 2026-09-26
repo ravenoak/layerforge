@@ -11,9 +11,9 @@ from layerforge.domain.shapes import Arrow
 from layerforge.svg.drawing.strategies.arrow_strategy import ArrowDrawingStrategy
 
 
-def _line_end(dwg: svgwrite.Drawing) -> tuple:
-    line = [el for el in dwg.elements if isinstance(el, svgwrite.shapes.Line)][0]
-    return float(line["x2"]), float(line["y2"])
+def _outline(dwg: svgwrite.Drawing) -> svgwrite.shapes.Polygon:
+    (polygon,) = [el for el in dwg.elements if isinstance(el, svgwrite.shapes.Polygon)]
+    return polygon
 
 
 def test_arrow_angle_is_always_radians():
@@ -21,17 +21,14 @@ def test_arrow_angle_is_always_radians():
     arrow = Arrow(0, 0, 10, angle=90, color="purple")
     dwg = svgwrite.Drawing()
     ArrowDrawingStrategy().draw(dwg, arrow)
-    x2, y2 = _line_end(dwg)
-    line = [el for el in dwg.elements if isinstance(el, svgwrite.shapes.Line)][0]
-    assert line["stroke"] == "purple"
-    assert math.isclose(x2, 10 * math.cos(90), abs_tol=1e-6)
-    assert math.isclose(y2, 10 * math.sin(90), abs_tol=1e-6)
+    polygon = _outline(dwg)
+    assert polygon["stroke"] == "purple"
+    tip = polygon.points[0]
+    assert tip == pytest.approx((5 * math.cos(90), 5 * math.sin(90)))
 
 
-def test_arrow_endpoint_radians():
+def test_arrow_tip_radians():
     arrow = Arrow(0, 0, 10, angle=math.pi / 2)
     dwg = svgwrite.Drawing()
     ArrowDrawingStrategy().draw(dwg, arrow)
-    x2, y2 = _line_end(dwg)
-    assert math.isclose(x2, 0.0, abs_tol=1e-6)
-    assert math.isclose(y2, 10.0, abs_tol=1e-6)
+    assert _outline(dwg).points[0] == pytest.approx((0.0, 5.0), abs=1e-9)

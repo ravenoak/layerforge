@@ -75,13 +75,15 @@ python -c "import layerforge; print(layerforge.__version__)"
 The CLI exposes parameters for tuning reference mark generation:
 
 - `--config` – a TOML settings file. Without it, `layerforge.toml` in the current directory is read if it exists, and the command says so on stderr. The command line beats the file. See [docs/configuration.md](docs/configuration.md#config-file).
-- `--units` – the unit of the model and of every length option: `mm`, `cm` or `in`. It sets the physical size of each SVG, so a laser program imports it at the right scale. An STL file has no unit, so this states it and nothing is converted. Defaults to `mm`.
+- `--units` – the unit of the model and of every length option: `mm`, `cm` or `in`. It sets the physical size of each SVG, so a laser program imports it at the right scale. An STL file has no unit, so this states it and nothing is converted.
 - `--mark-size` – size of every new mark. Without it the size is 3 to 5, by distance from the model origin.
-- `--mark-tolerance` – distance used when matching an existing mark. Defaults to `10.0`.
-- `--mark-min-distance` – minimum distance from contours and between marks. Defaults to `10.0`.
-- `--available-shapes` – comma separated list of shapes to choose from when creating marks. Defaults to `circle,square,triangle,arrow`.
-- `--mark-angle` – default orientation angle for generated marks in degrees. Defaults to `0.0`.
+- `--mark-tolerance` – distance used when matching an existing mark.
+- `--mark-min-distance` – minimum distance from contours and between marks.
+- `--available-shapes` – comma separated list of shapes to choose from when creating marks.
+- `--mark-angle` – default orientation angle for generated marks in degrees.
 - `--mark-color` – outline color for reference marks.
+
+The default of each option is in the [keys table](docs/configuration.md#config-file) and in `--help`.
 
 See [docs/reference_mark_algorithm.md#parameter-effects](docs/reference_mark_algorithm.md#parameter-effects)
 for diagrams and tuning tips on how these options influence mark placement.

@@ -126,3 +126,20 @@ def test_unusable_stored_mark_is_not_reused_at_a_nearby_place():
     for mark in sl.ref_marks:
         assert math.hypot(mark.x - 15, mark.y - 25) > 10
     assert len(manager.marks) == 1 + len(sl.ref_marks)
+
+
+def test_the_slice_and_the_store_snap_with_the_same_tolerance():
+    """#108 item 1: one source. The slice's tolerance decides, also when adding to the store.
+
+    The stored square at (0, 30) lies outside the contour, so the calculator still picks the
+    centre (0, 0). That is 30 from the square: outside the slice's tolerance of 0.3, inside
+    the manager's 40. The new mark must be stored as a new mark, and the square must stay.
+    """
+    manager = ReferenceMarkManager(config=ReferenceMarkConfig(tolerance=40))
+    manager.marks.append(ReferenceMark(0, 30, "square", 3))
+    cfg = ReferenceMarkConfig(tolerance=0.3, min_distance=1)
+    contour = Polygon([(-20, -20), (20, -20), (20, 20), (-20, 20)])
+    sl = Slice(0, 0.0, [contour], origin=(0, 0), mark_manager=manager, config=cfg)
+    sl.process_reference_marks()
+    assert [(m.x, m.y) for m in sl.ref_marks] == [(0, 0)]
+    assert [(m.shape, m.x, m.y) for m in manager.marks] == [("square", 0, 30), ("circle", 0, 0)]

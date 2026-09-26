@@ -116,6 +116,7 @@ class Slice:
                     new_size,
                     angle=self.config.angle,
                     color=self.config.color,
+                    tolerance=self.config.tolerance,
                 )
                 self.ref_marks.append(
                     ReferenceMark(

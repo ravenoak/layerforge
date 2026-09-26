@@ -109,6 +109,13 @@ output, the first release will raise the minor version.
 
 ### Fixed
 
+- A slice and its mark store now snap with the same tolerance. When they differed (a
+  hand-built `Slice` and manager), a new mark could overwrite a stored mark of another
+  shape 30 units away and leave the new position unstored. The slice's tolerance now
+  decides both steps, and `ReferenceMarkManager.add_or_update_mark` takes a `tolerance`
+  keyword. The command gives both the same value. Its output was identical before and
+  after on a 30 mm cylinder and a 30 mm cube at layer height 3 (#108).
+
 - `Slice.adjust_marks` no longer catches the `ValueError` for a mark whose shape name is
   not registered. It used to log one line and keep every mark of the slice unchecked,
   including a circle whose hole crossed the outline. A Python caller now gets the error

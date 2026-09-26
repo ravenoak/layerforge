@@ -46,9 +46,13 @@ class ReferenceMarkManager:
         *,
         angle: float = 0.0,
         color: str | None = None,
+        tolerance: float | None = None,
     ) -> None:
-        """Add a new mark or update an existing one."""
-        mark = self.find_mark_by_position(x, y)
+        """Add a new mark or update an existing one.
+
+        ``tolerance`` is the snapping range. Without it the manager's own is used.
+        """
+        mark = self.find_mark_by_position(x, y, tolerance=tolerance)
         if mark:
             mark.shape = shape
             mark.size = size

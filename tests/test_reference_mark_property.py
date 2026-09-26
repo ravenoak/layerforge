@@ -30,7 +30,7 @@ def test_marks_inside_polygon(coords):
     poly = cast(Polygon, hull)
     cfg = ReferenceMarkConfig(min_distance=1)
     manager = ReferenceMarkManager(config=cfg)
-    sl = Slice(0, 0.0, [poly], origin=(0, 0), mark_manager=manager, config=cfg, layer_height=3.0)
+    sl = Slice(0, 0.0, [poly], mark_manager=manager, config=cfg, layer_height=3.0)
     marks = ReferenceMarkCalculator.get_stable_marks(sl, [], config=cfg)
     min_distance = require(sl.config.min_distance, "min_distance")
     size = require(sl.config.size, "size")

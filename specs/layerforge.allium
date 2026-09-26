@@ -89,7 +89,6 @@ entity Run {
 
     height: mesh.max_z - mesh.min_z
     all_drawn: slices.count > 0 and slices.all(s => s.status = drawn)
-    origin: Point?                      -- x, y centre of the scaled mesh bounding box
     slices: Slice with run = this
     marks: RegisteredMark with run = this   -- shared by every slice in the run
 
@@ -252,7 +251,9 @@ rule FR2_FR3_RejectNonPositiveValues {
         -- is checked in the same way.
 }
 
--- Scaling (FR-8 to FR-10) -------------------------------------------------
+-- Scaling (FR-8 and FR-9) --------------------------------------------------
+
+-- FR-10: the mesh is not moved after scaling, so a slice keeps the x and y of the model.
 
 rule FR8_ScaleByFactor {
     when: run: Run.status becomes requested
@@ -284,13 +285,6 @@ rule NoScaling {
     requires: run.scale_factor = null and run.target_height = null
     requires: run.layer_height > 0
     ensures: run.status = scaled
-}
-
-rule FR10_SetOrigin {
-    when: run: Run.status transitions_to scaled
-    ensures: run.origin = bounding_box_centre(run.mesh)
-    @guidance
-        -- Taken after scaling. The mesh itself is not moved.
 }
 
 -- Slicing (FR-11 to FR-14) ------------------------------------------------

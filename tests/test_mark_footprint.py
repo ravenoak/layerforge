@@ -93,7 +93,6 @@ def _slice(polygon, layer_height=3.0, **config):
         0,
         0.0,
         [polygon],
-        origin=(0, 0),
         mark_manager=ReferenceMarkManager(config=cfg),
         config=cfg,
         layer_height=layer_height,

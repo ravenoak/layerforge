@@ -18,9 +18,7 @@ from layerforge.models.slicing.slice import Slice
 def create_slice(polygons, manager=None, cfg=None):
     manager = manager or ReferenceMarkManager(config=cfg)
     cfg = cfg or ReferenceMarkConfig()
-    return Slice(
-        0, 0.0, polygons, origin=(0, 0), mark_manager=manager, config=cfg, layer_height=3.0
-    )
+    return Slice(0, 0.0, polygons, mark_manager=manager, config=cfg, layer_height=3.0)
 
 
 def test_potential_marks_inside_polygon():
@@ -90,6 +88,48 @@ def test_sample_points_stay_out_of_holes():
     plate = _plate_with_hole()
     for x, y in ReferenceMarkCalculator._sample_points(plate, samples=8):
         assert plate.contains(Point(x, y))
+
+
+class _FailsOnSecondContains:
+    """Wraps a polygon. Its `contains` works for the centroid test and then raises.
+
+    A subclass of `Polygon` does not work here: shapely builds a plain `Polygon`.
+    """
+
+    def __init__(self, polygon: Polygon):
+        self._polygon = polygon
+        self.calls = 0
+
+    def __getattr__(self, name):
+        return getattr(self._polygon, name)
+
+    def contains(self, other):
+        self.calls += 1
+        if self.calls > 1:
+            raise RuntimeError("shapely failed")
+        return self._polygon.contains(other)
+
+
+def test_an_error_from_the_candidate_test_reaches_the_caller():
+    """It used to read as "outside", so an error hid as "no mark fits" (#171)."""
+    poly = _FailsOnSecondContains(Polygon([(0, 0), (100, 0), (100, 100), (0, 100)]))
+    with pytest.raises(RuntimeError, match="shapely failed"):
+        ReferenceMarkCalculator._sample_points(poly, samples=4)  # pyright: ignore[reportArgumentType]
+    assert poly.calls == 2
+
+
+@pytest.mark.parametrize(
+    "poly",
+    [
+        Polygon([(0, 0), (10, 10), (10, 0), (0, 10)]),  # a bow-tie, not valid
+        Polygon([(0, 0), (5, 0), (10, 0)]),  # no area
+        Polygon(),  # empty
+    ],
+    ids=["bow-tie", "no-area", "empty"],
+)
+def test_sample_points_of_a_degenerate_polygon_do_not_raise(poly):
+    """The `except` around the candidate test guarded nothing that these reach (#171)."""
+    assert isinstance(ReferenceMarkCalculator._sample_points(poly, samples=4), list)
 
 
 _COORD = st.floats(0, 30).map(lambda v: round(v, 3))

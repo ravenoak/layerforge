@@ -21,15 +21,13 @@ mark steps are on the [Alignment requirements](alignment_requirements.md) page.
 2. Scale the Model:
     1. If a scale factor is provided, scale the model by this factor.
     2. If a target height is provided, calculate the necessary scale factor to achieve this height and apply it to the model, ensuring the aspect ratios are maintained.
-3. Calculate the Model Origin:
-    1. Determine the model's origin point for reference in subsequent operations.
-4. Slice the Model into Layers:
+3. Slice the Model into Layers:
     1. Determine the positions for each slice based on the specified layer height.
     2. For each determined position:
         1. Slice the model at this position.
         2. Project the resulting slice to a 2D plane.
         3. Create a List of `Polygon`s representing the 2D contours of the slice.
-5. For each slice, process the slice:
+4. For each slice, process the slice:
     1. Calculate Reference Marks:
         1. Evaluate candidate points using a geometric stability metric derived from GDOP.
         2. Choose marks so that each piece can be aligned in exactly one way with each piece it overlaps in the layer above and below, ensuring:
@@ -46,7 +44,7 @@ mark steps are on the [Alignment requirements](alignment_requirements.md) page.
     4. Generate SVG File:
         1. Draw the slice contours and the reference marks as cut lines.
         2. Engrave the slice number inside each piece, clear of the marks.
-6. Output:
+5. Output:
     1. Save the generated SVG files to the specified output directory, with each file representing a slice of the original 3D model.
 
 ## Expected Workflow

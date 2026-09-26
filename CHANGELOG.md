@@ -131,6 +131,11 @@ output, the first release will raise the minor version.
 
 ### Fixed
 
+- An error raised while the calculator tests a candidate point no longer reads as
+  "outside the piece". The broad `except Exception` around it is removed, so a failure in
+  shapely reaches the caller and does not hide as "no mark fits". On a stub that raised
+  from its second `contains` call, the old code returned the centroid after 40 swallowed
+  errors. A bow-tie, a polygon with no area and an empty polygon give no error. (#171)
 - The warning about a mark size below the least hole size no longer ends its sentence
   with the internal requirement ID `(TR-6)`. A test now checks that no string in the
   command's code, and no line of `--help`, names a TR, FR or G number. (#175)
@@ -189,6 +194,10 @@ output, the first release will raise the minor version.
 
 ### Removed
 
+- **Breaking:** Python API. `Model.origin`, `Slice.origin` and the `origin` argument of
+  `Model(...)` and `Slice(...)` are removed, with `ModelFactory._calculate_origin`.
+  Nothing read them since the mark size stopped depending on the place (#170). A call that
+  passes `origin` now raises `TypeError`. The command's output does not change. (#172)
 - `Model.calculate_height`. Nothing used it. (#78)
 - `Triangle.vertices`. Use `Triangle.outline()`, a shapely polygon. (#84)
 

@@ -23,8 +23,6 @@ class Slice:
         The Z position of the slice.
     contours : list
         A list of contours in the slice.
-    origin : tuple
-        The origin of the model.
     ref_marks : List[ReferenceMark]
         A list of reference marks in the slice.
     mark_manager : ReferenceMarkManager
@@ -36,7 +34,6 @@ class Slice:
         index: int,
         position: float,
         contours: list[Polygon],
-        origin: tuple[float, float],
         mark_manager: ReferenceMarkManager,
         config: ReferenceMarkConfig | None = None,
         *,
@@ -52,8 +49,6 @@ class Slice:
             The Z position of the slice.
         contours : list
             A list of contours in the slice.
-        origin : tuple
-            The origin of the model.
         mark_manager : ReferenceMarkManager
             The reference mark manager for the slice.
         config : ReferenceMarkConfig, optional
@@ -68,7 +63,6 @@ class Slice:
         self.index = index
         self.mark_manager = mark_manager
         self.config = (config or ReferenceMarkConfig()).resolved(layer_height)
-        self.origin = origin
         self.position = position
 
         self.ref_marks: list[ReferenceMark] = []

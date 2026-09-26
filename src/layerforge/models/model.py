@@ -14,11 +14,9 @@ class Model:
         The 3D mesh of the model.
     layer_height : float
         The height of each layer that is sliced from the model.
-    origin : Tuple[float, float]
-        The origin of the model.
     """
 
-    def __init__(self, mesh: Mesh, layer_height: float, origin: tuple[float, float]):
+    def __init__(self, mesh: Mesh, layer_height: float):
         """Initialize the Model.
 
         Parameters
@@ -27,12 +25,9 @@ class Model:
             The 3D mesh of the model.
         layer_height : float
             The height of each layer that is sliced from the model.
-        origin : Tuple[float, float]
-            The origin of the model.
         """
         self.mesh = mesh
         self.layer_height = layer_height
-        self.origin = origin
 
     def calculate_slice_contours(self, position: float) -> list[Polygon]:
         """Calculate the slice contours at a given position.

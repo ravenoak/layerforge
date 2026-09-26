@@ -35,13 +35,6 @@ def test_scale_mesh_conflict():
         ModelFactory._scale_mesh(mesh, scale_factor=1, target_height=2)
 
 
-def test_calculate_origin():
-    mesh = Mesh(trimesh.creation.box(extents=(1, 2, 3)))
-    mesh.apply_translation([1, 2, 3])
-    origin = ModelFactory._calculate_origin(mesh)
-    assert pytest.approx(origin) == (1.0, 2.0)
-
-
 class ListLoader(MeshLoader):
     def load_mesh(self, model_file: str):  # pyright: ignore[reportIncompatibleMethodOverride]
         return [

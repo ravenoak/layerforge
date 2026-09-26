@@ -17,7 +17,7 @@ def test_inherit_mark_within_polygon():
     manager = ReferenceMarkManager(config=ReferenceMarkConfig(tolerance=10))
     manager.add_or_update_mark(50, 50, "circle", 3)
     cfg = ReferenceMarkConfig(min_distance=10)
-    sl = Slice(0, 0.0, [square], origin=(0, 0), mark_manager=manager, config=cfg, layer_height=3.0)
+    sl = Slice(0, 0.0, [square], mark_manager=manager, config=cfg, layer_height=3.0)
     ReferenceMarkService.process_slice(sl)
     assert len(sl.ref_marks) == 1
     assert sl.ref_marks[0].x == 50
@@ -28,7 +28,7 @@ def test_generate_mark_respects_boundary():
     square = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)])
     manager = ReferenceMarkManager()
     cfg = ReferenceMarkConfig(min_distance=10)
-    sl = Slice(1, 0.0, [square], origin=(0, 0), mark_manager=manager, config=cfg, layer_height=3.0)
+    sl = Slice(1, 0.0, [square], mark_manager=manager, config=cfg, layer_height=3.0)
     ReferenceMarkService.process_slice(sl)
     assert len(sl.ref_marks) == 1
     pt = Point(sl.ref_marks[0].x, sl.ref_marks[0].y)

@@ -222,6 +222,9 @@ def process_model(
     -------
     None
     """
+    # The same steps as ``cli``, without the message and the prompt. They are kept apart on
+    # purpose: ``test_cli_checks_before_prompt`` runs every check through both, so they
+    # cannot drift.
     file_settings, _ = _read_settings_file(config_path)
     settings = resolve_settings(
         file_settings,

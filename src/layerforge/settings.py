@@ -79,6 +79,10 @@ class Settings(BaseModel):
 def load_settings(path: Path | None, overrides: Mapping[str, object]) -> Settings:
     """Merge the defaults, the config file and the command line values.
 
+    This is the one-call form for Python callers and tests. The command does not use it: it
+    reads the file once with :func:`read_config_file`, names it on stderr, and then calls
+    :func:`merge_settings`.
+
     Parameters
     ----------
     path : Path, optional

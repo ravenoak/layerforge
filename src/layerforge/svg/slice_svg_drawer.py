@@ -1,4 +1,6 @@
 import logging
+import math
+from decimal import ROUND_DOWN, Decimal
 
 from shapely.geometry import Polygon
 from svgwrite import Drawing
@@ -6,7 +8,7 @@ from svgwrite import Drawing
 from layerforge.domain.shapes.registry import ShapeFactory
 from layerforge.models.reference_marks import ReferenceMark
 from layerforge.models.slicing import Slice
-from layerforge.models.slicing.number import place_number
+from layerforge.models.slicing.number import largest_fitting_height, place_number
 from layerforge.svg.drawing.strategy_context import StrategyContext
 from layerforge.svg.style import SVGStyle
 from layerforge.units import plain_number
@@ -131,7 +133,7 @@ class SliceSVGDrawer:
         SliceSVGDrawer.draw_reference_marks(dwg, slice_obj.ref_marks, shape_context, style)
 
         label = str(slice_obj.index)
-        misfits = 0
+        misfits: list[Polygon] = []
         for contour in slice_obj.contours:
             placement = place_number(
                 contour,
@@ -141,7 +143,8 @@ class SliceSVGDrawer:
                 width_factor=style.number_width_factor,
                 clearance=style.number_clearance,
             )
-            misfits += not placement.fits
+            if not placement.fits:
+                misfits.append(contour)
             dwg.add(
                 dwg.text(
                     label,
@@ -157,7 +160,43 @@ class SliceSVGDrawer:
                 )
             )
         if misfits:
-            logging.warning(
-                f"The number of slice {slice_obj.index} does not fit clear of the cuts in "
-                f"{misfits} of {len(slice_obj.contours)} pieces. Try a smaller --number-height."
+            SliceSVGDrawer._warn_number_does_not_fit(slice_obj, misfits, len(label), style)
+
+    @staticmethod
+    def _warn_number_does_not_fit(
+        slice_obj: Slice, misfits: list[Polygon], digits: int, style: SVGStyle
+    ) -> None:
+        """Log one warning for a slice: which pieces lack room and what height would fit."""
+        height = min(
+            largest_fitting_height(
+                contour,
+                slice_obj.ref_marks,
+                digits=digits,
+                ceiling=style.number_height,
+                width_factor=style.number_width_factor,
+                clearance=style.number_clearance,
             )
+            for contour in misfits
+        )
+        where = (
+            f"The number of slice {slice_obj.index} does not fit clear of the cuts in "
+            f"{len(misfits)} of {len(slice_obj.contours)} pieces."
+        )
+        if height > 0:
+            advice = (
+                f"Try --number-height {SliceSVGDrawer._round_down(height)} "
+                "(number.height in the config file), in the unit of the run."
+            )
+        else:
+            advice = (
+                "No height fits: the outline and the marks leave no room. Use a larger piece "
+                "or fewer or smaller marks (--mark-size, marks.size)."
+            )
+        logging.warning(f"{where} {advice}")
+
+    @staticmethod
+    def _round_down(value: float) -> str:
+        """Write ``value`` rounded down to 3 significant digits, so the result still fits."""
+        exponent = math.floor(math.log10(value)) - 2
+        digits = Decimal(repr(value)).scaleb(-exponent).to_integral_value(rounding=ROUND_DOWN)
+        return format(digits.scaleb(exponent).normalize(), "f")

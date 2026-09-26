@@ -97,3 +97,43 @@ def place_number(
 
     point = polylabel(contour, tolerance)
     return NumberPlacement(point.x, point.y, False)
+
+
+def largest_fitting_height(
+    contour: Polygon,
+    marks: Sequence[ReferenceMark],
+    *,
+    digits: int,
+    ceiling: float,
+    width_factor: float,
+    clearance: float,
+) -> float:
+    """Return the tallest number, up to ``ceiling``, that fits clear of the cuts of a piece.
+
+    A smaller number fits wherever a larger one does, so the height is found by halving. The
+    result is a height that fits (``place_number`` says so), within 0.1% of ``ceiling`` of the
+    tallest one. It is ``ceiling`` when that fits, and 0.0 when even a thousandth of it does not.
+    """
+
+    def fits(height: float) -> bool:
+        return place_number(
+            contour,
+            marks,
+            digits=digits,
+            height=height,
+            width_factor=width_factor,
+            clearance=clearance,
+        ).fits
+
+    if fits(ceiling):
+        return ceiling
+    low, high = ceiling / 1000, ceiling
+    if not fits(low):
+        return 0.0
+    for _ in range(12):
+        middle = (low + high) / 2
+        if fits(middle):
+            low = middle
+        else:
+            high = middle
+    return low

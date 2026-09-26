@@ -2,7 +2,7 @@
 
 ## Output colours
 
-Outlines and holes are cut lines. They are drawn as hairlines in `--cut-color` (default red), with no fill and a `class` of `outline` or `mark`. The number is engraved, in `--engrave-color` (default black). A colour is any SVG colour: a name such as `red`, a hex value such as `#f00`, or `rgb(255,0,0)`. A bad colour stops the run with exit code 2, before the prompt. Laser programs pick the operation by colour, so set these to the colours your program maps to cut and engrave.
+Outlines and holes are cut lines. They are drawn as hairlines in `--cut-color` (default red), with no fill and a `class` of `outline` or `mark`. The number is engraved, in `--engrave-color` (default black). A colour is any SVG colour: a name such as `red`, a hex value such as `#f00`, or `rgb(255,0,0)`. A bad colour stops the run with exit code 2, before the prompt. Laser programs pick the operation by colour, so set these to the colours your program maps to cut and engrave. If the two colours are the same (compared as text, ignoring case), the run warns once, because the number and the outlines would share one operation. `red` and `#f00` are not compared as one colour.
 
 ## Reference Mark Options
 

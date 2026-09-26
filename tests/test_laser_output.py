@@ -165,3 +165,37 @@ def test_the_context_adds_the_style_to_the_element_and_the_drawing():
     assert element.attribs["stroke-width"] == "0.01"
     assert element.attribs["fill"] == "none"
     assert element.attribs["class"] == "mark"
+
+
+def _colour_warnings(cube_stl: Path, out: Path, caplog: pytest.LogCaptureFixture, *args: str):
+    with caplog.at_level("WARNING"):
+        _slices(cube_stl, out, *args)
+    return [r.getMessage() for r in caplog.records if "colour" in r.getMessage()]
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        ["--cut-color", "black"],  # the engrave colour is black by default
+        ["--cut-color", "blue", "--engrave-color", "blue"],
+        ["--cut-color", "red", "--engrave-color", " red "],  # the settings trim a colour
+        ["--cut-color", "#F00", "--engrave-color", "#f00"],
+    ],
+)
+def test_the_same_colour_for_cut_and_engrave_warns_once(cube_stl, tmp_path, caplog, args):
+    messages = _colour_warnings(cube_stl, tmp_path / "out", caplog, *args)
+
+    assert len(messages) == 1
+    assert "--cut-color" in messages[0]
+    assert "--engrave-color" in messages[0]
+
+
+def test_the_default_colours_do_not_warn(cube_stl, tmp_path, caplog):
+    assert _colour_warnings(cube_stl, tmp_path / "out", caplog) == []
+
+
+def test_two_names_for_one_colour_are_not_compared(cube_stl, tmp_path, caplog):
+    """`red` and `#f00` are one colour, but resolving names is more code than the risk is worth."""
+    args = ("--cut-color", "red", "--engrave-color", "#f00")
+
+    assert _colour_warnings(cube_stl, tmp_path / "out", caplog, *args) == []

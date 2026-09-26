@@ -210,7 +210,9 @@ rule FR1_StartRun {
         -- min_hole_kerf_factor, hairline_width and number_width_factor have no option: each
         -- is the config file value (the [output] or [number] table), else the default. The
         -- defaults of hairline_width and number_height are millimetres, stated in the units of the run
-        -- like layer_height and kerf. Options are checked by the next rules.
+        -- like layer_height and kerf. Options are checked by the next rules. If cut_color
+        -- and engrave_color are equal as text, ignoring case, one warning is logged before
+        -- slicing and the run goes on: a laser program gives one operation to a colour.
 }
 
 rule FR30_RejectBadConfigFile {

@@ -128,6 +128,9 @@ output, the first release will raise the minor version.
 
 ### Added
 
+- A warning when `--cut-color` and `--engrave-color` are the same colour (compared as text,
+  ignoring case). A laser program gives one operation to a colour, so the number and the
+  outlines would share it. (#180)
 - `adjacent_pairs` in `layerforge.models.slicing.adjacency` (Python API). For each two adjacent
   layers it returns the pairs of overlapping pieces, each with its overlap and the overlap moved
   in by a clearance. Nothing in the command uses it yet. (#89)

@@ -78,7 +78,7 @@ Sizes are my estimates: S under an hour, M one session, L several sessions. Noth
 | 60 | #173 | Tidy after #62: the calculator's config fallback and where the small-size warning lives | S | none | Found by `/code-review` of #170. | no |
 | 61 | #175 | The small-mark-size warning names an internal requirement ID (TR-6) (done, #177) | S | none | Found by the second retrospective of session D. I wrote the message. | no |
 | 62 | #178 | Five `--help` strings say "See docs/reference_mark_algorithm.md", which a pip install does not ship | S | none | Found while fixing #175. | no |
-| 63 | #180 | Warn when the cut and engrave colours are the same | S | #83 (done) | Found by `/code-review` of #182. TR-17 and #83 chose no warning; decide. | decide |
+| 63 | #180 | Warn when the cut and engrave colours are the same (done, after the research in session E) | S | #83 (done) | Found by `/code-review` of #182. TR-17 and #83 chose no warning; decide. | decide |
 | 64 | #181 | `SVGStyle()` and `SliceSVGDrawer` default to a millimetre hairline and number height whatever the units | S | #83, #75 (done) | Found by `/code-review` of #182. The command is not affected. | no |
 | 65 | #183 | `place_number`: reuse the mark footprints per slice and bound the cost on fine outlines | S | #75 (done) | Found by `/code-review` of #184. 0.45 s for one outline of 8001 vertices. | no |
 | 66 | #185 | `adjacent_pairs`: invalid polygons and the cost on layers with many pieces | S | #89 (done) | Found by `/code-review` of #186. Do it with #63 or #92, the first users. | no |

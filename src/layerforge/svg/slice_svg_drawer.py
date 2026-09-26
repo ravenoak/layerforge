@@ -1,9 +1,12 @@
-from shapely.geometry import Point, Polygon
+import logging
+
+from shapely.geometry import Polygon
 from svgwrite import Drawing
 
 from layerforge.domain.shapes.registry import ShapeFactory
 from layerforge.models.reference_marks import ReferenceMark
 from layerforge.models.slicing import Slice
+from layerforge.models.slicing.number import place_number
 from layerforge.svg.drawing.strategy_context import StrategyContext
 from layerforge.svg.style import SVGStyle
 from layerforge.units import plain_number
@@ -17,7 +20,8 @@ class SliceSVGDrawer:
     the model seen from above.
 
     Everything that is cut, the outlines and the marks, gets the cut colour, a hairline stroke
-    and no fill (TR-14). The two kinds differ by their ``class``, not by colour.
+    and no fill (TR-14). The two kinds differ by their ``class``, not by colour. The number of
+    a piece is text with the engrave colour and no stroke (TR-11).
     """
 
     @staticmethod
@@ -87,42 +91,23 @@ class SliceSVGDrawer:
             )
             shape_context.draw(dwg, shape_instance, **attribs)
 
-    @staticmethod
-    def _label_position(
-        contour: Polygon, padding: tuple[float, float] | float | None
-    ) -> tuple[float, float]:
-        """Return a label position for ``contour`` respecting ``padding``."""
-        try:
-            pt = contour.centroid
-            if not contour.contains(pt):
-                minx, miny, maxx, maxy = contour.bounds
-                pt = Point((minx + maxx) / 2, (miny + maxy) / 2)
-            if not contour.contains(pt):
-                pt = contour.representative_point()
-            x, y = pt.x, pt.y
-        except Exception:
-            x, y = 10, 20
-
-        if padding is not None:
-            if isinstance(padding, (list, tuple)):
-                x += padding[0]
-                y += padding[1]
-            else:
-                x += padding
-                y += padding
-        return x, y
+    # The baseline of a text is below its middle by about a third of the font size. The tiny
+    # profile has no ``dominant-baseline`` to say "middle", so the drawer moves the baseline.
+    _BASELINE_SHIFT = 0.35
 
     @staticmethod
     def draw_slice(
         dwg: Drawing,
         slice_obj: Slice,
         shape_context: StrategyContext,
-        padding: tuple[float, float] | float | None = None,
         *,
         style: SVGStyle | None = None,
-        font_size: float | None = None,
     ) -> None:
-        """Draws a slice.
+        """Draws a slice: the outlines, the marks and the number of each piece.
+
+        The number is the slice index. It goes where its box is farthest from every cut
+        (:func:`place_number`). When it fits nowhere, it is drawn at the middle of the piece and
+        one warning names the slice.
 
         Parameters
         ----------
@@ -132,13 +117,8 @@ class SliceSVGDrawer:
             The slice to draw.
         shape_context : StrategyContext
             The shape drawing context.
-        padding : tuple | float | None, optional
-            Extra offset applied to label positions, in model coordinates.
         style : SVGStyle, optional
-            The colours and the stroke. Without it, the default style in millimetres.
-        font_size : float, optional
-            The size of the label text, in the unit of the run. Without it the viewer's default
-            applies.
+            The colours, the stroke and the number. Without it, the default style in millimetres.
 
         Returns
         -------
@@ -150,14 +130,34 @@ class SliceSVGDrawer:
 
         SliceSVGDrawer.draw_reference_marks(dwg, slice_obj.ref_marks, shape_context, style)
 
+        label = str(slice_obj.index)
+        misfits = 0
         for contour in slice_obj.contours:
-            x, y = SliceSVGDrawer._label_position(contour, padding)
-            extra = {} if font_size is None else {"font_size": plain_number(font_size)}
+            placement = place_number(
+                contour,
+                slice_obj.ref_marks,
+                digits=len(label),
+                height=style.number_height,
+                width_factor=style.number_width_factor,
+                clearance=style.number_clearance,
+            )
+            misfits += not placement.fits
             dwg.add(
                 dwg.text(
-                    f"Slice {slice_obj.index}",
-                    insert=(x, -y),
+                    label,
+                    insert=(
+                        placement.x,
+                        -placement.y + SliceSVGDrawer._BASELINE_SHIFT * style.number_height,
+                    ),
+                    text_anchor="middle",
                     fill=style.engrave_color,
-                    **extra,
+                    font_size=plain_number(style.number_height),
+                    font_family="sans-serif",
+                    font_weight="bold",
                 )
+            )
+        if misfits:
+            logging.warning(
+                f"The number of slice {slice_obj.index} does not fit clear of the cuts in "
+                f"{misfits} of {len(slice_obj.contours)} pieces. Try a smaller --number-height."
             )

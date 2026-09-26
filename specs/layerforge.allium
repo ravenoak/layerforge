@@ -6,7 +6,6 @@
 --   SVG output.
 -- Excludes:
 --   - Mesh file parsing (trimesh owns it; a mesh is external here)
---   - Text position fallbacks
 --   - Packaging, CI and documentation (see docs/requirements.md NFR-1 to NFR-7)
 --
 -- Rule names carry the requirement IDs from docs/requirements.md.
@@ -58,6 +57,8 @@ config {
     default_cut_color: String = "red"           -- outlines and holes (TR-14)
     default_engrave_color: String = "black"     -- the number (TR-14)
     default_hairline_width: Decimal = 0.01      -- millimetres, stated in the units of the run (TR-14)
+    default_number_height: Decimal = 5.0        -- millimetres, stated in the units of the run (TR-11, proposed)
+    default_number_width_factor: Decimal = 0.6  -- per character, times the height (TR-11, proposed)
     -- No default number for mark size, minimum distance and tolerance: each follows
     -- the sheet unless it is set (FR-21). The tolerance is this fraction of the size.
     tolerance_factor: Decimal = 0.1
@@ -87,6 +88,8 @@ entity Run {
     cut_color: String                   -- an SVG colour, checked before the run (FR-6)
     engrave_color: String
     hairline_width: Decimal             -- the stroke width of every cut line, in the units of the run
+    number_height: Decimal              -- the height of the layer number, in the units of the run (TR-11)
+    number_width_factor: Decimal        -- times number_height: the estimated width of one character
     mesh: Mesh
     output_folder: String
     status: requested | rejected | scaled | sliced | written
@@ -185,6 +188,8 @@ rule FR1_StartRun {
             cut_color: options.cut_color ?? config.default_cut_color,          -- or the file value (FR-30)
             engrave_color: options.engrave_color ?? config.default_engrave_color,
             hairline_width: config.default_hairline_width,
+            number_height: options.number_height ?? config.default_number_height,
+            number_width_factor: config.default_number_width_factor,
             output_folder: options.output_folder,
             status: requested
         )
@@ -194,17 +199,17 @@ rule FR1_StartRun {
         -- option is reported before the person types a path. A file
         -- with more than one geometry is rejected (FR-7). Defaults are the
         -- config values above (FR-6). Each of units, layer_height, kerf,
-        -- mark_size, tolerance, min_distance, shapes, angle, cut_color and
-        -- engrave_color is the option if given, else the config file value, else the default (FR-30). The
+        -- mark_size, tolerance, min_distance, shapes, angle, cut_color, engrave_color
+        -- and number_height is the option if given, else the config file value, else the default (FR-30). The
         -- defaults of layer_height and kerf are millimetres, stated in the
         -- units of the run when nobody set them (FR-31); a value that is given
         -- is already in those units. Mark size, tolerance and min_distance have
         -- no default number: they follow the sheet (FR-21). A config file
         -- that passes its check and is used is named once on stderr: "Using
         -- settings from <file>". min_web_ratio, min_hole_ratio and
-        -- min_hole_kerf_factor and hairline_width have no option: each is the config
-        -- file value (the [output] table for hairline_width), else the default. The
-        -- default hairline_width is millimetres, stated in the units of the run
+        -- min_hole_kerf_factor, hairline_width and number_width_factor have no option: each
+        -- is the config file value (the [output] or [number] table), else the default. The
+        -- defaults of hairline_width and number_height are millimetres, stated in the units of the run
         -- like layer_height and kerf. Options are checked by the next rules.
 }
 
@@ -441,7 +446,10 @@ rule FR24_WriteSvg {
     @guidance
         -- svg_name(i) is "slice_" plus i as three digits plus ".svg". The file
         -- holds each contour as an unfilled polygon (plus one for each hole), then each mark, then
-        -- the text "Slice N" once per contour (FR-25). A mark is a closed outline
+        -- the number once per contour (FR-25): the slice index as text, centred,
+        -- number_height tall, and at the point where its box is farthest from every cut. The box lies inside the
+        -- piece and keeps the kerf clear of the outline, the holes and every mark.
+        -- When it fits nowhere it is drawn at the middle of the piece, and one warning per slice (not per piece) names the slice. A mark is a closed outline
         -- anchored at its centre (FR-27): a circle, or a polygon for the square,
         -- triangle and arrow. Points are drawn at
         -- (x, -y), so the y axis points up as in the model (FR-26). Every file
@@ -535,6 +543,5 @@ surface Command {
 -- G-5  Shapes do not cycle once all are used.
 -- G-7  Marks are inherited from any earlier slice, not only neighbours.
 -- G-16 Overlapping shells in one mesh give false holes.
--- G-18 The slice label can cross an outline.
--- G-4, G-5, G-7 and G-18 have targets in
+-- G-4, G-5 and G-7 have targets in
 -- docs/alignment_requirements.md (TR-1 to TR-16).

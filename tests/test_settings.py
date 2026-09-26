@@ -28,6 +28,7 @@ def test_defaults_without_a_file(tmp_path, monkeypatch):
     assert s.marks.min_web_ratio == 0.5
     assert (s.output.cut_color, s.output.engrave_color) == ("red", "black")
     assert s.output.hairline_width == 0.01
+    assert (s.number.height, s.number.width_factor) == (5.0, 0.6)
 
 
 def test_precedence_is_command_line_then_file_then_default(tmp_path):
@@ -332,3 +333,43 @@ def test_a_file_that_sets_another_output_key_still_converts_the_hairline(tmp_pat
 
     assert s.output.cut_color == "blue"
     assert s.output.hairline_width == pytest.approx(0.01 / 25.4)
+
+
+@pytest.mark.parametrize(("units", "height"), [("mm", 5.0), ("cm", 0.5), ("in", 5 / 25.4)])
+def test_the_number_height_default_is_millimetres_stated_in_the_units(units, height):
+    assert load_settings(None, {"units": units}).number.height == pytest.approx(height)
+
+
+def test_a_number_height_that_is_given_is_not_converted(tmp_path):
+    cfg = _write(tmp_path, 'units = "in"\n[number]\nheight = 0.2\n')
+
+    assert load_settings(cfg, {}).number.height == 0.2
+    assert load_settings(cfg, {"number_height": 0.3}).number.height == 0.3
+
+
+def test_a_file_that_sets_only_the_width_factor_still_converts_the_number_height(tmp_path):
+    cfg = _write(tmp_path, 'units = "in"\n[number]\nwidth_factor = 0.7\n')
+
+    s = load_settings(cfg, {})
+
+    assert s.number.width_factor == 0.7
+    assert s.number.height == pytest.approx(5 / 25.4)
+
+
+@pytest.mark.parametrize(
+    ("body", "key", "reason"),
+    [
+        ("[number]\nheight = 0\n", "number.height", "must be > 0"),
+        ("[number]\nheight = nan\n", "number.height", "must be a finite number"),
+        ("[number]\nwidth_factor = 0\n", "number.width_factor", "must be > 0"),
+        ("[number]\nwidth_factor = -1\n", "number.width_factor", "must be > 0"),
+    ],
+)
+def test_a_bad_number_value_in_the_file_names_the_key(tmp_path, body, key, reason):
+    cfg = _write(tmp_path, body)
+
+    with pytest.raises(click.UsageError) as excinfo:
+        load_settings(cfg, {})
+
+    assert key in excinfo.value.message
+    assert reason in excinfo.value.message

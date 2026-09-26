@@ -78,7 +78,7 @@ def test_cli_writes_one_svg_per_slice(
         labels = [t.text for t in root.iter(f"{SVG}text")]
         assert contours, f"{path.name} has no contour"
         assert circles, f"{path.name} has no reference mark"
-        assert f"Slice {index}" in labels
+        assert str(index) in labels
         marks.append((circles[0].get("cx"), circles[0].get("cy")))
 
     # All layers share one frame, so they can be laid over each other.

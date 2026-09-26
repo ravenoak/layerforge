@@ -50,6 +50,7 @@ _OPTION_KEYS: dict[str, tuple[str, ...]] = {
     "mark_angle": ("marks", "angle"),
     "cut_color": ("output", "cut_color"),
     "engrave_color": ("output", "engrave_color"),
+    "number_height": ("number", "height"),
 }
 _OPTION_HINTS = {keys: "--" + name.replace("_", "-") for name, keys in _OPTION_KEYS.items()}
 
@@ -104,10 +105,20 @@ class OutputSettings(BaseModel):
         return colour
 
 
+class NumberSettings(BaseModel):
+    """The ``[number]`` table: the layer number drawn on each piece (TR-11)."""
+
+    model_config = _STRICT
+
+    height: float = Field(default=_STYLE.number_height, gt=0)
+    width_factor: float = Field(default=_STYLE.number_width_factor, gt=0)  # no option (TR-16)
+
+
 class Settings(BaseModel):
     """Every setting of a run.
 
-    ``layer_height``, ``kerf`` and ``output.hairline_width`` default to millimetres here.
+    ``layer_height``, ``kerf``, ``output.hairline_width`` and ``number.height`` default to
+    millimetres here.
     :func:`merge_settings` states a default that was not set in the units of the run, so read
     them from its result.
     """
@@ -119,6 +130,7 @@ class Settings(BaseModel):
     kerf: float = Field(default=_DEFAULTS.kerf, ge=0)
     marks: MarkSettings = Field(default_factory=MarkSettings)
     output: OutputSettings = Field(default_factory=OutputSettings)
+    number: NumberSettings = Field(default_factory=NumberSettings)
 
 
 def load_settings(path: Path | None, overrides: Mapping[str, object]) -> Settings:
@@ -204,6 +216,9 @@ def _in_units(settings: Settings) -> Settings:
     if "hairline_width" not in settings.output.model_fields_set:
         width = from_mm(settings.units, settings.output.hairline_width)
         updates["output"] = settings.output.model_copy(update={"hairline_width": width})
+    if "height" not in settings.number.model_fields_set:
+        height = from_mm(settings.units, settings.number.height)
+        updates["number"] = settings.number.model_copy(update={"height": height})
     return settings.model_copy(update=updates) if updates else settings
 
 

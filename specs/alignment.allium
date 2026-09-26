@@ -258,7 +258,7 @@ config {
     marks_angle: Decimal = 0                       -- marks.angle, existing (TR-7): degrees
     number_height_mm: Decimal = 5                  -- number.height, proposed (TR-11)
     number_width_factor: Decimal = 0.6             -- number.width_factor, proposed (TR-11): per character
-    number_font_family: String = "bold sans-serif" -- number.font_family, sourced (TR-11)
+    number_font_family: String = "bold sans-serif" -- number.font_family, sourced (TR-11); not built, the font is fixed
     output_cut_color: String = "red"               -- output.cut_color, convention (TR-14)
     output_engrave_color: String = "black"         -- output.engrave_color, convention (TR-14)
     output_hairline_width_mm: Decimal = 0.01       -- output.hairline_width, sourced (TR-14)

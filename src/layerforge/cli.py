@@ -98,6 +98,7 @@ def resolve_settings(
     mark_angle: float | None = None,
     cut_color: str | None = None,
     engrave_color: str | None = None,
+    number_height: float | None = None,
 ) -> Settings:
     """Check every option against the settings of the config file, and return the run's settings.
 
@@ -127,6 +128,7 @@ def resolve_settings(
             "mark_angle": mark_angle,
             "cut_color": cut_color,
             "engrave_color": engrave_color,
+            "number_height": number_height,
         },
     )
     _check_output_folder(output_folder)
@@ -174,6 +176,9 @@ def _run(
         cut_color=output.cut_color,
         engrave_color=output.engrave_color,
         hairline_width=output.hairline_width,
+        number_height=settings.number.height,
+        number_width_factor=settings.number.width_factor,
+        number_clearance=settings.kerf,
     )
     svg_generator = SVGGenerator(
         output_folder, svg_writer, shape_context, units=settings.units, style=style
@@ -197,6 +202,7 @@ def process_model(
     mark_angle: float | None = None,
     cut_color: str | None = None,
     engrave_color: str | None = None,
+    number_height: float | None = None,
     config_path: Path | None = None,
 ) -> None:
     """Process the model and generate SVG slices.
@@ -237,6 +243,9 @@ def process_model(
     engrave_color : str, optional
         The colour of the number, which is engraved. Falls back to the config file, then its
         default (black).
+    number_height : float, optional
+        The height of the layer number, in the unit of the run. Falls back to the config file,
+        then its default (5 mm).
     config_path : Path, optional
         The TOML config file. Without it ``layerforge.toml`` in the current
         directory is used if it exists.
@@ -268,6 +277,7 @@ def process_model(
         mark_angle=mark_angle,
         cut_color=cut_color,
         engrave_color=engrave_color,
+        number_height=number_height,
     )
     _run(
         settings,
@@ -373,6 +383,14 @@ def process_model(
     help="The colour of the number, which is engraved. A name, #rgb, #rrggbb or rgb(r,g,b). "
     f"Default {_DEFAULTS.output.engrave_color}.",
 )
+@click.option(
+    "--number-height",
+    type=float,
+    default=None,
+    help="The height of the layer number, which is engraved on each piece, in the unit of "
+    f"the run. It must fit clear of the outline, the holes and the marks. "
+    f"Default {_DEFAULTS.number.height:g} mm.",
+)
 def cli(
     stl_file: str | None,
     config_path: Path | None,
@@ -389,6 +407,7 @@ def cli(
     mark_angle: float | None,
     cut_color: str | None,
     engrave_color: str | None,
+    number_height: float | None,
 ) -> None:
     """Slice an STL model into one SVG file per layer.
 
@@ -415,6 +434,7 @@ def cli(
             mark_angle=mark_angle,
             cut_color=cut_color,
             engrave_color=engrave_color,
+            number_height=number_height,
         )
     except ConflictingOptionsError as exc:
         click.echo(str(exc))

@@ -53,6 +53,11 @@ def _has_shape(dwg: svgwrite.Drawing, cls: type, stroke: str | None = None) -> b
     return False
 
 
+def _elements_of_class(dwg: svgwrite.Drawing, kind: str) -> list:
+    """Return the elements of ``dwg`` with ``class`` ``kind``: ``outline`` or ``mark``."""
+    return [el for el in dwg.elements if getattr(el, "attribs", {}).get("class") == kind]
+
+
 def _text_positions(dwg: svgwrite.Drawing) -> list[tuple[float, float]]:
     """Return the (x, y) positions of text elements in ``dwg``."""
     coords: list[tuple[float, float]] = []
@@ -78,10 +83,16 @@ def test_draw_slice_adds_expected_shapes():
     dwg = svgwrite.Drawing()
     SliceSVGDrawer.draw_slice(dwg, slice_obj, ctx)
 
-    assert _has_shape(dwg, svgwrite.shapes.Circle, "red")
-    assert _has_shape(dwg, svgwrite.shapes.Polygon, "blue")  # square
-    assert _has_shape(dwg, svgwrite.shapes.Polygon, "green")
-    assert _has_shape(dwg, svgwrite.shapes.Polygon, "black")  # contour
+    marks = _elements_of_class(dwg, "mark")
+    assert sorted(type(el).__name__ for el in marks) == ["Circle", "Polygon", "Polygon"]
+    assert sorted(len(el.points) for el in marks if isinstance(el, svgwrite.shapes.Polygon)) == [
+        3,  # triangle
+        4,  # square
+    ]
+    (outline,) = _elements_of_class(dwg, "outline")
+    assert isinstance(outline, svgwrite.shapes.Polygon)
+    # One colour for everything that is cut, whatever its shape (TR-14).
+    assert {el.attribs["stroke"] for el in [outline, *marks]} == {"red"}
 
 
 def test_svg_generator_writes_files_and_captures(tmp_path):
@@ -101,8 +112,10 @@ def test_svg_generator_writes_files_and_captures(tmp_path):
         assert path.exists()
 
     assert _has_shape(writer.saved[0], svgwrite.shapes.Circle)
-    assert _has_shape(writer.saved[1], svgwrite.shapes.Polygon, "blue")
-    assert _has_shape(writer.saved[2], svgwrite.shapes.Polygon, "green")
+    (square,) = _elements_of_class(writer.saved[1], "mark")
+    assert isinstance(square, svgwrite.shapes.Polygon) and len(square.points) == 4
+    (triangle,) = _elements_of_class(writer.saved[2], "mark")
+    assert isinstance(triangle, svgwrite.shapes.Polygon) and len(triangle.points) == 3
 
 
 def test_label_inside_slice_polygon():
@@ -140,12 +153,7 @@ def test_holes_are_drawn_as_outlines():
     dwg = svgwrite.Drawing()
     SliceSVGDrawer.draw_slice(dwg, _plate_with_hole_slice(), ctx)
 
-    outlines = [
-        el
-        for el in dwg.elements
-        if isinstance(el, svgwrite.shapes.Polygon) and el.attribs.get("stroke") == "black"
-    ]
-    assert len(outlines) == 2
+    assert len(_elements_of_class(dwg, "outline")) == 2
 
 
 def test_label_is_not_placed_in_a_hole():

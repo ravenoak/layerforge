@@ -32,7 +32,6 @@ class BaseShape(ABC):
     y: float
     size: float
     angle: float = 0.0
-    color: str | None = None
 
     symmetry_order: ClassVar[int | None] = 1
 

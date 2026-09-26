@@ -1,4 +1,5 @@
 from svgwrite import Drawing
+from svgwrite.base import BaseElement
 
 from layerforge.domain.shapes.base_shape import BaseShape
 
@@ -8,8 +9,6 @@ from .base_strategy import ShapeDrawingStrategy
 class ArrowDrawingStrategy(ShapeDrawingStrategy):
     """Drawing strategy for Arrow shapes."""
 
-    def draw(self, dwg: Drawing, shape: BaseShape) -> None:
-        """Draw the outline of a :class:`Arrow` on ``dwg``."""
-        color = shape.color or "black"
-        points = self.outline_points(shape)
-        dwg.add(dwg.polygon(points, stroke=color, fill="none"))
+    def element(self, dwg: Drawing, shape: BaseShape) -> BaseElement:
+        """Return the outline of an :class:`Arrow`."""
+        return dwg.polygon(self.outline_points(shape))

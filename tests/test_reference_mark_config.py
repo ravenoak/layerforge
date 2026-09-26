@@ -8,6 +8,13 @@ def test_empty_available_shapes_raises():
         ReferenceMarkConfig(available_shapes=[])
 
 
+@pytest.mark.parametrize("field", ["color", "colour", "sise"])
+def test_a_field_that_does_not_exist_is_an_error_and_is_not_dropped(field):
+    """`color` was removed (#83). Without this a caller that still passes it gets no colour."""
+    with pytest.raises(ValueError, match="Extra inputs are not permitted"):
+        ReferenceMarkConfig(**{field: "red"})  # pyright: ignore[reportArgumentType]
+
+
 @pytest.mark.parametrize("field", ["tolerance", "min_distance"])
 def test_negative_values_raise_value_error(field):
     with pytest.raises(ValueError):

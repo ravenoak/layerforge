@@ -13,20 +13,18 @@ from layerforge.models.reference_marks import (
 
 def test_add_and_update_mark():
     manager = ReferenceMarkManager(config=ReferenceMarkConfig(tolerance=10))
-    manager.add_or_update_mark(10, 20, "circle", 3, angle=math.pi / 4, color="red")
+    manager.add_or_update_mark(10, 20, "circle", 3, angle=math.pi / 4)
     assert len(manager.marks) == 1
     assert manager.marks[0].shape == "circle"
     assert manager.marks[0].size == 3
     assert manager.marks[0].angle == math.pi / 4
-    assert manager.marks[0].color == "red"
 
     # update existing position
-    manager.add_or_update_mark(10, 20, "square", 5, angle=math.pi / 2, color="blue")
+    manager.add_or_update_mark(10, 20, "square", 5, angle=math.pi / 2)
     assert len(manager.marks) == 1
     assert manager.marks[0].shape == "square"
     assert manager.marks[0].size == 5
     assert manager.marks[0].angle == math.pi / 2
-    assert manager.marks[0].color == "blue"
 
     # add new mark at different position
     manager.add_or_update_mark(30, 40, "triangle", 4)

@@ -3,6 +3,7 @@ import svgwrite
 from layerforge.models.slicing import Slice
 from layerforge.svg.drawing import StrategyContext
 from layerforge.svg.slice_svg_drawer import SliceSVGDrawer
+from layerforge.svg.style import SVGStyle
 from layerforge.writers.svg_writer import SVGWriter
 
 
@@ -20,6 +21,8 @@ class SVGGenerator:
     units : str
         The unit of the model's numbers: ``mm``, ``cm`` or ``in``. It is the unit of
         the ``width`` and ``height`` of every SVG.
+    style : SVGStyle
+        The colours and the hairline width of every SVG (TR-14).
     """
 
     def __init__(
@@ -28,6 +31,7 @@ class SVGGenerator:
         svg_writer: SVGWriter,
         shape_context: StrategyContext,
         units: str = "mm",
+        style: SVGStyle | None = None,
     ):
         """Initializes the SVG generator.
 
@@ -41,11 +45,15 @@ class SVGGenerator:
             The shape strategy context to use.
         units : str
             The unit of the model's numbers, used for the size of every SVG.
+        style : SVGStyle, optional
+            The colours and the hairline width, in ``units``. Without it, the default style,
+            with the hairline of 0.01 mm stated in ``units``.
         """
         self.output_folder = output_folder
         self.svg_writer = svg_writer
         self.shape_context = shape_context
         self.units = units
+        self.style = style or SVGStyle.for_units(units)
 
     def generate_svgs(self, slices: list[Slice]) -> None:
         """Generates SVGs for slices.
@@ -60,6 +68,7 @@ class SVGGenerator:
         None
         """
         view_box = self._view_box(slices)
+        font_size = None
         for slice_obj in slices:
             if view_box is None:
                 dwg = svgwrite.Drawing(profile="tiny")
@@ -70,12 +79,12 @@ class SVGGenerator:
                 size = (f"{width}{self.units}", f"{height}{self.units}")
                 dwg = svgwrite.Drawing(profile="tiny", size=size)
                 dwg.viewbox(x, y, width, height)
-                # The default 16 unit text and 1 unit lines would swamp a model
-                # that is a few units across, so scale them with the model.
-                extent = max(width, height)
-                dwg.attribs["font-size"] = extent / 20
-                dwg.attribs["stroke-width"] = extent / 200
-            SliceSVGDrawer.draw_slice(dwg, slice_obj, self.shape_context)
+                # The default 16 unit text would swamp a model that is a few units across,
+                # so scale it with the model. The lines are hairlines, whatever the model.
+                font_size = max(width, height) / 20
+            SliceSVGDrawer.draw_slice(
+                dwg, slice_obj, self.shape_context, style=self.style, font_size=font_size
+            )
             self.svg_writer.write(dwg, self.output_folder, slice_obj.index)
 
     @staticmethod

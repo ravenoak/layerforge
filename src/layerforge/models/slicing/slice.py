@@ -99,7 +99,6 @@ class Slice:
                         shape=existing_mark.shape,
                         size=existing_mark.size,
                         angle=existing_mark.angle,
-                        color=existing_mark.color,
                     )
                 )
             else:
@@ -110,7 +109,6 @@ class Slice:
                     new_shape,
                     size,
                     angle=self.config.angle,
-                    color=self.config.color,
                     tolerance=tolerance,
                 )
                 self.ref_marks.append(
@@ -120,7 +118,6 @@ class Slice:
                         shape=new_shape,
                         size=size,
                         angle=self.config.angle,
-                        color=self.config.color,
                     )
                 )
 

@@ -243,7 +243,7 @@ New pull requests open with a checklist from
   close the issue. #119 moved a bad config file before the prompt, and bad option values
   and the option conflict still came after it (G-28, #135). Probing the class of #135 found
   two more late failures: an output folder that is a file (#144, fixed with it) and a bad
-  `--mark-color` (#145).
+  `--mark-color` (#145, which #83 then removed with the option).
 - The editor's pyright once showed errors (`No parameter named "size"`, an unknown import
   symbol) that `uv run pyright` and the CI lint job did not. They came right after
   `git checkout` and scripted edits changed files outside the editor. Later the same

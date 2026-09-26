@@ -6,7 +6,7 @@
 --   SVG output.
 -- Excludes:
 --   - Mesh file parsing (trimesh owns it; a mesh is external here)
---   - Drawing details such as stroke widths and text position fallbacks
+--   - Text position fallbacks
 --   - Packaging, CI and documentation (see docs/requirements.md NFR-1 to NFR-7)
 --
 -- Rule names carry the requirement IDs from docs/requirements.md.
@@ -40,7 +40,6 @@ value Appearance {
     shape: String
     size: Decimal
     angle: Decimal          -- radians
-    color: String?
 }
 
 ------------------------------------------------------------
@@ -56,6 +55,9 @@ config {
     default_min_hole_ratio: Decimal = 1.0
     default_min_hole_kerf_factor: Decimal = 1.5
     default_shapes: List<String> = ["circle", "square", "triangle", "arrow"]
+    default_cut_color: String = "red"           -- outlines and holes (TR-14)
+    default_engrave_color: String = "black"     -- the number (TR-14)
+    default_hairline_width: Decimal = 0.01      -- millimetres, stated in the units of the run (TR-14)
     -- No default number for mark size, minimum distance and tolerance: each follows
     -- the sheet unless it is set (FR-21). The tolerance is this fraction of the size.
     tolerance_factor: Decimal = 0.1
@@ -82,7 +84,9 @@ entity Run {
     available_shapes: List<String>
     angle: Decimal                      -- radians; the command takes degrees
     config_error: String?               -- set when the config file is unreadable or has a bad key or value (FR-30)
-    color: String?
+    cut_color: String                   -- an SVG colour, checked before the run (FR-6)
+    engrave_color: String
+    hairline_width: Decimal             -- the stroke width of every cut line, in the units of the run
     mesh: Mesh
     output_folder: String
     status: requested | rejected | scaled | sliced | written
@@ -178,7 +182,9 @@ rule FR1_StartRun {
             available_shapes: options.available_shapes,
             angle: radians(options.mark_angle),
             config_error: settings_file_error(options),
-            color: options.mark_color,
+            cut_color: options.cut_color ?? config.default_cut_color,          -- or the file value (FR-30)
+            engrave_color: options.engrave_color ?? config.default_engrave_color,
+            hairline_width: config.default_hairline_width,
             output_folder: options.output_folder,
             status: requested
         )
@@ -188,16 +194,18 @@ rule FR1_StartRun {
         -- option is reported before the person types a path. A file
         -- with more than one geometry is rejected (FR-7). Defaults are the
         -- config values above (FR-6). Each of units, layer_height, kerf,
-        -- mark_size, tolerance, min_distance, shapes and angle is the option if
-        -- given, else the config file value, else the default (FR-30). The
+        -- mark_size, tolerance, min_distance, shapes, angle, cut_color and
+        -- engrave_color is the option if given, else the config file value, else the default (FR-30). The
         -- defaults of layer_height and kerf are millimetres, stated in the
         -- units of the run when nobody set them (FR-31); a value that is given
         -- is already in those units. Mark size, tolerance and min_distance have
         -- no default number: they follow the sheet (FR-21). A config file
         -- that passes its check and is used is named once on stderr: "Using
         -- settings from <file>". min_web_ratio, min_hole_ratio and
-        -- min_hole_kerf_factor have no option: each is the config file value,
-        -- else the default. Options are checked by the next rules.
+        -- min_hole_kerf_factor and hairline_width have no option: each is the config
+        -- file value (the [output] table for hairline_width), else the default. The
+        -- default hairline_width is millimetres, stated in the units of the run
+        -- like layer_height and kerf. Options are checked by the next rules.
 }
 
 rule FR30_RejectBadConfigFile {
@@ -229,6 +237,19 @@ rule FR4_RejectConflictingScaling {
         -- number, nan and inf, so the conflict is reported before a bad value
         -- (FR-2, FR-3). A bad config file is reported before it (FR-30). It is
         -- reported before the --stl-file prompt.
+}
+
+rule FR6_RejectBadColour {
+    when: run: Run.status becomes requested
+    requires: not is_svg_colour(run.cut_color) or not is_svg_colour(run.engrave_color)
+    ensures: run.status = rejected
+    @guidance
+        -- is_svg_colour accepts a name, #rgb, #rrggbb and rgb(r,g,b), after
+        -- trimming. It rejects an empty value, none, currentColor, rgba() and a
+        -- name in the wrong case (Red). Message: "Invalid value for --cut-color:
+        -- <value> is not a colour ..." Exit code 2, before the --stl-file prompt.
+        -- A bad value in the config file is reported by FR30_RejectBadConfigFile
+        -- as "<file>: output.cut_color: ...".
 }
 
 rule FR2_FR3_RejectNonPositiveValues {
@@ -350,8 +371,7 @@ rule FR15_FR21_PlaceMarks {
                     let appearance = Appearance{
                         shape: next_shape(slice.run.marks, slice.run.available_shapes),
                         size: slice.run.mark_size,
-                        angle: slice.run.angle,
-                        color: slice.run.color
+                        angle: slice.run.angle
                     }
                     RegisteredMark.created(run: slice.run, at: chosen, appearance: appearance)
                     PlacedMark.created(
@@ -420,7 +440,7 @@ rule FR24_WriteSvg {
         slice.status = drawn
     @guidance
         -- svg_name(i) is "slice_" plus i as three digits plus ".svg". The file
-        -- holds each contour as a black unfilled polygon (plus one for each hole), then each mark, then
+        -- holds each contour as an unfilled polygon (plus one for each hole), then each mark, then
         -- the text "Slice N" once per contour (FR-25). A mark is a closed outline
         -- anchored at its centre (FR-27): a circle, or a polygon for the square,
         -- triangle and arrow. Points are drawn at
@@ -430,6 +450,8 @@ rule FR24_WriteSvg {
         -- height are the viewBox width and height followed by the unit of the
         -- run (FR-31), so every file has the same physical size. Without a
         -- viewBox they are 100%. Every slice gets a file, including empty ones.
+        -- Outlines and holes have the run's cut_color, fill none and a stroke of hairline_width,
+        -- and a class: outline for a contour, mark for a mark. The number has the engrave_color.
 }
 
 rule RunCompletes {
@@ -514,7 +536,5 @@ surface Command {
 -- G-7  Marks are inherited from any earlier slice, not only neighbours.
 -- G-16 Overlapping shells in one mesh give false holes.
 -- G-18 The slice label can cross an outline.
--- G-23 The output suits a screen, not a laser.
--- G-30 A bad --mark-color ends in a traceback while the SVG is drawn.
--- G-4, G-5, G-7, G-18 and G-23 have targets in
+-- G-4, G-5, G-7 and G-18 have targets in
 -- docs/alignment_requirements.md (TR-1 to TR-16).

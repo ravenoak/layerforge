@@ -1,5 +1,9 @@
 # Configuration
 
+## Output colours
+
+Outlines and holes are cut lines. They are drawn as hairlines in `--cut-color` (default red), with no fill and a `class` of `outline` or `mark`. The number is engraved, in `--engrave-color` (default black). A colour is any SVG colour: a name such as `red`, a hex value such as `#f00`, or `rgb(255,0,0)`. A bad colour stops the run with exit code 2, before the prompt. Laser programs pick the operation by colour, so set these to the colours your program maps to cut and engrave.
+
 ## Reference Mark Options
 
 The behaviour of reference mark generation can be tuned via the following
@@ -10,14 +14,13 @@ configuration options or the equivalent CLI arguments:
 - `available_shapes` – list of shapes for new marks. A new mark takes the first shape not yet in use.
 - `angle` – default orientation angle for generated marks. The CLI flag takes
   degrees; `ReferenceMarkConfig.angle` is in radians.
-- `color` – outline color used when drawing marks.
 - `size` – size of every new mark. Without it the size is the larger of `min_hole_ratio` times the layer height (the sheet thickness) and `min_hole_kerf_factor` times the kerf. It does not depend on where the mark lies or on the size of the model. A size below that minimum is a warning, not an error.
 - `kerf` – the width of material the tool removes. It is a top-level key (`--kerf`), not a mark option. Use 0 for a CNC router or hand work.
 - `min_hole_ratio` and `min_hole_kerf_factor` – the two factors of the default size. They are keys of the config file only, in `[marks]`, with no command-line flag.
 - `min_web_ratio` – the least material between two holes, and between a hole and an outline, as a multiple of the layer height. It is a key of the config file only, `[marks]` `min_web_ratio`, with no command-line flag.
 
 These correspond to the CLI flags `--mark-tolerance`, `--mark-min-distance`,
-`--available-shapes`, `--mark-angle`, `--mark-color` and `--mark-size` respectively, and `--kerf`
+`--available-shapes`, `--mark-angle` and `--mark-size` respectively, and `--kerf`
 for the kerf.
 
 ### Workflow
@@ -52,6 +55,11 @@ tolerance = 0.3
 min_distance = 6.0
 shapes = ["circle", "triangle", "square"]
 angle = 0                 # degrees
+
+[output]
+cut_color = "red"         # outlines and holes
+engrave_color = "black"   # the number
+hairline_width = 0.01     # stroke width of a cut line, in the unit above
 ```
 
 Every key is optional. A value from the command line beats the file, and the file
@@ -70,13 +78,16 @@ beats the default.
 | `marks.min_web_ratio` | none | `0.5` |
 | `marks.min_hole_ratio` | none | `1.0` |
 | `marks.min_hole_kerf_factor` | none | `1.5` |
+| `output.cut_color` | `--cut-color` | `"red"` |
+| `output.engrave_color` | `--engrave-color` | `"black"` |
+| `output.hairline_width` | none | `0.01` |
 
-The defaults of `layer_height` (3 mm) and `kerf` (0.3 mm) are millimetres. With `--units cm` or
+The defaults of `layer_height` (3 mm), `kerf` (0.3 mm) and `output.hairline_width` (0.01 mm) are millimetres. With `--units cm` or
 `--units in` they are stated in that unit: 3 mm is 0.3 cm or 0.118 in. A value that you give, in the
 file or on the command line, is already in the units and is not converted. The three mark numbers
 with no default number (size, tolerance and minimum distance) are worked out from the sheet, so they follow `--units` too.
 
-`--mark-color`, `--scale-factor`, `--target-height`, `--stl-file` and
+`--scale-factor`, `--target-height`, `--stl-file` and
 `--output-folder` are not settings and have no key.
 
 An unknown key, a value of the wrong type, and a number that is not finite or out
@@ -87,4 +98,4 @@ an option overrides it. A bad option value names the option.
 
 ## Planned options
 
-The target adds more settings to the file, each with its own key: `--number-height`, `--allow-unaligned`, `--cut-color` and `--engrave-color`. It removes `--mark-color`. See [Alignment requirements](alignment_requirements.md#settings).
+The target adds more settings to the file, each with its own key: `--number-height` and `--allow-unaligned`. See [Alignment requirements](alignment_requirements.md#settings).

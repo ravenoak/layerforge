@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 # The default snapping radius is this fraction of the mark size (TR-10). TR-16 has no key for it.
 TOLERANCE_FACTOR = 0.1
@@ -18,7 +18,12 @@ class ReferenceMarkConfig(BaseModel):
 
     ``size``, ``min_distance`` and ``tolerance`` are ``None`` until they are set or derived
     from the sheet (TR-6, TR-10). :meth:`resolved` derives them.
+
+    A field that does not exist is an error, so a caller that still passes the removed ``color``
+    is told and not ignored (#83).
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     tolerance: float | None = Field(default=None, allow_inf_nan=False)
     min_distance: float | None = Field(default=None, allow_inf_nan=False)
@@ -27,7 +32,6 @@ class ReferenceMarkConfig(BaseModel):
     )
     angle: float = Field(default=0.0, allow_inf_nan=False)
     size: float | None = Field(default=None, gt=0, allow_inf_nan=False)
-    color: str | None = None
     min_web_ratio: float = Field(default=0.5, ge=0, allow_inf_nan=False)
     kerf: float = Field(default=0.3, ge=0, allow_inf_nan=False)
     min_hole_ratio: float = Field(default=1.0, gt=0, allow_inf_nan=False)

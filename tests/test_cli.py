@@ -37,7 +37,8 @@ def test_cli_hands_the_checked_settings_to_the_run(monkeypatch):
     assert called["output_folder"] == "out"
     assert called["scale_factor"] == 2.0
     assert called["target_height"] is None
-    assert called["mark_color"] is None
+    assert "mark_color" not in called
+    assert called["settings"].output.cut_color == "red"
     # Settings that can come from the config file are resolved to their defaults.
     marks = called["settings"].marks
     assert marks.shapes == ["circle", "square", "triangle", "arrow"]

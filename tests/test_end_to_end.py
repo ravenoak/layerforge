@@ -73,7 +73,7 @@ def test_cli_writes_one_svg_per_slice(
     for index, path in enumerate(files):
         root = ET.parse(path).getroot()
         view_boxes.add(root.get("viewBox"))
-        contours = [p for p in root.iter(f"{SVG}polygon") if p.get("stroke") == "black"]
+        contours = [p for p in root.iter(f"{SVG}polygon") if p.get("class") == "outline"]
         circles = list(root.iter(f"{SVG}circle"))
         labels = [t.text for t in root.iter(f"{SVG}text")]
         assert contours, f"{path.name} has no contour"

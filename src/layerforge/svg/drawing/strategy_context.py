@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 from svgwrite import Drawing
 
 from layerforge.domain.shapes.base_shape import BaseShape
@@ -37,8 +39,11 @@ class StrategyContext:
         """
         self._strategies[shape_type.lower()] = strategy
 
-    def draw(self, dwg: Drawing, shape: BaseShape) -> None:
+    def draw(self, dwg: Drawing, shape: BaseShape, **attribs: str) -> None:
         """Draws a shape using the appropriate drawing strategy.
+
+        The strategy makes the element and this method styles it, so the strokes of every
+        shape are set in one place.
 
         Parameters
         ----------
@@ -46,6 +51,8 @@ class StrategyContext:
             The SVG drawing to draw the shape on.
         shape : BaseShape
             The shape to draw.
+        **attribs : str
+            SVG attributes for the element, for example ``stroke="red"`` or ``class_="mark"``.
 
         Returns
         -------
@@ -57,7 +64,10 @@ class StrategyContext:
             If no strategy is found for the shape type.
         """
         strategy = self._strategies.get(type(shape).__name__.lower())
-        if strategy:
-            strategy.draw(dwg, shape)
-        else:
+        if strategy is None:
             raise ValueError(f"No strategy found for shape type: {type(shape).__name__}")
+        element = strategy.element(dwg, shape)
+        # svgwrite's `update` turns `class_` into `class` and `stroke_width` into `stroke-width`.
+        # Pyright cannot see the method (it is there at run time), so it is called through Any.
+        cast(Any, element).update(attribs)
+        dwg.add(element)

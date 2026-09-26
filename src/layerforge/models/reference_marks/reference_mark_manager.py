@@ -45,7 +45,6 @@ class ReferenceMarkManager:
         size: float,
         *,
         angle: float = 0.0,
-        color: str | None = None,
         tolerance: float | None = None,
     ) -> None:
         """Add a new mark or update an existing one.
@@ -57,11 +56,8 @@ class ReferenceMarkManager:
             mark.shape = shape
             mark.size = size
             mark.angle = angle
-            mark.color = color
         else:
-            self.marks.append(
-                ReferenceMark(x=x, y=y, shape=shape, size=size, angle=angle, color=color)
-            )
+            self.marks.append(ReferenceMark(x=x, y=y, shape=shape, size=size, angle=angle))
 
     def find_mark_in_polygon(
         self, polygon: Polygon, min_distance: float | None = None

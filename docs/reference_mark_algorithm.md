@@ -30,7 +30,7 @@ first; otherwise the best scoring candidate is selected.
 
 When processing a slice, the algorithm checks whether any stored mark lies inside
 a contour at a safe distance from the edges. If so, that mark is reused and keeps
-its original shape **as well as its orientation angle and stroke color**. This
+its original shape **as well as its orientation angle**. This
 inheritance gives each layer a shared set of identifiers for accurate reassembly.
 
 ```mermaid
@@ -121,11 +121,6 @@ Controls the orientation of newly generated marks. The command line option
 flowchart LR
     A[Default orientation] -- angle --> B[Rotated]
 ```
-
-### `color`
-
-Sets the stroke color used when drawing marks. It does not affect placement but
-may improve visibility in the output SVGs.
 
 #### Tips for Different Model Scales
 

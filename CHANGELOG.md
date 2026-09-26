@@ -131,6 +131,9 @@ output, the first release will raise the minor version.
 
 ### Fixed
 
+- The warning about a mark size below the least hole size no longer ends its sentence
+  with the internal requirement ID `(TR-6)`. A test now checks that no string in the
+  command's code, and no line of `--help`, names a TR, FR or G number. (#175)
 - A slice and its mark store now snap with the same tolerance. When they differed (a
   hand-built `Slice` and manager), a new mark could overwrite a stored mark of another
   shape 30 units away and leave the new position unstored. The slice's tolerance now

@@ -86,7 +86,7 @@ starts with `Error:` and exits with code 2 is also preceded by a `Usage:` line.
   layer height of material around it. A square piece 6 mm wide or less gets no mark at a layer
   height of 3, and a 10 mm cube gets none at a layer height of 5. Use a smaller `--mark-size` or
   `--mark-min-distance`.
-- ``WARNING:root:The mark size 1 is below the least hole size 3 for a sheet of 3 and a kerf of 0.3 (TR-6). Holes this small may not cut cleanly.``
+- ``WARNING:root:The mark size 1 is below the least hole size 3 for a sheet of 3 and a kerf of 0.3. Holes this small may not cut cleanly.``
   (the run continues, exit code 0) – `--mark-size` is smaller than the larger of the layer height
   and 1.5 times the kerf. Your laser may not cut a hole that small. Raise `--mark-size`, or ignore
   the warning if you know your machine.

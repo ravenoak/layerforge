@@ -66,7 +66,7 @@ class SlicerService:
         if cfg.size is not None and cfg.size < least:
             logging.warning(
                 f"The mark size {cfg.size:g} is below the least hole size {least:g} for a sheet "
-                f"of {model.layer_height:g} and a kerf of {cfg.kerf:g} (TR-6). "
+                f"of {model.layer_height:g} and a kerf of {cfg.kerf:g}. "
                 "Holes this small may not cut cleanly."
             )
         min_bound, max_bound = model.mesh.bounds

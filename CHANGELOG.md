@@ -21,6 +21,18 @@ output, the first release will raise the minor version.
 
 ### Changed
 
+- **Breaking:** Every mark shape is a closed outline anchored at its centre, and
+  its size is the diameter of the smallest circle around the centre that holds
+  it. At size 10 the square's area falls from 100 to 50 (the side is now the
+  size divided by √2), and the triangle's from 200 to 28.4 (it was 2 × size wide
+  and tall). The arrow is a closed polygon of seven vertices with its tip at
+  the size divided by two from the centre. It was a line of the full size from
+  its tail, with an open head. Angle 0 now points along +x for every shape. The
+  triangle pointed up. In the SVG the square and the arrow are `<polygon>`
+  elements, and the arrow no longer has a `<line>`. (#84, G-20)
+- **Breaking:** `BaseShape` has an abstract `outline()` and a `symmetry_order`. A shape
+  registered with `register_shape` must define `outline()`, or it can no longer be created.
+  (#84)
 - **Breaking:** Slices are cut at the middle of each layer, counted from the
   mesh's lowest z, not from z = 0. A mesh 10 high with layer height 3 was cut at
   0, 3, 6, 9 and 10, and is now cut at 1.5, 4.5, 7.5 and 9.5. The number of
@@ -110,5 +122,6 @@ output, the first release will raise the minor version.
 ### Removed
 
 - `Model.calculate_height`. Nothing used it. (#78)
+- `Triangle.vertices`. Use `Triangle.outline()`, a shapely polygon. (#84)
 
 [Unreleased]: https://github.com/ravenoak/layerforge/commits/main

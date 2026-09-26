@@ -47,7 +47,7 @@ flowchart LR
 | `models.reference_marks` | Mark configuration, calculator, manager (shared registry), adjuster. |
 | `svg` | `SVGGenerator` and `SliceSVGDrawer` draw one SVG per slice. |
 | `svg.drawing` | One strategy per mark shape, looked up through `StrategyContext`. |
-| `domain.shapes` | Shape data: circle, square, triangle, arrow. |
+| `domain.shapes` | Shape data: circle, square, triangle, arrow. Each gives its closed outline as a polygon (TR-7). |
 | `writers` | `SVGFileWriter` saves `slice_NNN.svg`. |
 | `utils` | Shape registration, loader registration, file helpers, distance. |
 

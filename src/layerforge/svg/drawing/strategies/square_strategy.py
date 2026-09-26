@@ -1,9 +1,5 @@
-import math
-from typing import cast
-
 from svgwrite import Drawing
 
-from layerforge.domain.shapes import Square
 from layerforge.domain.shapes.base_shape import BaseShape
 
 from .base_strategy import ShapeDrawingStrategy
@@ -13,15 +9,7 @@ class SquareDrawingStrategy(ShapeDrawingStrategy):
     """Drawing strategy for Square shapes."""
 
     def draw(self, dwg: Drawing, shape: BaseShape) -> None:
-        """Draw a :class:`Square` shape on ``dwg``."""
-        square = cast(Square, shape)
-        color = square.color or "blue"
-        element = dwg.rect(
-            insert=(square.x - square.size / 2, square.y - square.size / 2),
-            size=(square.size, square.size),
-            stroke=color,
-            fill="none",
-        )
-        if square.angle:
-            element.rotate(math.degrees(square.angle), center=(square.x, square.y))
-        dwg.add(element)
+        """Draw the outline of a :class:`Square` on ``dwg``."""
+        color = shape.color or "blue"
+        points = self.outline_points(shape)
+        dwg.add(dwg.polygon(points, stroke=color, fill="none"))

@@ -79,7 +79,7 @@ def test_draw_slice_adds_expected_shapes():
     SliceSVGDrawer.draw_slice(dwg, slice_obj, ctx)
 
     assert _has_shape(dwg, svgwrite.shapes.Circle, "red")
-    assert _has_shape(dwg, svgwrite.shapes.Rect, "blue")
+    assert _has_shape(dwg, svgwrite.shapes.Polygon, "blue")  # square
     assert _has_shape(dwg, svgwrite.shapes.Polygon, "green")
     assert _has_shape(dwg, svgwrite.shapes.Polygon, "black")  # contour
 
@@ -101,7 +101,7 @@ def test_svg_generator_writes_files_and_captures(tmp_path):
         assert path.exists()
 
     assert _has_shape(writer.saved[0], svgwrite.shapes.Circle)
-    assert _has_shape(writer.saved[1], svgwrite.shapes.Rect)
+    assert _has_shape(writer.saved[1], svgwrite.shapes.Polygon, "blue")
     assert _has_shape(writer.saved[2], svgwrite.shapes.Polygon, "green")
 
 
@@ -179,10 +179,13 @@ def test_y_axis_is_flipped_for_marks():
 def test_arrow_pointing_up_in_the_model_points_up_on_screen():
     arrow = ReferenceMark(x=5, y=6, shape="arrow", size=4, angle=math.pi / 2)
     dwg = _draw(box(0, 0, 20, 20), arrow)
-    (line,) = [el for el in dwg.elements if isinstance(el, svgwrite.shapes.Line)]
-    assert float(line["x2"]) == pytest.approx(5)
-    assert float(line["y1"]) == pytest.approx(-6)
-    assert float(line["y2"]) == pytest.approx(-10)
+    # The contour is a 4-point polygon; the arrow is a closed 7-point polygon.
+    (outline,) = [
+        el for el in dwg.elements if isinstance(el, svgwrite.shapes.Polygon) and len(el.points) == 7
+    ]
+    # The tip is a radius (size / 2) from the anchor (5, -6), straight up on screen.
+    tip = min(outline.points, key=lambda p: p[1])
+    assert tip == pytest.approx((5, -8))
 
 
 def _view_box(dwg: svgwrite.Drawing) -> tuple[float, ...]:

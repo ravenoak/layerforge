@@ -1,11 +1,20 @@
+import math
 from dataclasses import dataclass
+from typing import ClassVar
+
+from shapely.geometry import Polygon
 
 from .base_shape import BaseShape
+
+# The base corners lie 140 degrees either side of the apex, so the apex angle is 40 degrees.
+_BASE_ANGLE = math.radians(140)
 
 
 @dataclass
 class Triangle(BaseShape):
-    """A triangle shape for reference marks."""
+    """An isosceles triangle shape for reference marks. At angle 0 its apex points along +x."""
+
+    symmetry_order: ClassVar[int | None] = 1
 
     def type(self) -> str:
         """Return the type of shape. Always 'triangle' for this class.
@@ -17,17 +26,12 @@ class Triangle(BaseShape):
         """
         return "triangle"
 
-    @property
-    def vertices(self) -> list[tuple[float, float]]:
-        """Return the vertices of the triangle.
-
-        Returns
-        -------
-        list
-            The vertices of the triangle.
-        """
-        return [
-            (self.x, self.y - self.size),
-            (self.x - self.size, self.y + self.size),
-            (self.x + self.size, self.y + self.size),
-        ]
+    def outline(self) -> Polygon:
+        """Return the triangle, with its three corners on the circle of diameter ``size``."""
+        return self._place(
+            [
+                (1.0, 0.0),
+                (math.cos(_BASE_ANGLE), math.sin(_BASE_ANGLE)),
+                (math.cos(_BASE_ANGLE), -math.sin(_BASE_ANGLE)),
+            ]
+        )

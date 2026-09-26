@@ -386,7 +386,9 @@ rule FR24_WriteSvg {
     @guidance
         -- svg_name(i) is "slice_" plus i as three digits plus ".svg". The file
         -- holds each contour as a black unfilled polygon (plus one for each hole), then each mark, then
-        -- the text "Slice N" once per contour (FR-25). Points are drawn at
+        -- the text "Slice N" once per contour (FR-25). A mark is a closed outline
+        -- anchored at its centre (FR-27): a circle, or a polygon for the square,
+        -- triangle and arrow. Points are drawn at
         -- (x, -y), so the y axis points up as in the model (FR-26). Every file
         -- has the same viewBox, which holds the contours of all slices plus a
         -- 5% margin, so layers can be laid over each other. The root width and
@@ -469,10 +471,9 @@ surface Command {
 -- G-16 Overlapping shells in one mesh give false holes.
 -- G-18 The slice label can cross an outline.
 -- G-19 The default min_distance ignores the model size.
--- G-20 Shapes have no common definition; the arrow cannot be cut as a hole.
 -- G-21 Clearance and spacing use the mark centre, not the whole hole.
 -- G-23 The output suits a screen, not a laser.
 -- G-30 A bad --mark-color ends in a traceback while the SVG is drawn.
 -- G-31 An output folder that cannot be written, or an empty one, is not checked before the slicing.
--- G-4 to G-7, G-18, G-19, G-20, G-21 and G-23 have targets in
+-- G-4 to G-7, G-18, G-19, G-21 and G-23 have targets in
 -- docs/alignment_requirements.md (TR-1 to TR-16).

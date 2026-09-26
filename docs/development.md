@@ -212,13 +212,17 @@ New pull requests open with a checklist from
 - zsh does not split an unquoted `$var`. `for a in "--x 1"; do cmd $a; done` passes one
   argument, and every probe then says `No such option '--x 1'` and tests nothing. Write
   one explicit call per case. Write scratch files with an absolute path.
-- An `is_eager=True` option's callback runs before the `--stl-file` prompt, with
-  `value=None` when the option is absent (click 8.5). A parser error such as an unknown
-  option, and `click.Path(exists=True)`, fail before the callback. `CliRunner` results
+- click 8.5 asks for an option with `prompt=` while it parses the options, so any check the
+  command makes later comes after the question. `--stl-file` therefore has no `prompt=`.
+  `cli` runs `resolve_settings` and then calls `click.prompt` (#135). A parse error (an
+  unknown option, a wrong type, a `--config` path that does not exist) still comes first,
+  and `--help`, which is eager, wins over every check `cli` makes. `CliRunner` results
   have `.stderr` and `.stdout` apart, and `.output` holds both.
 - When a fix names one kind of bad input, probe the others of the same kind before you
   close the issue. #119 moved a bad config file before the prompt, and bad option values
-  and the option conflict still come after it (G-28, #135).
+  and the option conflict still came after it (G-28, #135). Probing the class of #135 found
+  two more late failures: an output folder that is a file (#144, fixed with it) and a bad
+  `--mark-color` (#145).
 - The editor's pyright once showed errors (`No parameter named "size"`, an unknown import
   symbol) that `uv run pyright` and the CI lint job did not. They came right after
   `git checkout` and scripted edits changed files outside the editor. Later the same

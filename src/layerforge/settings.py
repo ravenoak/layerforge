@@ -96,9 +96,27 @@ def load_settings(path: Path | None, overrides: Mapping[str, object]) -> Setting
         and names the key instead, or ``settings`` when the error has no key.
     """
     path = find_config_file(path)
-    settings = read_config_file(path) if path is not None else Settings()
+    return merge_settings(read_config_file(path) if path is not None else Settings(), overrides)
 
-    merged = settings.model_dump()
+
+def merge_settings(file_settings: Settings, overrides: Mapping[str, object]) -> Settings:
+    """Lay the command line values over settings that are already read and checked.
+
+    Parameters
+    ----------
+    file_settings : Settings
+        The settings of the config file, or the defaults when there is no file.
+    overrides : Mapping[str, object]
+        Command line values by option name. ``None`` means the option was not given.
+
+    Raises
+    ------
+    click.BadParameter
+        If a command line value is bad. The parameter hint names the option.
+        A bad merged value for a key that has no option raises ``click.UsageError``
+        and names the key instead, or ``settings`` when the error has no key.
+    """
+    merged = file_settings.model_dump()
     for option, value in overrides.items():
         if value is None:
             continue

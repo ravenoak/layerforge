@@ -2,7 +2,7 @@
 
 ## Pipeline
 
-One run of the `layerforge` command. The steps live in `cli.py::process_model`.
+One run of the `layerforge` command. The checks live in `cli.py::_read_settings_file` and `cli.py::resolve_settings`, and the pipeline in `cli.py::_run`. `process_model` calls all three. The command calls the two checks, asks for the STL path, then calls `_run`.
 
 ```mermaid
 flowchart TD
@@ -40,7 +40,7 @@ flowchart LR
 
 | Package | Role |
 |---|---|
-| `cli` | The `layerforge` command and `process_model`. Validates options and runs the pipeline. |
+| `cli` | The `layerforge` command, `resolve_settings` (checks every option) and `_read_settings_file` (reads the config file) and `process_model`. Runs the pipeline. |
 | `models.loading` | `LoaderFactory`, the `Mesh` interface, and the trimesh loader. |
 | `models` | `ModelFactory` builds a `Model` (scaled mesh, height, origin). |
 | `models.slicing` | `SlicerService` computes positions and builds `Slice` objects. |

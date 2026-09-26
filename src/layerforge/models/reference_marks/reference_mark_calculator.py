@@ -129,6 +129,7 @@ class ReferenceMarkCalculator:
                 continue
 
             candidates = ReferenceMarkCalculator._sample_points(poly)
+            taken = [*existing_marks, *selected]
             best_pt = None
             best_score = -1.0
             for cand in candidates:
@@ -141,10 +142,7 @@ class ReferenceMarkCalculator:
                 # A point within the snapping range of a stored mark, or of a mark
                 # chosen in this slice, would be taken for that mark (TR-10). The
                 # stored mark did not pass the checks above, so skip the point.
-                if any(
-                    calculate_distance(x, y, mx, my) <= cfg.tolerance
-                    for mx, my in existing_marks + selected
-                ):
+                if any(calculate_distance(x, y, mx, my) <= cfg.tolerance for mx, my in taken):
                     continue
                 score = ReferenceMarkCalculator._stability_score(selected + [cand])
                 if score > best_score:

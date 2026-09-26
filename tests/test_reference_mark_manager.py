@@ -4,7 +4,11 @@ import pytest
 
 pytest.importorskip("trimesh")
 pytest.importorskip("shapely")
-from layerforge.models.reference_marks import ReferenceMark, ReferenceMarkManager
+from layerforge.models.reference_marks import (
+    ReferenceMark,
+    ReferenceMarkConfig,
+    ReferenceMarkManager,
+)
 
 
 def test_add_and_update_mark():
@@ -66,3 +70,15 @@ def test_add_or_update_mark_updates_the_nearest_mark():
     manager.add_or_update_mark(7, 0, "triangle", 4)
 
     assert [m.shape for m in manager.marks] == ["circle", "triangle"]
+
+
+def test_add_or_update_mark_uses_the_tolerance_it_is_given():
+    """#108 item 1: the caller's tolerance replaces the manager's own."""
+    manager = ReferenceMarkManager(config=ReferenceMarkConfig(tolerance=40))
+    manager.add_or_update_mark(0, 30, "square", 3)
+
+    manager.add_or_update_mark(0, 0, "circle", 3, tolerance=0.3)
+    assert [(m.shape, m.y) for m in manager.marks] == [("square", 30), ("circle", 0)]
+
+    manager.add_or_update_mark(0, 0.2, "triangle", 4, tolerance=0.3)
+    assert [(m.shape, m.y) for m in manager.marks] == [("square", 30), ("triangle", 0)]

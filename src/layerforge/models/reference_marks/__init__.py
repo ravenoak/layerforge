@@ -1,5 +1,5 @@
 from .config import ReferenceMarkConfig
-from .footprint import mark_footprint, mark_size_at
+from .footprint import mark_footprint, mark_reach, mark_size_at
 from .reference_mark import ReferenceMark
 from .reference_mark_adjuster import ReferenceMarkAdjuster
 from .reference_mark_calculator import ReferenceMarkCalculator
@@ -14,5 +14,6 @@ __all__ = [
     "ReferenceMarkManager",
     "ReferenceMarkService",
     "mark_footprint",
+    "mark_reach",
     "mark_size_at",
 ]

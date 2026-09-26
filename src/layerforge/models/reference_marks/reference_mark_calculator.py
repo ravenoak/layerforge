@@ -9,7 +9,7 @@ from shapely.geometry import Point, Polygon
 from layerforge.utils import calculate_distance
 
 from .config import ReferenceMarkConfig
-from .footprint import mark_size_at
+from .footprint import mark_reach, mark_size_at
 
 if TYPE_CHECKING:
     from layerforge.models.slicing.slice import Slice
@@ -88,17 +88,20 @@ class ReferenceMarkCalculator:
     ) -> list[tuple[float, float]]:
         """Return stable mark positions for ``layer`` respecting ``config.min_distance``.
 
-        The hole of a mark must fit too (TR-5). Its size is not known yet for a new
-        mark, so a mark is taken as a disc of its size, which holds the hole at any angle.
-        The disc must lie inside the piece with ``layer.min_web`` to spare, and two
-        discs must be ``layer.min_web`` apart.
+        The hole of a mark must fit too (TR-5). Its shape and angle are not known yet for a
+        new mark, so a mark is taken as a disc that holds the outline of every available
+        shape at any angle. Its radius is the farthest reach of those outlines from the
+        centre, which is a little over half the size for the circle (#157). The disc must
+        lie inside the piece with ``layer.min_web`` to spare, and two discs must be
+        ``layer.min_web`` apart.
         """
         cfg = config or ReferenceMarkConfig()
         min_distance = cfg.min_distance
         min_web = layer.min_web
+        reach_per_size = max(mark_reach(name, 1.0) for name in cfg.available_shapes)
 
         def radius(x: float, y: float) -> float:
-            return mark_size_at(cfg, layer.origin, x, y) / 2
+            return mark_size_at(cfg, layer.origin, x, y) * reach_per_size
 
         def clear_of_outline(x: float, y: float, poly: Polygon) -> bool:
             edge = poly.boundary.distance(Point(x, y))

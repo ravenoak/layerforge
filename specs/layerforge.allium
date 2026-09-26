@@ -351,14 +351,16 @@ rule FR15_FR21_PlaceMarks {
         -- choose_mark_point (FR-15 to FR-18): at most one point per contour.
         -- An earlier registered point inside the contour is reused if it is
         -- at least min_distance from the boundary and from marks already
-        -- placed on this slice, and if a disc of its size fits (below). Otherwise the candidate with the highest
+        -- placed on this slice, and if its disc fits (below). Otherwise the candidate with the highest
         -- stability score wins; a candidate within tolerance of a registered
         -- mark or of a mark placed on this slice is skipped (FR-17); candidates are the centroid (if inside the contour) plus points from a
         -- fixed-seed generator inside the bounding box. The score is the sum of pairwise
         -- distances over the candidate and the marks already placed. The hole of
         -- a new mark must fit (TR-5). Its shape and angle are not known yet, so
-        -- a mark is a disc of its size: the disc lies inside the boundary by at
-        -- least the web, and two discs are at least the web apart.
+        -- a mark is a disc that holds the outline of every available shape at its
+        -- size (radius: the farthest reach of those outlines from the centre, a
+        -- little over half the size for the circle, FR-27): the disc lies inside
+        -- the boundary by at least the web, and two discs are at least the web apart.
         -- next_shape gives the first shape not yet registered, else the first
         -- shape (G-5). mark_size is run.mark_size when set, else
         -- int(d / mark_size_step) clamped to min_mark_size .. max_mark_size (G-6). Registered marks are shared by

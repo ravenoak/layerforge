@@ -109,6 +109,15 @@ output, the first release will raise the minor version.
 
 ### Fixed
 
+- The command no longer chooses a point for a circle mark that the check after it drops.
+  The point was chosen with a disc of radius size / 2, and the circle's checked outline
+  reaches 0.12% further (5.00603 at size 10). On a square piece 6.0 or 6.002 wide (size 3,
+  web 1.5) the calculator chose the centre and the check dropped it. The disc now has the reach of the farthest available shape. The
+  checks keep the polygon of the circle, not the exact circle, so a circle that passes
+  never crosses an edge (#157). A Python caller whose `available_shapes` names an
+  unregistered shape now gets a `ValueError` from the calculator. Before, it got a
+  mark. The command is not affected, because it checks the names first (FR-6).
+
 - Loops inside a contour become holes in the slice. Marks avoid the holes, and
   the SVG outlines them. (#70, G-3)
 - A negative `--mark-tolerance` or `--mark-min-distance` exits with code 2 and

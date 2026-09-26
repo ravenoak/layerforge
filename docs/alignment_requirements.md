@@ -92,7 +92,7 @@ All rows are **planned**. "Closes" names the known gaps the row addresses, with 
 
 | ID | Requirement | Closes |
 |---|---|---|
-| TR-13 | `--units` sets the unit of the mesh and of every length option: layer height, target height, mark size, distances, tolerance and number height. The choices are `mm`, `cm` and `in`. The default is `mm`. Every SVG has the same `width` and `height`, given with that unit, and a `viewBox` in the same numbers. `--scale-factor` still rescales the mesh. | G-17 (#74) |
+| TR-13 | `--units` sets the unit of the mesh and of every length option: layer height, target height, mark size, distances, tolerance and number height. The choices are `mm`, `cm` and `in`. The default is `mm`. Every SVG has the same `width` and `height`, given with that unit, and a `viewBox` in the same numbers. `--scale-factor` still rescales the mesh. Status: built in #74 (`--units`, the `units` key, and `width` and `height` with the unit). Nothing is converted, because the numbers already follow the unit and no default is given in mm yet; the conversion of a mm default (kerf, number height, hairline) comes with the issue that adds it. | G-17 (#74, done) |
 | TR-14 | Cut geometry (piece outlines and holes) is drawn in one colour, default red, with a stroke of `output.hairline_width` and no fill. The default width is a hairline of 0.01 mm, converted to the chosen unit. The number is drawn in black, filled, with no stroke. `--cut-color` and `--engrave-color` (`output.cut_color`, `output.engrave_color`) change the colours. `--mark-color` and the per-shape default colours are removed. The root `stroke-width` and `font-size` of the current output are removed. Colour groups objects. It does not set the operation in every program (TR-17). | G-23 (#83) |
 
 ### Dowel holes (later)
@@ -121,7 +121,7 @@ How common tools read the output, which TR-17 rests on:
 
 | ID | Requirement | Closes |
 |---|---|---|
-| TR-16 | Every number in TR-2 to TR-15 that depends on the machine, the material or judgment is a setting. Each has a default and a config-file key (see the table). The common ones also have a command-line option. A setting is taken from the command line first, then from the config file, then from its default. The config file is TOML. Its path is `--config`, or `layerforge.toml` in the current directory if that file exists. Lengths are in `--units`. Unknown keys, wrong types and out-of-range values stop the run before slicing, with exit code 2 and a message that names the file and the key. Status: #87 built the mechanism and the keys `layer_height`, `marks.size`, `marks.tolerance`, `marks.min_distance`, `marks.shapes` and `marks.angle`. Each later issue adds its own keys, and until then a key that is not built is an unknown key. | G-24 (#87, done) |
+| TR-16 | Every number in TR-2 to TR-15 that depends on the machine, the material or judgment is a setting. Each has a default and a config-file key (see the table). The common ones also have a command-line option. A setting is taken from the command line first, then from the config file, then from its default. The config file is TOML. Its path is `--config`, or `layerforge.toml` in the current directory if that file exists. Lengths are in `--units`. Unknown keys, wrong types and out-of-range values stop the run before slicing, with exit code 2 and a message that names the file and the key. Status: #87 built the mechanism and the keys `layer_height`, `marks.size`, `marks.tolerance`, `marks.min_distance`, `marks.shapes` and `marks.angle`. #74 added `units`. Each later issue adds its own keys, and until then a key that is not built is an unknown key. | G-24 (#87, done) |
 
 | Key | Option | Default | Basis | Used by |
 |---|---|---|---|---|
@@ -172,7 +172,7 @@ height = 6.0
 
 | Option | Change |
 |---|---|
-| `--units` | New. Default `mm`. |
+| `--units` | New (#74). Default `mm`. |
 | `--config` | New (#87). Path to a TOML settings file (TR-16). |
 | `--kerf` | New. Default 0.3 mm (proposed). |
 | `--mark-size` | New (#87). Sets the size. Without it the size is still the FR-21 rule. The default from the sheet thickness and kerf (TR-6) comes with #62. |

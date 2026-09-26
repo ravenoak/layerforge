@@ -48,6 +48,7 @@ value Appearance {
 ------------------------------------------------------------
 
 config {
+    default_units: String = "mm"
     default_layer_height: Decimal = 3.0
     default_tolerance: Decimal = 10.0
     default_min_distance: Decimal = 10.0
@@ -64,6 +65,7 @@ config {
 ------------------------------------------------------------
 
 entity Run {
+    units: String                       -- mm, cm or in: the unit of the mesh and of every length (FR-31)
     layer_height: Decimal
     scale_factor: Decimal?
     target_height: Decimal?
@@ -150,6 +152,7 @@ rule FR1_StartRun {
     ensures:
         Run.created(
             mesh: load_single_mesh(stl_file),
+            units: options.units,
             layer_height: options.layer_height,
             scale_factor: options.scale_factor,
             target_height: options.target_height,
@@ -168,7 +171,7 @@ rule FR1_StartRun {
         -- file and every option have been checked (the rules below), so a bad
         -- option is reported before the person types a path. A file
         -- with more than one geometry is rejected (FR-7). Defaults are the
-        -- config values above (FR-6). Each of layer_height, mark_size,
+        -- config values above (FR-6). Each of units, layer_height, mark_size,
         -- tolerance, min_distance, shapes and angle is the option if given,
         -- else the config file value, else the default (FR-30). A config file
         -- that passes its check and is used is named once on stderr: "Using
@@ -386,8 +389,10 @@ rule FR24_WriteSvg {
         -- the text "Slice N" once per contour (FR-25). Points are drawn at
         -- (x, -y), so the y axis points up as in the model (FR-26). Every file
         -- has the same viewBox, which holds the contours of all slices plus a
-        -- 5% margin, so layers can be laid over each other. Every slice gets a
-        -- file, including empty ones.
+        -- 5% margin, so layers can be laid over each other. The root width and
+        -- height are the viewBox width and height followed by the unit of the
+        -- run (FR-31), so every file has the same physical size. Without a
+        -- viewBox they are 100%. Every slice gets a file, including empty ones.
 }
 
 rule RunCompletes {
@@ -462,12 +467,11 @@ surface Command {
 -- G-6  Mark size is fixed at 3 to 5, not proportional to the model.
 -- G-7  Marks are inherited from any earlier slice, not only neighbours.
 -- G-16 Overlapping shells in one mesh give false holes.
--- G-17 The SVG has no physical size.
 -- G-18 The slice label can cross an outline.
 -- G-19 The default min_distance ignores the model size.
 -- G-20 Shapes have no common definition; the arrow cannot be cut as a hole.
 -- G-21 Clearance and spacing use the mark centre, not the whole hole.
 -- G-23 The output suits a screen, not a laser.
 -- G-30 A bad --mark-color ends in a traceback while the SVG is drawn.
--- G-4 to G-7, G-17 to G-19, G-20, G-21 and G-23 have targets in
+-- G-4 to G-7, G-18, G-19, G-20, G-21 and G-23 have targets in
 -- docs/alignment_requirements.md (TR-1 to TR-16).

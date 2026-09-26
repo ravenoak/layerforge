@@ -1,3 +1,5 @@
+import xml.etree.ElementTree as ET
+
 import click
 import pytest
 
@@ -129,4 +131,23 @@ def test_process_model_non_finite_option_fails_before_slicing(
         process_model(stl_file=str(cylinder_stl), output_folder=str(out), **kwargs)
     assert excinfo.value.param_hint == hint
     assert "finite" in excinfo.value.message
+    assert not out.exists()
+
+
+def test_process_model_units_set_the_svg_size_unit(cylinder_stl, tmp_path):
+    out = tmp_path / "out"
+
+    process_model(stl_file=str(cylinder_stl), output_folder=str(out), units="in")
+
+    root = ET.parse(sorted(out.glob("slice_*.svg"))[0]).getroot()
+    assert str(root.get("width")).endswith("in")
+    assert str(root.get("height")).endswith("in")
+
+
+def test_process_model_bad_units_fail_before_slicing(cylinder_stl, tmp_path):
+    out = tmp_path / "out"
+
+    with pytest.raises(click.BadParameter, match="Input should be"):
+        process_model(stl_file=str(cylinder_stl), output_folder=str(out), units="ft")
+
     assert not out.exists()

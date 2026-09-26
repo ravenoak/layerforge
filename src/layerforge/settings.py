@@ -11,7 +11,7 @@ import math
 import tomllib
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import click
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
@@ -29,6 +29,7 @@ _STRICT = ConfigDict(extra="forbid", strict=True, allow_inf_nan=False)
 # (--mark-color, --scale-factor, --target-height, --stl-file, --output-folder)
 # are not settings.
 _OPTION_KEYS: dict[str, tuple[str, ...]] = {
+    "units": ("units",),
     "layer_height": ("layer_height",),
     "mark_size": ("marks", "size"),
     "mark_tolerance": ("marks", "tolerance"),
@@ -69,6 +70,7 @@ class Settings(BaseModel):
 
     model_config = _STRICT
 
+    units: Literal["mm", "cm", "in"] = "mm"
     layer_height: float = Field(default=3.0, gt=0)
     marks: MarkSettings = Field(default_factory=MarkSettings)
 

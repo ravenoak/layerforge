@@ -50,6 +50,7 @@ def resolve_settings(
     file_settings: Settings,
     *,
     output_folder: str,
+    units: str | None = None,
     layer_height: float | None = None,
     scale_factor: float | None = None,
     target_height: float | None = None,
@@ -76,6 +77,7 @@ def resolve_settings(
     settings = merge_settings(
         file_settings,
         {
+            "units": units,
             "layer_height": layer_height,
             "mark_size": mark_size,
             "mark_tolerance": mark_tolerance,
@@ -122,7 +124,7 @@ def _run(
 
     slices = SlicerService.slice_model(model, config=config)
     svg_writer = SVGFileWriter()
-    svg_generator = SVGGenerator(output_folder, svg_writer, shape_context)
+    svg_generator = SVGGenerator(output_folder, svg_writer, shape_context, units=settings.units)
     svg_generator.generate_svgs(slices)
 
 
@@ -130,6 +132,7 @@ def process_model(
     *,
     stl_file: str,
     output_folder: str,
+    units: str | None = None,
     layer_height: float | None = None,
     scale_factor: float | None = None,
     target_height: float | None = None,
@@ -149,6 +152,9 @@ def process_model(
         Path to the STL model to slice.
     output_folder : str
         Directory where SVG slices will be written.
+    units : str, optional
+        The unit of the model and of every length: ``mm``, ``cm`` or ``in``. It sets
+        the unit of each SVG's size. Falls back to the config file, then ``mm``.
     layer_height : float, optional
         Height of each generated layer. Falls back to the config file, then 3.0.
     scale_factor : float, optional
@@ -185,6 +191,7 @@ def process_model(
     settings = resolve_settings(
         file_settings,
         output_folder=output_folder,
+        units=units,
         layer_height=layer_height,
         scale_factor=scale_factor,
         target_height=target_height,
@@ -216,6 +223,14 @@ def process_model(
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
     help="A TOML settings file. Default: layerforge.toml in the current directory, if it exists. "
     "The command line overrides the file. The file that is used is named on stderr.",
+)
+@click.option(
+    "--units",
+    default=None,
+    type=click.Choice(["mm", "cm", "in"]),
+    help="The unit of the model and of every length option. It sets the physical size "
+    "of each SVG. An STL file has no unit, so this states it and nothing is converted. "
+    "Default mm.",
 )
 @click.option("--layer-height", default=None, type=float, help="The layer height. Default 3.0.")
 @click.option("--output-folder", default="output", help="The output folder for SVG files.")
@@ -267,6 +282,7 @@ def process_model(
 def cli(
     stl_file: str | None,
     config_path: Path | None,
+    units: str | None,
     layer_height: float | None,
     output_folder: str,
     scale_factor: float | None,
@@ -291,6 +307,7 @@ def cli(
         settings = resolve_settings(
             file_settings,
             output_folder=output_folder,
+            units=units,
             layer_height=layer_height,
             scale_factor=scale_factor,
             target_height=target_height,

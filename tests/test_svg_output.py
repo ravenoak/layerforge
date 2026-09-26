@@ -211,3 +211,52 @@ def test_no_view_box_when_nothing_was_cut(tmp_path):
     empty = Slice(0, 0.0, [], (0, 0), ReferenceMarkManager(), ReferenceMarkConfig())
     SVGGenerator(str(tmp_path), writer, ctx).generate_svgs([empty])
     assert "viewBox" not in writer.saved[0].attribs
+
+
+def _generate(tmp_path, polygons, **kwargs):
+    ctx = StrategyContext()
+    register_shape_strategies(ctx)
+    writer = CaptureWriter()
+    slices = [
+        Slice(i, 0.0, [poly], (0, 0), ReferenceMarkManager(), ReferenceMarkConfig())
+        for i, poly in enumerate(polygons)
+    ]
+    SVGGenerator(str(tmp_path), writer, ctx, **kwargs).generate_svgs(slices)
+    return writer.saved
+
+
+@pytest.mark.parametrize("units", ["mm", "cm", "in"])
+def test_svg_width_and_height_are_the_view_box_size_in_the_unit(tmp_path, units):
+    """A laser program reads the size from width and height, so they must match the view box."""
+    # 10.1 x 3.3 gives view box numbers that are not round, so a rounded width would differ.
+    saved = _generate(tmp_path, [box(0, 0, 10.1, 3.3), box(1, 1, 2, 2)], units=units)
+
+    for dwg in saved:
+        _, _, view_width, view_height = dwg.attribs["viewBox"].split(",")
+        assert dwg.attribs["width"] == f"{view_width}{units}"
+        assert dwg.attribs["height"] == f"{view_height}{units}"
+
+
+def test_svg_size_is_in_millimetres_by_default(tmp_path):
+    (dwg,) = _generate(tmp_path, [box(0, 0, 10, 10)])
+
+    assert dwg.attribs["width"].endswith("mm")
+    assert dwg.attribs["height"].endswith("mm")
+
+
+def test_every_svg_has_the_same_physical_size(tmp_path):
+    saved = _generate(tmp_path, [box(0, 0, 40, 20), box(10, 5, 20, 10)], units="cm")
+
+    assert len({(d.attribs["width"], d.attribs["height"]) for d in saved}) == 1
+
+
+def test_svg_without_a_view_box_keeps_a_relative_size(tmp_path):
+    ctx = StrategyContext()
+    register_shape_strategies(ctx)
+    writer = CaptureWriter()
+    empty = Slice(0, 0.0, [], (0, 0), ReferenceMarkManager(), ReferenceMarkConfig())
+
+    SVGGenerator(str(tmp_path), writer, ctx, units="cm").generate_svgs([empty])
+
+    assert writer.saved[0].attribs["width"] == "100%"
+    assert writer.saved[0].attribs["height"] == "100%"

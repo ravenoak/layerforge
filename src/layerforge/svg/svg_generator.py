@@ -17,9 +17,18 @@ class SVGGenerator:
         The SVG writer to use.
     shape_context : StrategyContext
         The shape strategy context to use.
+    units : str
+        The unit of the model's numbers: ``mm``, ``cm`` or ``in``. It is the unit of
+        the ``width`` and ``height`` of every SVG.
     """
 
-    def __init__(self, output_folder: str, svg_writer: SVGWriter, shape_context: StrategyContext):
+    def __init__(
+        self,
+        output_folder: str,
+        svg_writer: SVGWriter,
+        shape_context: StrategyContext,
+        units: str = "mm",
+    ):
         """Initializes the SVG generator.
 
         Parameters
@@ -30,10 +39,13 @@ class SVGGenerator:
             The SVG writer to use.
         shape_context : StrategyContext
             The shape strategy context to use.
+        units : str
+            The unit of the model's numbers, used for the size of every SVG.
         """
         self.output_folder = output_folder
         self.svg_writer = svg_writer
         self.shape_context = shape_context
+        self.units = units
 
     def generate_svgs(self, slices: list[Slice]) -> None:
         """Generates SVGs for slices.
@@ -49,9 +61,14 @@ class SVGGenerator:
         """
         view_box = self._view_box(slices)
         for slice_obj in slices:
-            dwg = svgwrite.Drawing(profile="tiny")
-            if view_box is not None:
+            if view_box is None:
+                dwg = svgwrite.Drawing(profile="tiny")
+            else:
                 x, y, width, height = view_box
+                # The size is the view box size in the unit, as text: the tiny profile
+                # rounds a float attribute, so a number would differ from the view box.
+                size = (f"{width}{self.units}", f"{height}{self.units}")
+                dwg = svgwrite.Drawing(profile="tiny", size=size)
                 dwg.viewbox(x, y, width, height)
                 # The default 16 unit text and 1 unit lines would swamp a model
                 # that is a few units across, so scale them with the model.

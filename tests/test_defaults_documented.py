@@ -95,6 +95,9 @@ def _spec_config() -> dict[str, object]:
         ("default_min_hole_ratio", ("marks", "min_hole_ratio")),
         ("default_min_hole_kerf_factor", ("marks", "min_hole_kerf_factor")),
         ("default_shapes", ("marks", "shapes")),
+        ("default_cut_color", ("output", "cut_color")),
+        ("default_engrave_color", ("output", "engrave_color")),
+        ("default_hairline_width", ("output", "hairline_width")),  # millimetres in both
     ],
 )
 def test_the_spec_config_block_states_the_default_of_each_setting(name, key):
@@ -131,6 +134,9 @@ def test_every_default_of_the_spec_config_block_is_compared():
         "default_min_hole_ratio",
         "default_min_hole_kerf_factor",
         "default_shapes",
+        "default_cut_color",
+        "default_engrave_color",
+        "default_hairline_width",
     }
 
 
@@ -150,6 +156,8 @@ def _help_text(option: str) -> str:
         ("--kerf", ("kerf",), lambda v: f"Default {v} mm"),
         ("--available-shapes", ("marks", "shapes"), lambda v: f"Default {','.join(v)}."),
         ("--mark-angle", ("marks", "angle"), lambda v: f"Default {v}."),
+        ("--cut-color", ("output", "cut_color"), lambda v: f"Default {v}."),
+        ("--engrave-color", ("output", "engrave_color"), lambda v: f"Default {v}."),
     ],
 )
 def test_the_help_text_states_the_default_of_each_option(option, key, shown):

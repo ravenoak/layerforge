@@ -11,6 +11,7 @@ from layerforge.models.reference_marks.config import TOLERANCE_FACTOR
 from layerforge.settings import Settings, find_config_file, merge_settings, read_config_file
 from layerforge.svg import SVGGenerator
 from layerforge.svg.drawing import StrategyContext
+from layerforge.svg.style import SVGStyle
 from layerforge.utils import register_shape_strategies
 from layerforge.utils.loader_initialization import initialize_loaders
 from layerforge.writers import SVGFileWriter
@@ -95,6 +96,8 @@ def resolve_settings(
     mark_min_distance: float | None = None,
     available_shapes: str | None = None,
     mark_angle: float | None = None,
+    cut_color: str | None = None,
+    engrave_color: str | None = None,
 ) -> Settings:
     """Check every option against the settings of the config file, and return the run's settings.
 
@@ -122,6 +125,8 @@ def resolve_settings(
             "mark_min_distance": mark_min_distance,
             "available_shapes": shapes,
             "mark_angle": mark_angle,
+            "cut_color": cut_color,
+            "engrave_color": engrave_color,
         },
     )
     _check_output_folder(output_folder)
@@ -135,7 +140,6 @@ def _run(
     output_folder: str,
     scale_factor: float | None,
     target_height: float | None,
-    mark_color: str | None,
 ) -> None:
     """Load the model, slice it and write the SVG files. The settings are already checked."""
     shape_context = StrategyContext()
@@ -157,7 +161,6 @@ def _run(
         available_shapes=marks.shapes,
         angle=math.radians(marks.angle),
         size=marks.size,
-        color=mark_color,
         min_web_ratio=marks.min_web_ratio,
         kerf=settings.kerf,
         min_hole_ratio=marks.min_hole_ratio,
@@ -166,7 +169,15 @@ def _run(
 
     slices = SlicerService.slice_model(model, config=config)
     svg_writer = SVGFileWriter()
-    svg_generator = SVGGenerator(output_folder, svg_writer, shape_context, units=settings.units)
+    output = settings.output
+    style = SVGStyle(
+        cut_color=output.cut_color,
+        engrave_color=output.engrave_color,
+        hairline_width=output.hairline_width,
+    )
+    svg_generator = SVGGenerator(
+        output_folder, svg_writer, shape_context, units=settings.units, style=style
+    )
     svg_generator.generate_svgs(slices)
 
 
@@ -184,7 +195,8 @@ def process_model(
     mark_min_distance: float | None = None,
     available_shapes: str | None = None,
     mark_angle: float | None = None,
-    mark_color: str | None = None,
+    cut_color: str | None = None,
+    engrave_color: str | None = None,
     config_path: Path | None = None,
 ) -> None:
     """Process the model and generate SVG slices.
@@ -219,8 +231,12 @@ def process_model(
         Comma separated list of shapes used for new marks.
     mark_angle : float, optional
         Default orientation angle for marks in degrees.
-    mark_color : str, optional
-        Default color for mark outlines.
+    cut_color : str, optional
+        The stroke colour of everything that is cut: the outlines and the mark holes. A name,
+        #rgb, #rrggbb or rgb(r,g,b). Falls back to the config file, then its default (red).
+    engrave_color : str, optional
+        The colour of the number, which is engraved. Falls back to the config file, then its
+        default (black).
     config_path : Path, optional
         The TOML config file. Without it ``layerforge.toml`` in the current
         directory is used if it exists.
@@ -250,6 +266,8 @@ def process_model(
         mark_min_distance=mark_min_distance,
         available_shapes=available_shapes,
         mark_angle=mark_angle,
+        cut_color=cut_color,
+        engrave_color=engrave_color,
     )
     _run(
         settings,
@@ -257,7 +275,6 @@ def process_model(
         output_folder=output_folder,
         scale_factor=scale_factor,
         target_height=target_height,
-        mark_color=mark_color,
     )
 
 
@@ -344,9 +361,17 @@ def process_model(
     "See docs/reference_mark_algorithm.md#parameter-effects.",
 )
 @click.option(
-    "--mark-color",
+    "--cut-color",
     default=None,
-    help="Outline color for marks. See docs/reference_mark_algorithm.md#parameter-effects.",
+    help="The stroke colour of everything that is cut: the outlines and the mark holes. "
+    "An SVG colour such as red, #f00 or rgb(255,0,0). Laser software groups objects by "
+    f"colour, and you set the operation for each group. Default {_DEFAULTS.output.cut_color}.",
+)
+@click.option(
+    "--engrave-color",
+    default=None,
+    help="The colour of the number, which is engraved. A name, #rgb, #rrggbb or rgb(r,g,b). "
+    f"Default {_DEFAULTS.output.engrave_color}.",
 )
 def cli(
     stl_file: str | None,
@@ -362,7 +387,8 @@ def cli(
     mark_min_distance: float | None,
     available_shapes: str | None,
     mark_angle: float | None,
-    mark_color: str | None,
+    cut_color: str | None,
+    engrave_color: str | None,
 ) -> None:
     """Slice an STL model into one SVG file per layer.
 
@@ -387,6 +413,8 @@ def cli(
             mark_min_distance=mark_min_distance,
             available_shapes=available_shapes,
             mark_angle=mark_angle,
+            cut_color=cut_color,
+            engrave_color=engrave_color,
         )
     except ConflictingOptionsError as exc:
         click.echo(str(exc))
@@ -399,7 +427,6 @@ def cli(
         output_folder=output_folder,
         scale_factor=scale_factor,
         target_height=target_height,
-        mark_color=mark_color,
     )
 
 

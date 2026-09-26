@@ -7,6 +7,7 @@ check, and #136 makes ``--help`` win over a bad config file.
 import os
 import tomllib
 
+import click
 import pytest
 from click.testing import CliRunner
 
@@ -36,6 +37,25 @@ BAD_FILE_MESSAGE = "bad.toml: marks.tolerance: must be >= 0"
         (["--kerf", "inf"], 2, "Invalid value for --kerf: must be a finite"),
         (["--kerf", "-inf"], 2, "Invalid value for --kerf: must be a finite"),
         (["--units", "ft"], 2, "Invalid value for '--units'"),
+        (
+            ["--cut-color", "notacolor"],
+            2,
+            "Invalid value for --cut-color: 'notacolor' is not a colour",
+        ),
+        (["--cut-color", ""], 2, "Invalid value for --cut-color: '' is not a colour"),
+        (["--cut-color", "none"], 2, "Invalid value for --cut-color: 'none' is not a colour"),
+        (["--cut-color", "Red"], 2, "Invalid value for --cut-color: 'Red' is not a colour"),
+        (
+            ["--engrave-color", "currentColor"],
+            2,
+            "Invalid value for --engrave-color: 'currentColor' is not a colour",
+        ),
+        (
+            ["--engrave-color", "rgb(1,2)"],
+            2,
+            "Invalid value for --engrave-color: 'rgb(1,2)' is not a colour",
+        ),
+        (["--mark-color", "red"], 2, "No such option '--mark-color'"),
         (["--available-shapes", "hexagon"], 2, "Invalid value for --available-shapes: unknown"),
         (["--scale-factor", "0"], 2, "Invalid value for --scale-factor: must be > 0"),
         (["--scale-factor", "nan"], 2, "Invalid value for --scale-factor: must be a finite"),
@@ -54,6 +74,49 @@ def test_cli_bad_option_is_reported_before_the_stl_prompt(args, exit_code, messa
     assert result.exit_code == exit_code, result.output
     assert message in result.output
     assert "STL file path" not in result.output
+
+
+@pytest.mark.parametrize("colour", ["red", "#f00", "rgb(255,0,0)"])
+def test_cli_accepts_the_colours_that_svg_reads(tmp_path, colour):
+    result = CliRunner().invoke(
+        cli,
+        ["--cut-color", colour, "--engrave-color", colour, "--output-folder", str(tmp_path / "o")],
+        input="\n",
+    )
+
+    assert "is not a colour" not in result.output
+    assert "STL file path" in result.output  # every check passed, so the prompt came
+
+
+def test_cli_bad_colour_in_the_file_is_reported_before_the_stl_prompt(tmp_path):
+    bad = tmp_path / "bad.toml"
+    bad.write_text('[output]\ncut_color = "none"\n')
+
+    result = CliRunner().invoke(cli, ["--config", str(bad)], input="box.stl\n")
+
+    assert result.exit_code == 2, result.output
+    assert f"{bad}: output.cut_color: 'none' is not a colour" in result.output
+    assert "STL file path" not in result.output
+
+
+@pytest.mark.parametrize(
+    ("cut", "engrave", "hint"),
+    [("notacolor", None, "--cut-color"), (None, "notacolor", "--engrave-color")],
+)
+def test_process_model_bad_colour_is_reported_before_any_work(
+    cylinder_stl, tmp_path, cut, engrave, hint
+):
+    """The Python API makes the same check as the command (#145)."""
+    with pytest.raises(click.BadParameter) as excinfo:
+        process_model(
+            stl_file=str(cylinder_stl),
+            output_folder=str(tmp_path / "out"),
+            cut_color=cut,
+            engrave_color=engrave,
+        )
+    assert excinfo.value.param_hint == hint
+    assert "'notacolor' is not a colour" in excinfo.value.message
+    assert not (tmp_path / "out").exists()
 
 
 @pytest.mark.parametrize("below", [False, True])

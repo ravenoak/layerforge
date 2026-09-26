@@ -29,22 +29,19 @@ def test_new_mark_added_to_manager():
     assert manager.marks[0].y == sl.ref_marks[0].y
 
 
-def test_inherited_mark_keeps_angle_and_color():
+def test_inherited_mark_keeps_its_angle():
     square = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)])
     manager = ReferenceMarkManager()
-    cfg1 = ReferenceMarkConfig(min_distance=10, angle=math.pi / 4, color="red")
+    cfg1 = ReferenceMarkConfig(min_distance=10, angle=math.pi / 4)
     sl1 = Slice(0, 0.0, [square], mark_manager=manager, config=cfg1, layer_height=3.0)
     ReferenceMarkService.process_slice(sl1)
     assert sl1.ref_marks[0].angle == math.pi / 4
-    assert sl1.ref_marks[0].color == "red"
 
-    cfg2 = ReferenceMarkConfig(min_distance=10, angle=math.pi / 2, color="blue")
+    cfg2 = ReferenceMarkConfig(min_distance=10, angle=math.pi / 2)
     sl2 = Slice(1, 0.0, [square], mark_manager=manager, config=cfg2, layer_height=3.0)
     ReferenceMarkService.process_slice(sl2)
     assert sl2.ref_marks[0].angle == math.pi / 4
-    assert sl2.ref_marks[0].color == "red"
     assert manager.marks[0].angle == math.pi / 4
-    assert manager.marks[0].color == "red"
 
 
 def test_warning_when_a_contour_gets_no_mark(caplog):
@@ -97,7 +94,7 @@ def _stub_chosen_points(monkeypatch, points):
 def test_point_near_a_stored_mark_takes_its_coordinates(monkeypatch):
     square = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)])
     manager = ReferenceMarkManager()
-    manager.marks = [ReferenceMark(x=20, y=50, shape="square", size=4, angle=1.0, color="red")]
+    manager.marks = [ReferenceMark(x=20, y=50, shape="square", size=4, angle=1.0)]
     _stub_chosen_points(monkeypatch, [(23, 50)])
     sl = Slice(
         1,
@@ -112,7 +109,7 @@ def test_point_near_a_stored_mark_takes_its_coordinates(monkeypatch):
 
     (mark,) = sl.ref_marks
     assert (mark.x, mark.y) == (20, 50)
-    assert (mark.shape, mark.size, mark.angle, mark.color) == ("square", 4, 1.0, "red")
+    assert (mark.shape, mark.size, mark.angle) == ("square", 4, 1.0)
     assert len(manager.marks) == 1
 
 

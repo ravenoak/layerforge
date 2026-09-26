@@ -17,7 +17,7 @@ def test_example_generates_svgs(tmp_path):
     found_mark = False
     for fp in files:
         txt = fp.read_text()
-        if any(color in txt for color in ['stroke="red"', 'stroke="blue"', 'stroke="green"']):
+        if 'class="mark"' in txt:
             found_mark = True
             break
     assert found_mark, "no reference marks found in SVGs"

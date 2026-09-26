@@ -16,22 +16,29 @@ from typing import Any, Literal
 import click
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 from pydantic_core import ErrorDetails
+from svgwrite.data.typechecker import Tiny12TypeChecker  # pyright: ignore[reportMissingTypeStubs]
 
 from layerforge.domain.shapes.registry import registered_shapes
 from layerforge.models.reference_marks import ReferenceMarkConfig
+from layerforge.svg.style import SVGStyle
 from layerforge.units import from_mm
 
 DEFAULT_FILE = Path("layerforge.toml")
 
 _DEFAULTS = ReferenceMarkConfig()
+_STYLE = SVGStyle()
 _STRICT = ConfigDict(extra="forbid", strict=True, allow_inf_nan=False)
 
+# The colours that svgwrite writes for SVG Tiny: a name, #rgb, #rrggbb, rgb(r,g,b) or rgb(r%,g%,b%).
+# Its checker is the one that would refuse the value later, while the SVG is drawn (#145).
+_COLOUR_CHECKER: Any = Tiny12TypeChecker()
+
 # Lengths whose default is stated in millimetres and converted to the run's units (TR-13).
+# ``output.hairline_width`` is converted too, see ``_in_units``.
 _MM_DEFAULTS = ("layer_height", "kerf")
 
 # Command line option name -> key path in the file. Options not listed here
-# (--mark-color, --scale-factor, --target-height, --stl-file, --output-folder)
-# are not settings.
+# (--scale-factor, --target-height, --stl-file, --output-folder) are not settings.
 _OPTION_KEYS: dict[str, tuple[str, ...]] = {
     "units": ("units",),
     "layer_height": ("layer_height",),
@@ -41,6 +48,8 @@ _OPTION_KEYS: dict[str, tuple[str, ...]] = {
     "mark_min_distance": ("marks", "min_distance"),
     "available_shapes": ("marks", "shapes"),
     "mark_angle": ("marks", "angle"),
+    "cut_color": ("output", "cut_color"),
+    "engrave_color": ("output", "engrave_color"),
 }
 _OPTION_HINTS = {keys: "--" + name.replace("_", "-") for name, keys in _OPTION_KEYS.items()}
 
@@ -74,11 +83,33 @@ class MarkSettings(BaseModel):
         return v
 
 
+class OutputSettings(BaseModel):
+    """The ``[output]`` table: how the SVG is drawn for a laser (TR-14)."""
+
+    model_config = _STRICT
+
+    cut_color: str = _STYLE.cut_color
+    engrave_color: str = _STYLE.engrave_color
+    hairline_width: float = Field(default=_STYLE.hairline_width, gt=0)  # no option (TR-16)
+
+    @field_validator("cut_color", "engrave_color")
+    @classmethod
+    def _a_colour(cls, v: str) -> str:
+        colour = v.strip()
+        if not _COLOUR_CHECKER.is_color(colour):
+            raise ValueError(
+                f"{v!r} is not a colour. Use a name such as red, a hex value such as #f00, "
+                "or rgb(255,0,0)"
+            )
+        return colour
+
+
 class Settings(BaseModel):
     """Every setting of a run.
 
-    ``layer_height`` and ``kerf`` default to millimetres here. :func:`merge_settings` states a
-    default that was not set in the units of the run, so read them from its result.
+    ``layer_height``, ``kerf`` and ``output.hairline_width`` default to millimetres here.
+    :func:`merge_settings` states a default that was not set in the units of the run, so read
+    them from its result.
     """
 
     model_config = _STRICT
@@ -87,6 +118,7 @@ class Settings(BaseModel):
     layer_height: float = Field(default=3.0, gt=0)
     kerf: float = Field(default=_DEFAULTS.kerf, ge=0)
     marks: MarkSettings = Field(default_factory=MarkSettings)
+    output: OutputSettings = Field(default_factory=OutputSettings)
 
 
 def load_settings(path: Path | None, overrides: Mapping[str, object]) -> Settings:
@@ -159,12 +191,19 @@ def merge_settings(file_settings: Settings, overrides: Mapping[str, object]) -> 
 
 
 def _in_units(settings: Settings) -> Settings:
-    """State the millimetre defaults that nobody set in the units of the run (TR-13)."""
-    updates = {
+    """State the millimetre defaults that nobody set in the units of the run (TR-13).
+
+    A key is left alone when it was set, whatever else its table holds: a file that sets only
+    ``output.cut_color`` still gets the hairline in the units of the run.
+    """
+    updates: dict[str, Any] = {
         name: from_mm(settings.units, getattr(settings, name))
         for name in _MM_DEFAULTS
         if name not in settings.model_fields_set
     }
+    if "hairline_width" not in settings.output.model_fields_set:
+        width = from_mm(settings.units, settings.output.hairline_width)
+        updates["output"] = settings.output.model_copy(update={"hairline_width": width})
     return settings.model_copy(update=updates) if updates else settings
 
 

@@ -51,9 +51,9 @@ Opening the first SVG shows the contour, one reference mark (the red circle) and
 ```xml
 <?xml version="1.0" encoding="utf-8" ?>
 <svg ...>
-  <polygon fill="none" ... />
-  <circle ... stroke="red" />
-  <text ...>Slice 0</text>
+  <polygon class="outline" fill="none" points="..." stroke="red" stroke-width="0.01" />
+  <circle class="mark" cx="-0.0" cy="0.0" fill="none" r="2.5" stroke="red" stroke-width="0.01" />
+  <text fill="black" font-size="1.1" x="-0.0" y="0.0">Slice 0</text>
 </svg>
 ```
 

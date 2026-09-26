@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 from svgwrite import Drawing
+from svgwrite.base import BaseElement
 
 from layerforge.domain.shapes.base_shape import BaseShape
 
@@ -17,18 +18,21 @@ class ShapeDrawingStrategy(ABC):
         return [(x, y) for x, y in shape.outline().exterior.coords][:-1]
 
     @abstractmethod
-    def draw(self, dwg: Drawing, shape: BaseShape) -> None:
-        """Draws a shape on the given Drawing object.
+    def element(self, dwg: Drawing, shape: BaseShape) -> BaseElement:
+        """Return the element that draws ``shape``, without adding it to ``dwg``.
+
+        The element holds no stroke, width, fill or class. :meth:`StrategyContext.draw` adds
+        them, so every shape is styled the same way.
 
         Parameters
         ----------
         dwg : Drawing
-            The Drawing object to draw the shape on.
+            The Drawing object that makes the element.
         shape : BaseShape
             The shape to draw.
 
         Returns
         -------
-        None
+        BaseElement
+            The element, not yet in ``dwg``.
         """
-        pass

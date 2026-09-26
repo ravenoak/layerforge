@@ -67,7 +67,7 @@ python -c "import layerforge; print(layerforge.__version__)"
 - Slice STL models into individual layers.
 - Generate SVG files with contours, slice numbers and reference marks.
 - Reference marks are chosen using a geometric stability metric inspired by GDOP.
-- Marks inherit shape, position, angle and color between slices and are adjusted to avoid overlaps.
+- Marks inherit shape, position and angle between slices and are adjusted to avoid overlaps.
 - Supports multiple mark shapes (circle, square, triangle, arrow) for easy identification.
 
 ## Configuration
@@ -82,7 +82,7 @@ The CLI exposes parameters for tuning reference mark generation:
 - `--mark-min-distance` – minimum distance from contours and between marks. Without it, the mark size.
 - `--available-shapes` – comma separated list of shapes to choose from when creating marks.
 - `--mark-angle` – default orientation angle for generated marks in degrees.
-- `--mark-color` – outline color for reference marks.
+- `--cut-color` and `--engrave-color` – the colours of the cut lines (default red) and of the number (default black).
 
 The default of each option is in the [keys table](docs/configuration.md#config-file) and in `--help`.
 

@@ -160,7 +160,7 @@ A second retrospective pass on session D (2026-09-26) ran the repo-wide grep for
 
 | Decision | Blocks | Needed by |
 |---|---|---|
-| Laser and material numbers (#96): kerf, smallest clean hole, number height, hairline behavior. Cut the sheet of #141 on your machine. | Final defaults in #87, #62, #75 | Before #83 is merged |
+| Laser and material numbers (#96): kerf, smallest clean hole, number height, hairline behavior. Cut the sheet of #141 on your machine. | Final defaults in #87, #62, #75 | Before the proposed defaults are final |
 | Colours and stroke conventions of the laser software (#83): answered in part by TR-17. Red cut and black engrave stay as defaults. The probe of #141 shows what your software does. | #83 | Session E |
 | Dowel hole design (#93): review the proposal in TR-15, mainly position and count | #93, #142 | Later |
 | Config key names in TR-16 | Later keys | Each issue that adds a key. The six built in #87 follow TR-16 as written, so the owner may still rename them. |

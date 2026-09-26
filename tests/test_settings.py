@@ -26,6 +26,8 @@ def test_defaults_without_a_file(tmp_path, monkeypatch):
     assert s.marks.shapes == ["circle", "square", "triangle", "arrow"]
     assert s.marks.angle == 0.0
     assert s.marks.min_web_ratio == 0.5
+    assert (s.output.cut_color, s.output.engrave_color) == ("red", "black")
+    assert s.output.hairline_width == 0.01
 
 
 def test_precedence_is_command_line_then_file_then_default(tmp_path):
@@ -100,6 +102,17 @@ def test_all_keys_are_read(tmp_path):
         ("[marks]\nshapes = []\n", "marks.shapes", "must name at least one shape"),
         ('units = "ft"\n', "units", "Input should be"),
         ("units = 5\n", "units", "Input should be"),
+        ('[output]\ncut_color = "notacolor"\n', "output.cut_color", "'notacolor' is not a colour"),
+        ('[output]\nengrave_color = ""\n', "output.engrave_color", "'' is not a colour"),
+        ('[output]\ncut_color = "none"\n', "output.cut_color", "'none' is not a colour"),
+        ('[output]\ncut_color = "currentColor"\n', "output.cut_color", "is not a colour"),
+        ('[output]\ncut_color = "Red"\n', "output.cut_color", "'Red' is not a colour"),
+        ('[output]\nengrave_color = "url(#a)"\n', "output.engrave_color", "is not a colour"),
+        ("[output]\ncut_color = 5\n", "output.cut_color", "valid string"),
+        ("[output]\nhairline_width = 0\n", "output.hairline_width", "must be > 0"),
+        ("[output]\nhairline_width = -1\n", "output.hairline_width", "must be > 0"),
+        ("[output]\nhairline_width = nan\n", "output.hairline_width", "must be a finite number"),
+        ("[output]\nstroke = 1\n", "output.stroke", "Extra inputs"),
     ],
 )
 def test_a_bad_file_names_the_file_and_the_key(tmp_path, text, key, reason):
@@ -262,3 +275,60 @@ def test_a_bad_kerf_option_names_the_option(value, reason):
 
     assert excinfo.value.param_hint == "--kerf"
     assert reason in excinfo.value.message
+
+
+@pytest.mark.parametrize("colour", ["red", "#f00", "#ff0000", "rgb(255,0,0)", "rgb(255, 0, 0)"])
+def test_a_colour_that_svg_reads_is_accepted(tmp_path, colour):
+    cfg = _write(tmp_path, f'[output]\ncut_color = "{colour}"\nengrave_color = "{colour}"\n')
+
+    s = load_settings(cfg, {})
+
+    assert (s.output.cut_color, s.output.engrave_color) == (colour, colour)
+
+
+def test_a_colour_is_stored_without_the_spaces_around_it():
+    s = load_settings(None, {"cut_color": "  red ", "engrave_color": "#00f "})
+
+    assert (s.output.cut_color, s.output.engrave_color) == ("red", "#00f")
+
+
+def test_the_colour_options_beat_the_file(tmp_path):
+    cfg = _write(tmp_path, '[output]\ncut_color = "blue"\nengrave_color = "green"\n')
+
+    assert load_settings(cfg, {}).output.cut_color == "blue"
+    s = load_settings(cfg, {"cut_color": "#f00", "engrave_color": None})
+    assert (s.output.cut_color, s.output.engrave_color) == ("#f00", "green")
+
+
+@pytest.mark.parametrize(
+    ("option", "hint"),
+    [("cut_color", "--cut-color"), ("engrave_color", "--engrave-color")],
+)
+@pytest.mark.parametrize("bad", ["notacolor", "", "none", "currentColor", "Red", "rgb(1,2)"])
+def test_a_bad_colour_option_names_the_option(option, hint, bad):
+    with pytest.raises(click.BadParameter) as excinfo:
+        load_settings(None, {option: bad})
+
+    assert excinfo.value.param_hint == hint
+    assert f"{bad!r} is not a colour" in excinfo.value.message
+
+
+@pytest.mark.parametrize(("units", "width"), [("mm", 0.01), ("cm", 0.001), ("in", 0.01 / 25.4)])
+def test_the_hairline_default_is_millimetres_stated_in_the_units(units, width):
+    assert load_settings(None, {"units": units}).output.hairline_width == pytest.approx(width)
+
+
+def test_a_hairline_that_is_given_is_not_converted(tmp_path):
+    cfg = _write(tmp_path, 'units = "in"\n[output]\nhairline_width = 0.0005\n')
+
+    assert load_settings(cfg, {}).output.hairline_width == 0.0005
+
+
+def test_a_file_that_sets_another_output_key_still_converts_the_hairline(tmp_path):
+    """Only the key that was set is left alone, not the whole [output] table."""
+    cfg = _write(tmp_path, 'units = "in"\n[output]\ncut_color = "blue"\n')
+
+    s = load_settings(cfg, {})
+
+    assert s.output.cut_color == "blue"
+    assert s.output.hairline_width == pytest.approx(0.01 / 25.4)

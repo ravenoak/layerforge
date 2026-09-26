@@ -21,6 +21,21 @@ output, the first release will raise the minor version.
 
 ### Changed
 
+- **Breaking:** The SVG is laser output. Outlines and holes are hairlines of 0.01 mm
+  (`output.hairline_width`, in the unit of the run) in the cut colour, red by default, with no
+  fill and a `class` of `outline` or `mark`. Before, outlines were black, each mark shape had
+  its own colour, and the root set a stroke width of 1/200 of the drawing. The root
+  `font-size` and `stroke-width` are gone; the label carries its own `font-size`, with the
+  same value, and the `fill` of the engrave colour. `stroke-width` is plain decimal text, so
+  0.01 mm with `--units in` is `0.00039370078740157485` and not `0.0004`. (#83, #145, Refs #154)
+- **Breaking:** `--mark-color` is removed. Use `--cut-color`. A bad colour now exits with
+  code 2 before the prompt and names the option, where it ended in a traceback after the
+  slicing. (#83, #145)
+- **Breaking:** Python API. The `color` field is removed from `BaseShape`, `ReferenceMark`,
+  `ReferenceMarkConfig`, `ReferenceMarkManager.add_or_update_mark` and `Slice`.
+  `ReferenceMarkConfig` raises on an unknown field, so `color=` is an error and not dropped.
+  A drawing strategy implements `element(dwg, shape)` and returns an unstyled element, where
+  it had `draw`. `SVGGenerator` and `draw_slice` take a `style` (`SVGStyle`). (#83)
 - **Breaking:** The default mark size, minimum distance and tolerance follow the sheet
   and the kerf, not the model. The size is the larger of the layer height and 1.5 times
   the kerf (3 for the default 3 mm sheet and 0.3 mm kerf), and it no longer depends on
@@ -103,6 +118,9 @@ output, the first release will raise the minor version.
 
 ### Added
 
+- `--cut-color` and `--engrave-color` (default red and black), and the config-file table
+  `[output]` with `cut_color`, `engrave_color` and `hairline_width`. A colour is a name, `#rgb`,
+  `#rrggbb` or `rgb(r,g,b)`. (#83)
 - `--kerf` and the `kerf` key: the width of material the tool removes, default 0.3 mm
   stated in `--units`. The keys `marks.min_hole_ratio` (1) and `marks.min_hole_kerf_factor`
   (1.5) give the least hole size, with no command-line option. A `--mark-size` below that

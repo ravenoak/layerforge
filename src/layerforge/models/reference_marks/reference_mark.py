@@ -10,4 +10,3 @@ class ReferenceMark:
     shape: str
     size: float
     angle: float = 0.0
-    color: str | None = None

@@ -21,6 +21,24 @@ output, the first release will raise the minor version.
 
 ### Changed
 
+- **Breaking:** The default mark size, minimum distance and tolerance follow the sheet
+  and the kerf, not the model. The size is the larger of the layer height and 1.5 times
+  the kerf (3 for the default 3 mm sheet and 0.3 mm kerf), and it no longer depends on
+  the distance from the origin. `--mark-min-distance` defaults to the mark size (it was
+  10) and `--mark-tolerance` to 0.1 times it (it was 10). Measured on cubes centred on the
+  origin at layer height 3: a 10 mm cube goes from 0 marks to 4 in 4 slices, and the
+  20 mm and 30 mm cubes keep their 7 and 10 marks, of radius 1.5. At layer height 5 the
+  radius of the marks of the 20 mm and 30 mm cubes grows from 1.5 to 2.5, and a 10 mm cube
+  still gets none. A run with a config file or options that name a size, a distance or a
+  tolerance is not affected. (#62, #76, G-6, G-19)
+- **Breaking:** With `--units cm` or `--units in`, the default layer height is 3 mm stated
+  in that unit (0.3 cm, 0.118 in), where it was 3.0 in that unit. A layer height that you
+  give is not converted. (#62)
+- **Breaking:** Python API. `Slice` needs `layer_height` (keyword only). `ReferenceMarkConfig`
+  has `size`, `min_distance` and `tolerance` as `None` until they are set or derived, and
+  `resolved(layer_height)` derives them; `Slice` and `SlicerService.slice_model` do that.
+  `ReferenceMarkAdjuster` and `ReferenceMarkManager` raise `ValueError` for a value that is
+  not set. `mark_size_at` and `Slice._calculate_mark_size` are removed. (#62, #165)
 - **Breaking:** Every mark shape is a closed outline anchored at its centre, and
   its size is the diameter of the smallest circle around the centre that holds
   it. At size 10 the square's area falls from 100 to 50 (the side is now the
@@ -85,17 +103,21 @@ output, the first release will raise the minor version.
 
 ### Added
 
+- `--kerf` and the `kerf` key: the width of material the tool removes, default 0.3 mm
+  stated in `--units`. The keys `marks.min_hole_ratio` (1) and `marks.min_hole_kerf_factor`
+  (1.5) give the least hole size, with no command-line option. A `--mark-size` below that
+  size logs one warning for the run, and the run goes on. (#62, TR-6)
 - `marks.min_web_ratio` in the config file: the least material between two holes, and
   between a hole and an outline, as a multiple of the layer height. Default 0.5.
   It has no command-line option. (#85)
 - Python API: `ReferenceMarkAdjuster.adjust_marks` takes a keyword `min_web`, `Slice` takes
-  `layer_height`, and `layerforge.models.reference_marks` exports `mark_footprint` and
-  `mark_size_at`. The shape registry lives in `layerforge.domain.shapes.registry`;
+  `layer_height`, and `layerforge.models.reference_marks` exports `mark_footprint`. The shape registry lives in `layerforge.domain.shapes.registry`;
   `layerforge.svg.drawing.shape_factory` still exports the same names. (#85)
 - `--units` (`mm`, `cm` or `in`, default `mm`) and the `units` key of the config file.
   An STL file has no unit, so the option states the unit of the model and of every
-  length option, and labels the size of each SVG. Nothing is converted. With
-  `--units in`, the default mark distances of 10 are 10 inches. (#74, G-17)
+  length option, and labels the size of each SVG. A length that you give is not
+  converted. The defaults for the layer height and the kerf are stated in the unit (#62).
+  (#74, G-17)
 - A TOML config file. `--config PATH` names it, and `layerforge.toml` in the
   current directory is read when it exists, so **a `layerforge.toml` you already
   have there now changes the run**. Keys: `layer_height`, and `size`,
@@ -103,8 +125,8 @@ output, the first release will raise the minor version.
   from the command line beats the file, and the file beats the default. An
   unknown key or a bad value exits with code 2 and names the file and the key.
   (#87, G-24)
-- `--mark-size` sets the size of every new mark. Without it the size is still
-  3 to 5, by distance from the model origin. (#87)
+- `--mark-size` sets the size of every new mark. Without it the size follows the
+  sheet (see #62 under Changed). (#87)
 - One warning per slice when a contour gets no mark. (#70, G-13)
 
 ### Fixed

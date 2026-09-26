@@ -8,8 +8,8 @@ from shapely.geometry import Point, Polygon
 
 from layerforge.utils import calculate_distance
 
-from .config import ReferenceMarkConfig
-from .footprint import mark_reach, mark_size_at
+from .config import ReferenceMarkConfig, require
+from .footprint import mark_reach
 
 if TYPE_CHECKING:
     from layerforge.models.slicing.slice import Slice
@@ -95,20 +95,19 @@ class ReferenceMarkCalculator:
         lie inside the piece with ``layer.min_web`` to spare, and two discs must be
         ``layer.min_web`` apart.
         """
-        cfg = config or ReferenceMarkConfig()
-        min_distance = cfg.min_distance
+        cfg = (config or layer.config).resolved(layer.layer_height)
+        min_distance = require(cfg.min_distance, "min_distance")
+        tolerance = require(cfg.tolerance, "tolerance")
         min_web = layer.min_web
         reach_per_size = max(mark_reach(name, 1.0) for name in cfg.available_shapes)
-
-        def radius(x: float, y: float) -> float:
-            return mark_size_at(cfg, layer.origin, x, y) * reach_per_size
+        radius = require(cfg.size, "size") * reach_per_size
 
         def clear_of_outline(x: float, y: float, poly: Polygon) -> bool:
             edge = poly.boundary.distance(Point(x, y))
-            return edge >= min_distance and edge >= radius(x, y) + min_web
+            return edge >= min_distance and edge >= radius + min_web
 
         def clear_of(x: float, y: float, other: tuple[float, float]) -> bool:
-            gap = radius(x, y) + radius(*other) + min_web
+            gap = 2 * radius + min_web
             return calculate_distance(x, y, other[0], other[1]) >= max(min_distance, gap)
 
         selected: list[tuple[float, float]] = []
@@ -142,7 +141,7 @@ class ReferenceMarkCalculator:
                 # A point within the snapping range of a stored mark, or of a mark
                 # chosen in this slice, would be taken for that mark (TR-10). The
                 # stored mark did not pass the checks above, so skip the point.
-                if any(calculate_distance(x, y, mx, my) <= cfg.tolerance for mx, my in taken):
+                if any(calculate_distance(x, y, mx, my) <= tolerance for mx, my in taken):
                     continue
                 score = ReferenceMarkCalculator._stability_score(selected + [cand])
                 if score > best_score:

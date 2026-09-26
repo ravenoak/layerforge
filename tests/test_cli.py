@@ -243,8 +243,40 @@ def test_cli_defaults_reach_the_slicer(sliced):
 
     assert seen["layer_height"] == 3.0
     cfg = seen["config"]
-    assert (cfg.tolerance, cfg.min_distance, cfg.angle, cfg.size) == (10.0, 10.0, 0.0, None)
+    # Size, minimum distance and tolerance come from the sheet, so the slicer derives them (TR-6).
+    assert (cfg.tolerance, cfg.min_distance, cfg.angle, cfg.size) == (None, None, 0.0, None)
+    assert (cfg.kerf, cfg.min_hole_ratio, cfg.min_hole_kerf_factor) == (0.3, 1.0, 1.5)
     assert cfg.available_shapes == ["circle", "square", "triangle", "arrow"]
+
+
+def test_cli_kerf_option_reaches_the_slicer(sliced):
+    assert sliced("--kerf", "0.25")["config"].kerf == 0.25
+    assert sliced("--kerf", "0")["config"].kerf == 0.0
+
+
+def test_cli_hole_factors_and_kerf_of_the_file_reach_the_slicer(sliced, tmp_path):
+    (tmp_path / "layerforge.toml").write_text(
+        "kerf = 0.2\n[marks]\nmin_hole_ratio = 2\nmin_hole_kerf_factor = 3\n"
+    )
+
+    cfg = sliced()["config"]
+
+    assert (cfg.kerf, cfg.min_hole_ratio, cfg.min_hole_kerf_factor) == (0.2, 2.0, 3.0)
+
+
+def test_cli_units_state_the_default_sheet_and_kerf_in_that_unit(sliced):
+    """TR-13: with --units in the defaults are 3 mm and 0.3 mm in inches, not 3 and 0.3 inches."""
+    seen = sliced("--units", "in")
+
+    assert seen["layer_height"] == pytest.approx(3 / 25.4)
+    assert seen["config"].kerf == pytest.approx(0.3 / 25.4)
+
+
+def test_cli_units_do_not_convert_a_sheet_that_is_given(sliced):
+    seen = sliced("--units", "in", "--layer-height", "0.125", "--kerf", "0.01")
+
+    assert seen["layer_height"] == 0.125
+    assert seen["config"].kerf == 0.01
 
 
 def test_cli_config_file_values_reach_the_slicer(sliced, tmp_path):

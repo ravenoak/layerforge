@@ -15,6 +15,7 @@ import pytest
 from click.testing import CliRunner
 
 from layerforge.cli import cli
+from layerforge.models.reference_marks.config import TOLERANCE_FACTOR
 from layerforge.settings import _OPTION_HINTS, Settings
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -88,9 +89,11 @@ def _spec_config() -> dict[str, object]:
     [
         ("default_units", ("units",)),
         ("default_layer_height", ("layer_height",)),
-        ("default_tolerance", ("marks", "tolerance")),
-        ("default_min_distance", ("marks", "min_distance")),
+        ("default_kerf", ("kerf",)),
+        ("default_angle", ("marks", "angle")),  # degrees in both, as the option takes them
         ("default_min_web_ratio", ("marks", "min_web_ratio")),
+        ("default_min_hole_ratio", ("marks", "min_hole_ratio")),
+        ("default_min_hole_kerf_factor", ("marks", "min_hole_kerf_factor")),
         ("default_shapes", ("marks", "shapes")),
     ],
 )
@@ -98,14 +101,35 @@ def test_the_spec_config_block_states_the_default_of_each_setting(name, key):
     assert _spec_config()[name] == _leaves(Settings())[key]
 
 
+# Their default is a rule, not a number (TR-6, TR-10), so the spec block has no entry for them.
+DERIVED = [("marks", "size"), ("marks", "tolerance"), ("marks", "min_distance")]
+
+
+@pytest.mark.parametrize("key", DERIVED, ids=[".".join(k) for k in DERIVED])
+def test_a_derived_setting_has_no_default_number_and_no_spec_entry(key):
+    """#164: the choice not to compare them is written here, and it fails if it changes."""
+    assert _leaves(Settings())[key] is None
+    assert f"default_{key[-1]}" not in _spec_config()
+
+
+def test_the_tolerance_factor_of_the_spec_is_the_one_in_the_code():
+    block = re.search(r"^config \{\n(.*?)^\}", SPEC.read_text(), re.S | re.M)
+    assert block
+    match = re.search(r"^\s+tolerance_factor: Decimal = ([\d.]+)", block[1], re.M)
+    assert match
+    assert float(match[1]) == TOLERANCE_FACTOR
+
+
 def test_every_default_of_the_spec_config_block_is_compared():
     """A new `default_*` entry in the spec needs a row in the test above."""
     assert set(_spec_config()) == {
         "default_units",
         "default_layer_height",
-        "default_tolerance",
-        "default_min_distance",
+        "default_kerf",
+        "default_angle",
         "default_min_web_ratio",
+        "default_min_hole_ratio",
+        "default_min_hole_kerf_factor",
         "default_shapes",
     }
 
@@ -122,12 +146,19 @@ def _help_text(option: str) -> str:
     ("option", "key", "shown"),
     [
         ("--units", ("units",), lambda v: f"Default {v}."),
-        ("--layer-height", ("layer_height",), lambda v: f"Default {v}."),
-        ("--mark-tolerance", ("marks", "tolerance"), lambda v: f"Default {v}."),
-        ("--mark-min-distance", ("marks", "min_distance"), lambda v: f"Default {v}."),
+        ("--layer-height", ("layer_height",), lambda v: f"Default {v} mm"),
+        ("--kerf", ("kerf",), lambda v: f"Default {v} mm"),
         ("--available-shapes", ("marks", "shapes"), lambda v: f"Default {','.join(v)}."),
         ("--mark-angle", ("marks", "angle"), lambda v: f"Default {v}."),
     ],
 )
 def test_the_help_text_states_the_default_of_each_option(option, key, shown):
     assert shown(_leaves(Settings())[key]) in _help_text(option)
+
+
+def test_the_help_text_states_how_each_derived_default_is_worked_out():
+    marks = Settings().marks
+    size = f"{marks.min_hole_ratio:g} x the layer height and {marks.min_hole_kerf_factor:g} x"
+    assert size in _help_text("--mark-size")
+    assert f"Default {TOLERANCE_FACTOR:g} x the mark size" in _help_text("--mark-tolerance")
+    assert "Default: the mark size" in _help_text("--mark-min-distance")

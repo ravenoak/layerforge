@@ -246,7 +246,7 @@ config {
     --   marks.min_distance  the mark size (sourced, TR-5)
     --   marks.tolerance     marks_tolerance_factor x mark size (proposed)
     units: Units = mm                              -- units, convention (TR-13)
-    layer_height: Decimal = 3.0                    -- layer_height, existing (TR-6)
+    layer_height: Decimal = 3.0                    -- layer_height (TR-6): millimetres, stated in units (TR-13)
     kerf_mm: Decimal = 0.3                         -- kerf, proposed (TR-6, TR-15)
     marks_min_hole_ratio: Decimal = 1              -- marks.min_hole_ratio, sourced (TR-6)
     marks_min_hole_kerf_factor: Decimal = 1.5      -- marks.min_hole_kerf_factor, sourced (TR-6)

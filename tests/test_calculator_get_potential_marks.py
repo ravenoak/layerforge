@@ -18,7 +18,9 @@ from layerforge.models.slicing.slice import Slice
 def create_slice(polygons, manager=None, cfg=None):
     manager = manager or ReferenceMarkManager(config=cfg)
     cfg = cfg or ReferenceMarkConfig()
-    return Slice(0, 0.0, polygons, origin=(0, 0), mark_manager=manager, config=cfg)
+    return Slice(
+        0, 0.0, polygons, origin=(0, 0), mark_manager=manager, config=cfg, layer_height=3.0
+    )
 
 
 def test_potential_marks_inside_polygon():
@@ -31,7 +33,7 @@ def test_potential_marks_inside_polygon():
     x, y = marks[0]
     pt = Point(x, y)
     assert square.contains(pt)
-    assert square.boundary.distance(pt) >= cfg.min_distance
+    assert square.boundary.distance(pt) >= 10  # the min_distance set above
 
 
 def test_existing_mark_inherited():

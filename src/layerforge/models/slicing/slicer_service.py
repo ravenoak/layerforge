@@ -1,3 +1,4 @@
+import logging
 import math
 
 from layerforge.models import Model, Slice
@@ -58,7 +59,16 @@ class SlicerService:
         List[Slice]
             A list of the slices
         """
-        cfg = config or ReferenceMarkConfig()
+        # Resolve once: every slice and the store then share one size, one minimum distance
+        # and one snapping tolerance (TR-6, TR-10, #108).
+        cfg = (config or ReferenceMarkConfig()).resolved(model.layer_height)
+        least = cfg.min_size(model.layer_height)
+        if cfg.size is not None and cfg.size < least:
+            logging.warning(
+                f"The mark size {cfg.size:g} is below the least hole size {least:g} for a sheet "
+                f"of {model.layer_height:g} and a kerf of {cfg.kerf:g} (TR-6). "
+                "Holes this small may not cut cleanly."
+            )
         min_bound, max_bound = model.mesh.bounds
         slice_positions = SlicerService.calculate_slice_positions(
             float(min_bound[2]), float(max_bound[2]), model.layer_height

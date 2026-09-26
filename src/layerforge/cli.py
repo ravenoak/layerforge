@@ -7,6 +7,7 @@ import click
 from layerforge.models import ModelFactory, SlicerService
 from layerforge.models.loading import LoaderFactory
 from layerforge.models.reference_marks import ReferenceMarkConfig
+from layerforge.models.reference_marks.config import TOLERANCE_FACTOR
 from layerforge.settings import Settings, find_config_file, merge_settings, read_config_file
 from layerforge.svg import SVGGenerator
 from layerforge.svg.drawing import StrategyContext
@@ -86,6 +87,7 @@ def resolve_settings(
     output_folder: str,
     units: str | None = None,
     layer_height: float | None = None,
+    kerf: float | None = None,
     scale_factor: float | None = None,
     target_height: float | None = None,
     mark_size: float | None = None,
@@ -114,6 +116,7 @@ def resolve_settings(
         {
             "units": units,
             "layer_height": layer_height,
+            "kerf": kerf,
             "mark_size": mark_size,
             "mark_tolerance": mark_tolerance,
             "mark_min_distance": mark_min_distance,
@@ -156,6 +159,9 @@ def _run(
         size=marks.size,
         color=mark_color,
         min_web_ratio=marks.min_web_ratio,
+        kerf=settings.kerf,
+        min_hole_ratio=marks.min_hole_ratio,
+        min_hole_kerf_factor=marks.min_hole_kerf_factor,
     )
 
     slices = SlicerService.slice_model(model, config=config)
@@ -170,6 +176,7 @@ def process_model(
     output_folder: str,
     units: str | None = None,
     layer_height: float | None = None,
+    kerf: float | None = None,
     scale_factor: float | None = None,
     target_height: float | None = None,
     mark_size: float | None = None,
@@ -192,19 +199,22 @@ def process_model(
         The unit of the model and of every length: ``mm``, ``cm`` or ``in``. It sets
         the unit of each SVG's size. Falls back to the config file, then its default.
     layer_height : float, optional
-        Height of each generated layer. Falls back to the config file, then its default.
+        Height of each generated layer, which is the thickness of the sheet. Falls back to the
+        config file, then its default (3 mm, stated in ``units``).
+    kerf : float, optional
+        The width of material the tool removes. Falls back to the config file, then its
+        default (0.3 mm, stated in ``units``).
     scale_factor : float, optional
         Uniform scale factor to apply to the model.
     target_height : float, optional
         Desired overall height of the model.  Mutually exclusive with
         ``scale_factor``.
     mark_size : float, optional
-        Size of every new mark. Without it the size follows the distance from
-        the origin.
+        Size of every new mark. Without it the size follows the layer height and the kerf (TR-6).
     mark_tolerance : float, optional
-        Distance used when matching existing marks.
+        Distance used when matching existing marks. Without it, 0.1 times the mark size.
     mark_min_distance : float, optional
-        Minimum distance from contours and between marks.
+        Minimum distance from contours and between marks. Without it, the mark size.
     available_shapes : str, optional
         Comma separated list of shapes used for new marks.
     mark_angle : float, optional
@@ -232,6 +242,7 @@ def process_model(
         output_folder=output_folder,
         units=units,
         layer_height=layer_height,
+        kerf=kerf,
         scale_factor=scale_factor,
         target_height=target_height,
         mark_size=mark_size,
@@ -275,7 +286,16 @@ def process_model(
     "--layer-height",
     default=None,
     type=float,
-    help=f"The layer height. Default {_DEFAULTS.layer_height}.",
+    help="The layer height, which is the thickness of the sheet. "
+    f"Default {_DEFAULTS.layer_height} mm, stated in --units.",
+)
+@click.option(
+    "--kerf",
+    default=None,
+    type=float,
+    help="The kerf: the width of material the tool removes. It sets the smallest default "
+    f"mark size ({_DEFAULTS.marks.min_hole_kerf_factor:g} x the kerf). "
+    f"Default {_DEFAULTS.kerf} mm, stated in --units. Use 0 for a CNC router or hand work.",
 )
 @click.option("--output-folder", default="output", help="The output folder for SVG files.")
 @click.option(
@@ -289,13 +309,16 @@ def process_model(
     "--mark-size",
     default=None,
     type=float,
-    help="Size of every new mark. Default: 3 to 5, by distance from the model origin.",
+    help="Size of every new mark. Default: the larger of "
+    f"{_DEFAULTS.marks.min_hole_ratio:g} x the layer height and "
+    f"{_DEFAULTS.marks.min_hole_kerf_factor:g} x the kerf.",
 )
 @click.option(
     "--mark-tolerance",
     default=None,
     type=float,
-    help=f"Tolerance when matching existing marks. Default {_DEFAULTS.marks.tolerance}. "
+    help="Tolerance when matching existing marks. "
+    f"Default {TOLERANCE_FACTOR:g} x the mark size. "
     "See docs/reference_mark_algorithm.md#parameter-effects.",
 )
 @click.option(
@@ -303,7 +326,7 @@ def process_model(
     default=None,
     type=float,
     help="Minimum distance from contours and between marks. "
-    f"Default {_DEFAULTS.marks.min_distance}. "
+    "Default: the mark size. "
     "See docs/reference_mark_algorithm.md#parameter-effects.",
 )
 @click.option(
@@ -330,6 +353,7 @@ def cli(
     config_path: Path | None,
     units: str | None,
     layer_height: float | None,
+    kerf: float | None,
     output_folder: str,
     scale_factor: float | None,
     target_height: float | None,
@@ -355,6 +379,7 @@ def cli(
             output_folder=output_folder,
             units=units,
             layer_height=layer_height,
+            kerf=kerf,
             scale_factor=scale_factor,
             target_height=target_height,
             mark_size=mark_size,

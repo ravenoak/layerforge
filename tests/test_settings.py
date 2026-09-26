@@ -20,9 +20,9 @@ def test_defaults_without_a_file(tmp_path, monkeypatch):
     s = load_settings(None, {})
 
     assert s.layer_height == 3.0
-    assert s.marks.size is None
-    assert s.marks.tolerance == 10.0
-    assert s.marks.min_distance == 10.0
+    assert s.kerf == 0.3
+    assert (s.marks.size, s.marks.tolerance, s.marks.min_distance) == (None, None, None)
+    assert (s.marks.min_hole_ratio, s.marks.min_hole_kerf_factor) == (1.0, 1.5)
     assert s.marks.shapes == ["circle", "square", "triangle", "arrow"]
     assert s.marks.angle == 0.0
     assert s.marks.min_web_ratio == 0.5
@@ -58,7 +58,8 @@ def test_all_keys_are_read(tmp_path):
     cfg = _write(
         tmp_path,
         "layer_height = 2\n[marks]\nsize = 4\ntolerance = 1\nmin_distance = 2\n"
-        'shapes = ["circle", "arrow"]\nangle = 90\nmin_web_ratio = 0.75\n',
+        'shapes = ["circle", "arrow"]\nangle = 90\nmin_web_ratio = 0.75\n'
+        "min_hole_ratio = 2\nmin_hole_kerf_factor = 3\n",
     )
 
     s = load_settings(cfg, {})
@@ -72,13 +73,19 @@ def test_all_keys_are_read(tmp_path):
     assert s.marks.shapes == ["circle", "arrow"]
     assert s.marks.angle == 90.0
     assert s.marks.min_web_ratio == 0.75
+    assert (s.marks.min_hole_ratio, s.marks.min_hole_kerf_factor) == (2.0, 3.0)
 
 
 @pytest.mark.parametrize(
     ("text", "key", "reason"),
     [
         ('[marks]\ncolour = "red"\n', "marks.colour", "Extra inputs"),
-        ("kerf = 0.3\n", "kerf", "Extra inputs"),
+        ("dowel = 1\n", "dowel", "Extra inputs"),
+        ("kerf = -1\n", "kerf", "must be >= 0"),
+        ("kerf = nan\n", "kerf", "must be a finite number"),
+        ("[marks]\nmin_hole_ratio = 0\n", "marks.min_hole_ratio", "must be > 0"),
+        ("[marks]\nmin_hole_ratio = inf\n", "marks.min_hole_ratio", "must be a finite number"),
+        ("[marks]\nmin_hole_kerf_factor = -1\n", "marks.min_hole_kerf_factor", "must be >= 0"),
         ('layer_height = "3"\n', "layer_height", "valid number"),
         ('[marks]\nshapes = "circle"\n', "marks.shapes", "valid list"),
         ("layer_height = 0\n", "layer_height", "must be > 0"),
@@ -170,7 +177,7 @@ def test_a_check_across_keys_is_a_usage_error_that_names_settings(monkeypatch):
     class Crossed(settings_module.Settings):
         @model_validator(mode="after")
         def _tolerance_not_too_large(self):
-            if self.marks.tolerance > 100:
+            if self.marks.tolerance is not None and self.marks.tolerance > 100:
                 raise ValueError("tolerance is too large")
             return self
 
@@ -192,3 +199,66 @@ def test_units_come_from_the_file_and_the_option_beats_it(tmp_path):
     assert load_settings(cfg, {}).units == "cm"
     assert load_settings(cfg, {"units": "in"}).units == "in"
     assert load_settings(cfg, {"units": None}).units == "cm"
+
+
+@pytest.mark.parametrize(
+    ("units", "layer_height", "kerf"),
+    [("mm", 3.0, 0.3), ("cm", 0.3, 0.03), ("in", 3 / 25.4, 0.3 / 25.4)],
+)
+def test_the_default_sheet_and_kerf_are_millimetres_stated_in_the_units(
+    tmp_path, monkeypatch, units, layer_height, kerf
+):
+    """TR-13: a mm default must not be read as inches (#62)."""
+    monkeypatch.chdir(tmp_path)
+
+    s = load_settings(None, {"units": units})
+
+    assert s.layer_height == pytest.approx(layer_height)
+    assert s.kerf == pytest.approx(kerf)
+
+
+def test_the_units_of_the_file_convert_the_defaults_it_does_not_set(tmp_path):
+    cfg = _write(tmp_path, 'units = "in"\n')
+
+    s = load_settings(cfg, {})
+
+    assert s.layer_height == pytest.approx(3 / 25.4)
+    assert s.kerf == pytest.approx(0.3 / 25.4)
+
+
+def test_the_units_option_converts_the_defaults_of_a_file_in_millimetres(tmp_path):
+    """The file's own defaults are not carried over as inches (a dump and validate again)."""
+    cfg = _write(tmp_path, '[marks]\nshapes = ["circle"]\n')
+
+    s = load_settings(cfg, {"units": "in"})
+
+    assert s.layer_height == pytest.approx(3 / 25.4)
+
+
+def test_a_sheet_and_kerf_that_are_given_are_not_converted(tmp_path):
+    """A value from the file or the command line is already in the units."""
+    cfg = _write(tmp_path, 'units = "in"\nlayer_height = 0.125\nkerf = 0.01\n')
+
+    assert (load_settings(cfg, {}).layer_height, load_settings(cfg, {}).kerf) == (0.125, 0.01)
+    s = load_settings(None, {"units": "in", "layer_height": 2.0, "kerf": 0.5})
+    assert (s.layer_height, s.kerf) == (2.0, 0.5)
+    only_file = _write(tmp_path, "layer_height = 2\n", name="mm.toml")
+    assert load_settings(only_file, {"units": "in"}).layer_height == 2.0
+
+
+def test_the_kerf_option_beats_the_file(tmp_path):
+    cfg = _write(tmp_path, "kerf = 0.2\n")
+
+    assert load_settings(cfg, {}).kerf == 0.2
+    assert load_settings(cfg, {"kerf": 0.4}).kerf == 0.4
+
+
+@pytest.mark.parametrize(
+    ("value", "reason"), [(-1.0, "must be >= 0"), (float("nan"), "must be a finite number")]
+)
+def test_a_bad_kerf_option_names_the_option(value, reason):
+    with pytest.raises(click.BadParameter) as excinfo:
+        load_settings(None, {"kerf": value})
+
+    assert excinfo.value.param_hint == "--kerf"
+    assert reason in excinfo.value.message

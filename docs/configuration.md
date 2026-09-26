@@ -5,17 +5,20 @@
 The behaviour of reference mark generation can be tuned via the following
 configuration options or the equivalent CLI arguments:
 
-- `tolerance` – distance used when matching an existing mark.
-- `min_distance` – minimum distance a mark must maintain from contours and other marks.
+- `tolerance` – distance used when matching an existing mark. Without it, 0.1 times the mark size.
+- `min_distance` – minimum distance a mark must maintain from contours and other marks. Without it, the mark size.
 - `available_shapes` – list of shapes for new marks. A new mark takes the first shape not yet in use.
 - `angle` – default orientation angle for generated marks. The CLI flag takes
   degrees; `ReferenceMarkConfig.angle` is in radians.
 - `color` – outline color used when drawing marks.
-- `size` – size of every new mark. Without it the size follows the distance from the model origin.
+- `size` – size of every new mark. Without it the size is the larger of `min_hole_ratio` times the layer height (the sheet thickness) and `min_hole_kerf_factor` times the kerf. It does not depend on where the mark lies or on the size of the model. A size below that minimum is a warning, not an error.
+- `kerf` – the width of material the tool removes. It is a top-level key (`--kerf`), not a mark option. Use 0 for a CNC router or hand work.
+- `min_hole_ratio` and `min_hole_kerf_factor` – the two factors of the default size. They are keys of the config file only, in `[marks]`, with no command-line flag.
 - `min_web_ratio` – the least material between two holes, and between a hole and an outline, as a multiple of the layer height. It is a key of the config file only, `[marks]` `min_web_ratio`, with no command-line flag.
 
 These correspond to the CLI flags `--mark-tolerance`, `--mark-min-distance`,
-`--available-shapes`, `--mark-angle`, `--mark-color` and `--mark-size` respectively.
+`--available-shapes`, `--mark-angle`, `--mark-color` and `--mark-size` respectively, and `--kerf`
+for the kerf.
 
 ### Workflow
 
@@ -41,10 +44,11 @@ when it uses a file.
 ```toml
 units = "mm"              # the unit of the model and of every length: mm, cm or in
 layer_height = 3.0        # the sheet thickness
+kerf = 0.3                # the width of material the tool removes
 
 [marks]
 size = 3.0                # size of every new mark
-tolerance = 5.0
+tolerance = 0.3
 min_distance = 6.0
 shapes = ["circle", "triangle", "square"]
 angle = 0                 # degrees
@@ -57,12 +61,20 @@ beats the default.
 |---|---|---|
 | `units` | `--units` | `"mm"` |
 | `layer_height` | `--layer-height` | `3.0` |
-| `marks.size` | `--mark-size` | none: 3 to 5, by distance from the model origin |
-| `marks.tolerance` | `--mark-tolerance` | `10.0` |
-| `marks.min_distance` | `--mark-min-distance` | `10.0` |
+| `kerf` | `--kerf` | `0.3` |
+| `marks.size` | `--mark-size` | none: the larger of `min_hole_ratio` × layer height and `min_hole_kerf_factor` × kerf |
+| `marks.tolerance` | `--mark-tolerance` | none: 0.1 × the mark size |
+| `marks.min_distance` | `--mark-min-distance` | none: the mark size |
 | `marks.shapes` | `--available-shapes` | `["circle", "square", "triangle", "arrow"]` |
 | `marks.angle` | `--mark-angle` | `0.0` |
 | `marks.min_web_ratio` | none | `0.5` |
+| `marks.min_hole_ratio` | none | `1.0` |
+| `marks.min_hole_kerf_factor` | none | `1.5` |
+
+The defaults of `layer_height` (3 mm) and `kerf` (0.3 mm) are millimetres. With `--units cm` or
+`--units in` they are stated in that unit: 3 mm is 0.3 cm or 0.118 in. A value that you give, in the
+file or on the command line, is already in the units and is not converted. The three mark numbers
+with no default number (size, tolerance and minimum distance) are worked out from the sheet, so they follow `--units` too.
 
 `--mark-color`, `--scale-factor`, `--target-height`, `--stl-file` and
 `--output-folder` are not settings and have no key.
@@ -75,4 +87,4 @@ an option overrides it. A bad option value names the option.
 
 ## Planned options
 
-The target adds more settings to the file, each with its own key: `--kerf`, `--number-height`, `--allow-unaligned`, `--cut-color` and `--engrave-color`. It changes the defaults and meaning of `--mark-min-distance` and `--mark-tolerance`, sets the default mark size from the sheet thickness, and removes `--mark-color`. See [Alignment requirements](alignment_requirements.md#settings).
+The target adds more settings to the file, each with its own key: `--number-height`, `--allow-unaligned`, `--cut-color` and `--engrave-color`. It removes `--mark-color`. See [Alignment requirements](alignment_requirements.md#settings).

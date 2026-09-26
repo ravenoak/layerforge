@@ -8,8 +8,8 @@ from layerforge.models.reference_marks import (
     ReferenceMarkCalculator,
     ReferenceMarkConfig,
     ReferenceMarkManager,
-    mark_size_at,
 )
+from layerforge.models.reference_marks.config import require
 
 
 class Slice:
@@ -39,7 +39,8 @@ class Slice:
         origin: tuple[float, float],
         mark_manager: ReferenceMarkManager,
         config: ReferenceMarkConfig | None = None,
-        layer_height: float | None = None,
+        *,
+        layer_height: float,
     ):
         """Initialize the slice.
 
@@ -55,15 +56,18 @@ class Slice:
             The origin of the model.
         mark_manager : ReferenceMarkManager
             The reference mark manager for the slice.
-        layer_height : float, optional
-            The thickness of the layer. It sets the least material between holes
-            (``config.min_web_ratio`` times it). Without it that is 0.
+        config : ReferenceMarkConfig, optional
+            The mark settings. The slice resolves them with ``layer_height`` (TR-6, TR-10),
+            so ``slice.config`` always holds a size, a minimum distance and a tolerance.
+        layer_height : float
+            The thickness of the layer (the sheet). It sets the default mark size and the
+            least material between holes (``config.min_web_ratio`` times it).
         """
         self.layer_height = layer_height
         self.contours = contours
         self.index = index
         self.mark_manager = mark_manager
-        self.config = config or ReferenceMarkConfig()
+        self.config = (config or ReferenceMarkConfig()).resolved(layer_height)
         self.origin = origin
         self.position = position
 
@@ -72,8 +76,6 @@ class Slice:
     @property
     def min_web(self) -> float:
         """The least material between two holes, or between a hole and an outline."""
-        if self.layer_height is None:
-            return 0.0
         return self.config.min_web_ratio * self.layer_height
 
     def process_reference_marks(self) -> None:
@@ -87,14 +89,14 @@ class Slice:
         -------
         None
         """
+        tolerance = require(self.config.tolerance, "tolerance")
+        size = require(self.config.size, "size")
         existing_positions = [(m.x, m.y) for m in self.mark_manager.marks]
         potential_marks = ReferenceMarkCalculator.get_stable_marks(
             self, existing_positions, config=self.config
         )
         for x, y in potential_marks:
-            existing_mark = self.mark_manager.find_mark_by_position(
-                x, y, tolerance=self.config.tolerance
-            )
+            existing_mark = self.mark_manager.find_mark_by_position(x, y, tolerance=tolerance)
             if existing_mark:
                 self.ref_marks.append(
                     ReferenceMark(
@@ -108,22 +110,21 @@ class Slice:
                 )
             else:
                 new_shape = self._select_unique_shape()
-                new_size = self._calculate_mark_size(x, y)
                 self.mark_manager.add_or_update_mark(
                     x,
                     y,
                     new_shape,
-                    new_size,
+                    size,
                     angle=self.config.angle,
                     color=self.config.color,
-                    tolerance=self.config.tolerance,
+                    tolerance=tolerance,
                 )
                 self.ref_marks.append(
                     ReferenceMark(
                         x=x,
                         y=y,
                         shape=new_shape,
-                        size=new_size,
+                        size=size,
                         angle=self.config.angle,
                         color=self.config.color,
                     )
@@ -174,7 +175,3 @@ class Slice:
             if shape not in used_shapes:
                 return shape
         return available_shapes[0]
-
-    def _calculate_mark_size(self, x: float, y: float) -> float:
-        """Calculate the size of a mark at ``(x, y)``. See :func:`mark_size_at`."""
-        return mark_size_at(self.config, self.origin, x, y)

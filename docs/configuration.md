@@ -54,7 +54,7 @@ beats the default.
 
 | Key | Option | Default |
 |---|---|---|
-| `units` | `--units` | `mm` |
+| `units` | `--units` | `"mm"` |
 | `layer_height` | `--layer-height` | `3.0` |
 | `marks.size` | `--mark-size` | none: 3 to 5, by distance from the model origin |
 | `marks.tolerance` | `--mark-tolerance` | `10.0` |

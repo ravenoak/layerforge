@@ -166,6 +166,29 @@ These diagnostics are accepted, and the script prints their counts:
 
 A new warning is not a failure, so read the counts in the log when a spec changes.
 
+## Defaults
+
+Each default has one source in code: `ReferenceMarkConfig` for the `marks.*` keys, and
+`Settings` for `units` and `layer_height` (`settings.py` reads the mark defaults from
+`ReferenceMarkConfig`). The `--help` text of `cli.py` is built from `Settings()`, so it
+follows a change.
+
+`tests/test_defaults_documented.py` compares three copies with `Settings()`: the keys table
+of `docs/configuration.md`, the `config` block of `specs/layerforge.allium`, and the
+`--help` text. Change a default and the test fails until the table and the spec agree.
+A new setting must get a row in the table, because the test also compares the keys.
+
+Two kinds of copy are not tested:
+
+- The prose of `docs/requirements.md` (FR-2, FR-6, FR-31) and the tuning advice in
+  `docs/reference_mark_algorithm.md`. Search for the old value when you change a default.
+- The TR-16 table of `docs/alignment_requirements.md`. It holds target defaults, such as
+  0.1 times the mark size for `marks.tolerance`, that differ from today's on purpose.
+
+`ReferenceMarkConfig` keeps its own ranges (`ge=0`, `gt=0`), because Python callers build it
+without `Settings`. `Settings` repeats them, because it checks a file or option value before a
+`ReferenceMarkConfig` is built.
+
 ## Changelog and versions
 
 The [changelog](https://github.com/ravenoak/layerforge/blob/main/CHANGELOG.md) states

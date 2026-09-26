@@ -14,6 +14,9 @@ from layerforge.utils import register_shape_strategies
 from layerforge.utils.loader_initialization import initialize_loaders
 from layerforge.writers import SVGFileWriter
 
+# The help text states each default from here, so it cannot drift from the settings.
+_DEFAULTS = Settings()
+
 
 class ConflictingOptionsError(ValueError):
     """Raised when mutually exclusive CLI options are provided."""
@@ -154,9 +157,9 @@ def process_model(
         Directory where SVG slices will be written.
     units : str, optional
         The unit of the model and of every length: ``mm``, ``cm`` or ``in``. It sets
-        the unit of each SVG's size. Falls back to the config file, then ``mm``.
+        the unit of each SVG's size. Falls back to the config file, then its default.
     layer_height : float, optional
-        Height of each generated layer. Falls back to the config file, then 3.0.
+        Height of each generated layer. Falls back to the config file, then its default.
     scale_factor : float, optional
         Uniform scale factor to apply to the model.
     target_height : float, optional
@@ -230,9 +233,14 @@ def process_model(
     type=click.Choice(["mm", "cm", "in"]),
     help="The unit of the model and of every length option. It sets the physical size "
     "of each SVG. An STL file has no unit, so this states it and nothing is converted. "
-    "Default mm.",
+    f"Default {_DEFAULTS.units}.",
 )
-@click.option("--layer-height", default=None, type=float, help="The layer height. Default 3.0.")
+@click.option(
+    "--layer-height",
+    default=None,
+    type=float,
+    help=f"The layer height. Default {_DEFAULTS.layer_height}.",
+)
 @click.option("--output-folder", default="output", help="The output folder for SVG files.")
 @click.option(
     "--scale-factor",
@@ -251,27 +259,29 @@ def process_model(
     "--mark-tolerance",
     default=None,
     type=float,
-    help="Tolerance when matching existing marks. Default 10.0. "
+    help=f"Tolerance when matching existing marks. Default {_DEFAULTS.marks.tolerance}. "
     "See docs/reference_mark_algorithm.md#parameter-effects.",
 )
 @click.option(
     "--mark-min-distance",
     default=None,
     type=float,
-    help="Minimum distance from contours and between marks. Default 10.0. "
+    help="Minimum distance from contours and between marks. "
+    f"Default {_DEFAULTS.marks.min_distance}. "
     "See docs/reference_mark_algorithm.md#parameter-effects.",
 )
 @click.option(
     "--available-shapes",
     default=None,
-    help="Comma separated list of mark shapes. Default circle,square,triangle,arrow. "
+    help="Comma separated list of mark shapes. "
+    f"Default {','.join(_DEFAULTS.marks.shapes)}. "
     "See docs/reference_mark_algorithm.md#parameter-effects.",
 )
 @click.option(
     "--mark-angle",
     default=None,
     type=float,
-    help="Default mark orientation in degrees. Default 0.0. "
+    help=f"Default mark orientation in degrees. Default {_DEFAULTS.marks.angle}. "
     "See docs/reference_mark_algorithm.md#parameter-effects.",
 )
 @click.option(

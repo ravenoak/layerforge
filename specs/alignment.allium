@@ -15,8 +15,9 @@
 --     convention of TR-14
 --
 -- Rule and invariant names carry the requirement IDs from
--- docs/alignment_requirements.md (TR-1 to TR-16). Points that are still open are
--- listed under Open Questions.
+-- docs/alignment_requirements.md (TR-1 to TR-17). Points that are still open are
+-- listed under Open Questions. TR-17 (machine and process neutrality) is a
+-- principle for the output rules and has no rule of its own.
 --
 -- TR-1 (the layers can be assembled in exactly one way) is not a separate
 -- rule. It follows from TR2 (rotation and position) and TR3 (face up),
@@ -49,9 +50,13 @@ value Failure {
 
 enum Shape { circle | square | triangle | arrow }
 
--- TR-15: only the role is modelled. Dowel holes use the kerf setting.
--- Everything else about dowel holes is left for the later version.
+-- TR-15: only the role and the settings are modelled. Dowel holes use the kerf
+-- setting: the path diameter is the wanted hole size minus kerf. Shape (circle or
+-- slot with round ends), marking, position and count are left for the later
+-- version (#93, #142).
 enum MarkRole { alignment | dowel }
+enum DowelFit { slip | press }
+enum DowelMode { hole | centre }
 
 -- TR-13
 enum Units { mm | cm | `in` }
@@ -259,6 +264,11 @@ config {
     output_hairline_width_mm: Decimal = 0.01       -- output.hairline_width, sourced (TR-14)
     checks_allow_unaligned: Boolean = false        -- checks.allow_unaligned, decision (TR-12)
     checks_min_overlap_area: Decimal = 0           -- checks.min_overlap_area, decision (TR-2): any overlap counts
+    -- dowel.diameter has no default: dowels are off until the person gives one (TR-15)
+    dowel_fit: DowelFit = slip                     -- dowel.fit, proposed (TR-15)
+    dowel_slip_clearance_mm: Decimal = 0.2         -- dowel.clearance for slip, proposed (TR-15)
+    dowel_press_clearance_mm: Decimal = 0          -- dowel.clearance for press, proposed (TR-15)
+    dowel_mode: DowelMode = hole                   -- dowel.mode, decision (TR-15)
 }
 
 ------------------------------------------------------------
@@ -575,3 +585,5 @@ invariant TR14_CutAndEngraveConvention {
 --   0.25 to 0.5 mm.
 -- Cut numbers (--number-mode cut) are not built. The number is always
 --   drawn to engrave.
+-- The dowel design of TR-15 is a proposal for the owner's review (#93).
+--   Position and count are open. The fit numbers need the fit ladder (#141).

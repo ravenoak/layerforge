@@ -23,13 +23,13 @@ Sizes are my estimates: S under an hour, M one session, L several sessions. Noth
 | 5 | #97 | Changelog and version policy (done, #104) | S | none | Must exist before #83 and #87 land. | no |
 | 6 | #73 | Investigate overlapping shells (decided: document the limit) | M | none | Changes how contours are built, which #89 relies on. Decide before rank 14. | decided 2026-09-25 |
 | 7 | #87 | Settings model and config file (done, #115: the mechanism and the six keys that exist today; each later issue adds its own keys) | M to L | #71 helps | Everything else reads its numbers from here (TR-16). | confirm the file format and key names |
-| 8 | #96 | Calibrate the proposed defaults | owner | none (use with #87) | Turns proposed numbers into measured ones. Do it any time after rank 7, or in parallel. | **yes**: a test cut |
+| 8 | #96 | Calibrate the proposed defaults | owner | none (use with #87) | Turns proposed numbers into measured ones. Do it any time after rank 7, or in parallel. The generated sheet of #141 does the cutting part for any machine. | **yes**: cut the sheet of #141 and record the numbers |
 | 9 | #74 | Units and physical SVG size | M | #87 | Laser software may import at the wrong size. High value. | no |
 | 10 | #84 | Shape contract | M | none | Closed outlines, one size, anchor and angle. Needed by 11, 15, 17. | confirm angle 0 = +x, size = circumscribed diameter (already chosen) |
 | 11 | #85 | Clearance uses the whole hole | S to M | #84 | Cheap once outlines exist. | no |
 | 12 | #62 + #76 | Mark size and default distance from thickness and kerf | S to M | #87 | Small once settings exist. Makes small models get marks. | no |
 | 13 | #75 | Number placement and fit | M | #87, #85 | The number is now load-bearing (TR-3). It also sits on the first hole today. | no |
-| 14 | #83 | SVG for the laser | M | #87, #74 | Colour by operation, hairline, number only. Removes `--mark-color`. | confirm colours against the laser software |
+| 14 | #83 | SVG for the laser | M | #87, #74 | Colour groups, hairline, number only. Removes `--mark-color`. Colour does not set the operation in every program (TR-17). | no: red cut and black engrave stay as default groups. The probe of #141 shows what your software does. |
 | 15 | #89 | Adjacent pieces and overlap | M | none (#73 decided) | Foundation for #63 and #92. | no |
 | 16 | #90 | Rotational symmetry test | M | #84 | The core safety check (TR-2). | no |
 | 17 | #91 | Brute-force oracle for #90 | S to M | #90 | Guards the safety check. Write it in the same session as #90 if possible. | no |
@@ -41,7 +41,7 @@ Sizes are my estimates: S under an hour, M one session, L several sessions. Noth
 | 23 | #95 | Assembly guide and user docs | M | 7, 9, 14, 20 | The guide needs the final behavior. Each feature PR updates its own docs. | review by the owner |
 | 24 | #80 | MkDocs 2 notice | S | none | Low priority. | decide whether to pin |
 | 25 | #94 | Cut-through numbers, numbers as outlines | M | #75, #83, #87 | Later. | choose an approach |
-| 26 | #93 | Design dowel holes | M | #96, #87 | Later. Design work, no code. | **yes**: process and sizes |
+| 26 | #93 | Design dowel holes | M | #96, #87 | Later. Design work, no code. A machine-neutral design is proposed in TR-15. | **yes**: review TR-15 (position and count are open) |
 | 27 | #106 | Non-finite option values (`nan`, `inf`) pass the input checks (done, #112) | S | none | Found after #71: `nan` gives a traceback or a silent wrong run. #87 reuses the check. Cheap: do it before rank 7. | no |
 | 28 | #110 | Pull request template with the changelog and checks list (done, #113) | S | #97 | The reminders live in this page and the dev notes only. Cheap: do it before rank 7. | no |
 | 29 | #109 | Run `allium check` in CI and clear or accept its warnings (done, #114: CI runs `scripts/check_specs.sh`; the three warnings on `layerforge.allium` are accepted) | S to M | none | The check is manual today, and its exit code is 1 on warnings. Investigate the CI install first. | no |
@@ -60,6 +60,8 @@ Sizes are my estimates: S under an hour, M one session, L several sessions. Noth
 | 42 | #136 | Tidy the eager `--config` callback: a double read and three small inconsistencies | S | none | Found by `/code-review` on #131 and by running the command. Low priority. | decided 2026-09-25 by best practice: `--help` wins over everything, as [clig.dev](https://clig.dev) says ("you should be able to add `-h` to the end of anything and it should show help") |
 | 43 | #137 | `getting_started.md` lists error messages the command does not print | S | none | Two lines are wrong and the two most common messages are missing. Can be folded into #95. | no |
 | 44 | #138 | The PR template has no way to say a box does not apply | S | #110 | One line. | no |
+| 45 | #141 | Write a calibration sheet SVG so any machine can measure its own kerf, hole, fit and number sizes | M | #74, #83 | Machine-neutral way to get the numbers of #96 and the dowel fit of #93. | cut it on your machine |
+| 46 | #142 | Implement dowel holes (TR-15), after the design in #93 is accepted | M | #93, #84, #83, #74, #89, #141 | Later. Do not start before #93 is accepted. | no |
 
 Ranks 27 to 31 were found while doing ranks 1 to 6, and ranks 32 to 40 while doing ranks 7 and 27 to 29. They are appended, so the numbers in the Depends columns stay valid. Ranks 27 to 29 and 32 to 36 are done (session A3 below). Rank 37 goes before #62 (session D). Ranks 41 to 44 were found in the retrospective of session A3 (session A5 below); rank 41 goes before session C. Ranks 38 to 40 are hygiene and can go any time (session A4).
 
@@ -77,7 +79,7 @@ Issue #98 holds the same list as a checklist. Tick it as items merge, and keep t
 | B | #87 | Done 2026-09-25 as PR #115, narrow: the mechanism plus keys for today's settings. The example file for #96 is not added; `docs/configuration.md` has an example. |
 | C | #74, #84 | Units first, then the shape contract. |
 | D | #125, then #85, #62 + #76, #75, #108 | Uses #84 and #87. #125 goes first, because #62 changes a default. |
-| E | #83, #89 | Laser output, then adjacency. |
+| E | #83, #89, #141 | Laser output, then adjacency. The calibration sheet (#141) follows #83 and #74. |
 | F | #90, #91, #61 | Symmetry test and its oracle together, then shape choice. |
 | G | #63 | Alone. It is the largest change. Add the sheared-cylinder test from #107. |
 | H | #92, #60, #79, #95 | The check, the proof, tests, docs. |
@@ -121,9 +123,9 @@ Sessions A, A2 and B are done (2026-09-25). A: ranks 1 to 5 merged as #100 to #1
 
 | Decision | Blocks | Needed by |
 |---|---|---|
-| Laser and material numbers (#96): kerf, smallest clean hole, number height, hairline behavior | Final defaults in #87, #62, #75 | Before #83 is merged |
-| Colours and stroke conventions of the laser software (#83) | #83 | Session E |
-| Dowel hole design (#93) | later work | Later |
+| Laser and material numbers (#96): kerf, smallest clean hole, number height, hairline behavior. Cut the sheet of #141 on your machine. | Final defaults in #87, #62, #75 | Before #83 is merged |
+| Colours and stroke conventions of the laser software (#83): answered in part by TR-17. Red cut and black engrave stay as defaults. The probe of #141 shows what your software does. | #83 | Session E |
+| Dowel hole design (#93): review the proposal in TR-15, mainly position and count | #93, #142 | Later |
 | Config key names in TR-16 | Later keys | Each issue that adds a key. The six built in #87 follow TR-16 as written, so the owner may still rename them. |
 
 ## What is settled

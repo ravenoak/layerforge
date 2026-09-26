@@ -37,13 +37,13 @@ This generates a basic cube mesh, slices it, and writes SVG files to the
 ## CLI Example
 
 Running the CLI directly mirrors the example script.  Below is an
-illustrative session using a 20 mm cube. Slices are cut at 0, 5, 10, 15 and 20 mm, so it writes five files:
+illustrative session using a 20 mm cube. Each 5 mm layer is cut at its middle, so the cube gives four layers and the command writes four files:
 
 ```text
 $ layerforge --stl-file cube.stl --layer-height 5 --output-folder demo_output
 exit 0
 
-files [demo_output/slice_000.svg, ..., demo_output/slice_004.svg]
+files [demo_output/slice_000.svg, ..., demo_output/slice_003.svg]
 ```
 
 Opening the first SVG shows the slice label and contour:

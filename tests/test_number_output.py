@@ -130,3 +130,29 @@ def test_a_piece_too_small_for_the_number_warns_once_per_slice(tmp_path, caplog)
     assert "TR-" not in warnings[0]
     for path in out.glob("slice_*.svg"):
         assert list(ET.parse(path).getroot().iter(f"{SVG}text")), "the number is still drawn"
+
+
+def test_a_slice_with_two_pieces_has_a_number_on_each(tmp_path):
+    """Guard: each contour gets its own number, and the same text on both."""
+    stl = tmp_path / "two.stl"
+    left = trimesh.creation.box(extents=(30, 30, 20))
+    right = trimesh.creation.box(extents=(30, 30, 20))
+    right.apply_translation((60, 0, 0))
+    trimesh.util.concatenate([left, right]).export(stl)
+
+    for root in _slices(stl, tmp_path / "out"):
+        texts = list(root.iter(f"{SVG}text"))
+        assert len(texts) == 2
+        assert len({t.text for t in texts}) == 1
+        xs = sorted(float(t.get("x", "")) for t in texts)
+        assert xs[1] - xs[0] > 30  # one on each piece
+
+
+def test_the_config_file_sets_the_number_height(cube_stl, tmp_path):
+    """Guard: the [number] key reaches the SVG, not only the settings."""
+    cfg = tmp_path / "s.toml"
+    cfg.write_text("[number]\nheight = 3\n")
+
+    for root in _slices(cube_stl, tmp_path / "out", "--config", str(cfg)):
+        (text,) = root.iter(f"{SVG}text")
+        assert float(text.get("font-size", "")) == pytest.approx(3.0)

@@ -30,12 +30,13 @@ class ReferenceMarkAdjuster:
         kept_footprints: list[Polygon] = []
         for mark in marks:
             mark_point = Point(mark.x, mark.y)
+            # First, so that an unregistered shape name is an error for every mark (#162).
+            footprint = mark_footprint(mark)
             is_too_close = any(
                 polygon.boundary.distance(mark_point) < min_distance for polygon in contours
             )
             if is_too_close:
                 continue
-            footprint = mark_footprint(mark)
             fits = any(
                 polygon.contains_properly(footprint)
                 and polygon.boundary.distance(footprint) >= min_web

@@ -206,3 +206,25 @@ def test_the_calculator_refuses_a_shape_name_that_is_not_registered():
     layer = _slice(box(0, 0, 40, 40), layer_height=3.0, available_shapes=["hexagon"])
     with pytest.raises(ValueError, match="hexagon"):
         ReferenceMarkCalculator.get_stable_marks(layer, [], config=layer.config)
+
+
+def test_a_mark_with_an_unregistered_shape_name_is_an_error_and_not_a_skipped_check():
+    """#162: the error reaches the caller, so the circle at (1, 1) is not kept unchecked.
+
+    Before, `Slice.adjust_marks` caught the error, logged one line and kept both marks,
+    including the circle whose hole crosses the outline.
+    """
+    layer = _slice(box(0, 0, 40, 40), layer_height=3.0, min_distance=1)
+    marks = [ReferenceMark(20, 20, "hexagon", 4), ReferenceMark(1, 1, "circle", 4)]
+    layer.ref_marks = list(marks)
+    with pytest.raises(ValueError, match="hexagon"):
+        layer.adjust_marks()
+    assert layer.ref_marks == marks
+
+
+def test_an_unregistered_shape_name_is_an_error_even_for_a_mark_that_is_too_close_to_an_edge():
+    """#162: the name is checked for every mark, not only for those that pass the centre rule."""
+    layer = _slice(box(0, 0, 40, 40), layer_height=3.0, min_distance=2)
+    layer.ref_marks = [ReferenceMark(1, 1, "hexagon", 4)]
+    with pytest.raises(ValueError, match="hexagon"):
+        layer.adjust_marks()

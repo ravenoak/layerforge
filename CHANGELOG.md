@@ -109,6 +109,13 @@ output, the first release will raise the minor version.
 
 ### Fixed
 
+- `Slice.adjust_marks` no longer catches the `ValueError` for a mark whose shape name is
+  not registered. It used to log one line and keep every mark of the slice unchecked,
+  including a circle whose hole crossed the outline. A Python caller now gets the error
+  and the marks stay as they were. The command is not affected, because it checks the
+  shape names first (FR-6). The `except` dated from the first commit and guarded a
+  function that no longer exists (#162).
+
 - The command no longer chooses a point for a circle mark that the check after it drops.
   The point was chosen with a disc of radius size / 2, and the circle's checked outline
   reaches 0.12% further (5.00603 at size 10). On a square piece 6.0 or 6.002 wide (size 3,

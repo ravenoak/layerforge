@@ -141,15 +141,12 @@ class Slice:
         Raises
         ------
         ValueError
-            If an error occurs in adjusting the marks.
+            If a mark names a shape that is not registered. The marks are left as they were.
         """
         logging.debug(f"model_contours type: {type(self.contours)}, content: {self.contours}")
-        try:
-            self.ref_marks = ReferenceMarkAdjuster.adjust_marks(
-                self.ref_marks, self.contours, config=self.config, min_web=self.min_web
-            )
-        except ValueError as e:
-            logging.error(f"Error in adjusting marks for slice {self.index}: {e}")
+        self.ref_marks = ReferenceMarkAdjuster.adjust_marks(
+            self.ref_marks, self.contours, config=self.config, min_web=self.min_web
+        )
         self._warn_about_unmarked_contours()
 
     def _warn_about_unmarked_contours(self) -> None:

@@ -98,7 +98,8 @@ def resolve_settings(
 
     The command calls this before it asks for the STL path, so nothing is asked
     for when a check fails. The file was checked first (``_read_settings_file``, exit 2).
-    The order here is the scale and target conflict (exit 1), then the bad values (exit 2).
+    The order here is the scale and target conflict (exit 1), then the bad values (exit 2),
+    with the output folder last.
     """
     if scale_factor is not None and target_height is not None:
         raise ConflictingOptionsError("Only one of scale_factor or target_height can be provided.")

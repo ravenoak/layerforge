@@ -42,9 +42,12 @@ flowchart TD
 
 ## Adjusting Marks
 
-After placement, marks may still be too close to a contour or to one another.
-`ReferenceMarkAdjuster` filters marks that violate the configured minimum
-separation:
+After placement, marks may still be too close to a contour or to one another, or
+their hole may not fit the piece. `ReferenceMarkAdjuster` filters marks that violate
+the configured minimum separation, and marks whose whole hole (the outline of the
+shape, at its size and angle) does not lie inside a contour with the web to spare.
+The web is `marks.min_web_ratio` times the layer height. The sketch below shows the
+centre rules only:
 
 ```python
 class ReferenceMarkAdjuster:

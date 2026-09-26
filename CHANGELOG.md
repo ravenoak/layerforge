@@ -30,6 +30,14 @@ output, the first release will raise the minor version.
   its tail, with an open head. Angle 0 now points along +x for every shape. The
   triangle pointed up. In the SVG the square and the arrow are `<polygon>`
   elements, and the arrow no longer has a `<line>`. (#84, G-20)
+- **Breaking:** A mark is kept only if its whole hole fits. The hole must lie inside
+  the piece, with at least the web of material around it and between two holes.
+  The web is half the layer height by default (`marks.min_web_ratio`). Before, only the
+  centre was checked, so a large mark could cross an edge or overlap another. A
+  20 x 6 x 10 bar with layer height 5, `--mark-size 8` and `--mark-min-distance 2` had
+  a circle in each of its 2 files, and now has none and 2 warnings. A 20 mm cube at
+  layer height 5 with the defaults writes the same 4 files, byte for byte. The
+  warning now reads `Try a smaller --mark-min-distance or --mark-size.` (#85, G-21)
 - **Breaking:** `BaseShape` has an abstract `outline()` and a `symmetry_order`. A shape
   registered with `register_shape` must define `outline()`, or it can no longer be created.
   (#84)
@@ -77,6 +85,13 @@ output, the first release will raise the minor version.
 
 ### Added
 
+- `marks.min_web_ratio` in the config file: the least material between two holes, and
+  between a hole and an outline, as a multiple of the layer height. Default 0.5.
+  It has no command-line option. (#85)
+- Python API: `ReferenceMarkAdjuster.adjust_marks` takes a keyword `min_web`, `Slice` takes
+  `layer_height`, and `layerforge.models.reference_marks` exports `mark_footprint` and
+  `mark_size_at`. The shape registry lives in `layerforge.domain.shapes.registry`;
+  `layerforge.svg.drawing.shape_factory` still exports the same names. (#85)
 - `--units` (`mm`, `cm` or `in`, default `mm`) and the `units` key of the config file.
   An STL file has no unit, so the option states the unit of the model and of every
   length option, and labels the size of each SVG. Nothing is converted. With

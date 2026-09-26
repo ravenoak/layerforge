@@ -52,6 +52,7 @@ config {
     default_layer_height: Decimal = 3.0
     default_tolerance: Decimal = 10.0
     default_min_distance: Decimal = 10.0
+    default_min_web_ratio: Decimal = 0.5
     default_shapes: List<String> = ["circle", "square", "triangle", "arrow"]
     min_mark_size: Integer = 3
     max_mark_size: Integer = 5
@@ -71,6 +72,7 @@ entity Run {
     target_height: Decimal?
     tolerance: Decimal
     min_distance: Decimal
+    min_web_ratio: Decimal              -- times layer_height: the least material between holes and outlines (TR-5)
     available_shapes: List<String>
     angle: Decimal                      -- radians; the command takes degrees
     mark_size: Decimal?                 -- null: the size follows the distance from the origin (FR-21)
@@ -158,6 +160,7 @@ rule FR1_StartRun {
             target_height: options.target_height,
             tolerance: options.mark_tolerance,
             min_distance: options.mark_min_distance,
+            min_web_ratio: config.default_min_web_ratio,
             available_shapes: options.available_shapes,
             angle: radians(options.mark_angle),
             mark_size: options.mark_size,
@@ -175,7 +178,8 @@ rule FR1_StartRun {
         -- tolerance, min_distance, shapes and angle is the option if given,
         -- else the config file value, else the default (FR-30). A config file
         -- that passes its check and is used is named once on stderr: "Using
-        -- settings from <file>". Options are checked by the next rules.
+        -- settings from <file>". min_web_ratio has no option: it is the config
+        -- file value, else the default. Options are checked by the next rules.
 }
 
 rule FR30_RejectBadConfigFile {
@@ -347,11 +351,14 @@ rule FR15_FR21_PlaceMarks {
         -- choose_mark_point (FR-15 to FR-18): at most one point per contour.
         -- An earlier registered point inside the contour is reused if it is
         -- at least min_distance from the boundary and from marks already
-        -- placed on this slice. Otherwise the candidate with the highest
+        -- placed on this slice, and if a disc of its size fits (below). Otherwise the candidate with the highest
         -- stability score wins; a candidate within tolerance of a registered
         -- mark or of a mark placed on this slice is skipped (FR-17); candidates are the centroid (if inside the contour) plus points from a
         -- fixed-seed generator inside the bounding box. The score is the sum of pairwise
-        -- distances over the candidate and the marks already placed.
+        -- distances over the candidate and the marks already placed. The hole of
+        -- a new mark must fit (TR-5). Its shape and angle are not known yet, so
+        -- a mark is a disc of its size: the disc lies inside the boundary by at
+        -- least the web, and two discs are at least the web apart.
         -- next_shape gives the first shape not yet registered, else the first
         -- shape (G-5). mark_size is run.mark_size when set, else
         -- int(d / mark_size_step) clamped to min_mark_size .. max_mark_size (G-6). Registered marks are shared by
@@ -364,9 +371,20 @@ rule FR22_AdjustMarks {
         slice.status = adjusted
         for mark in slice.marks:
             if too_close_to_boundary(mark, slice.contours, slice.run.min_distance)
-                or too_close_to_earlier_mark(mark, slice.marks, slice.run.min_distance):
+                or too_close_to_earlier_mark(mark, slice.marks, slice.run.min_distance)
+                or hole_does_not_fit(
+                    mark, slice.contours, slice.run.min_web_ratio * slice.run.layer_height
+                )
+                or hole_too_close_to_earlier_hole(
+                    mark, slice.marks, slice.run.min_web_ratio * slice.run.layer_height
+                ):
                 not exists mark
     @guidance
+        -- hole_does_not_fit is true unless the outline of the mark's shape, at its
+        -- size and angle (FR-27), lies wholly inside one contour with the web
+        -- (the last argument) to spare, holes of the contour included.
+        -- hole_too_close_to_earlier_hole is true when that outline overlaps the
+        -- outline of an earlier mark of the slice, or is nearer than the web.
         -- The earlier mark of a close pair stays. Marks dropped here stay in
         -- the run's registry. A slice can end with a contour that has no
         -- mark. One warning is logged for the slice; it is still written.
@@ -411,6 +429,16 @@ invariant FR17_MarksClearOfBoundaries {
     for mark in PlacedMarks:
         mark.slice.status = drawn implies
             not too_close_to_boundary(mark, mark.slice.contours, mark.slice.run.min_distance)
+}
+
+invariant TR5_HolesFit {
+    for mark in PlacedMarks:
+        mark.slice.status = drawn implies
+            not hole_does_not_fit(
+                mark,
+                mark.slice.contours,
+                mark.slice.run.min_web_ratio * mark.slice.run.layer_height
+            )
 }
 
 invariant FR22_MarksClearOfEachOther {
@@ -471,9 +499,8 @@ surface Command {
 -- G-16 Overlapping shells in one mesh give false holes.
 -- G-18 The slice label can cross an outline.
 -- G-19 The default min_distance ignores the model size.
--- G-21 Clearance and spacing use the mark centre, not the whole hole.
 -- G-23 The output suits a screen, not a laser.
 -- G-30 A bad --mark-color ends in a traceback while the SVG is drawn.
 -- G-31 An output folder that cannot be written, or an empty one, is not checked before the slicing.
--- G-4 to G-7, G-18, G-19, G-21 and G-23 have targets in
+-- G-4 to G-7, G-18, G-19 and G-23 have targets in
 -- docs/alignment_requirements.md (TR-1 to TR-16).

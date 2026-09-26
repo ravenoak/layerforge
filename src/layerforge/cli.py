@@ -123,6 +123,7 @@ def _run(
         angle=math.radians(marks.angle),
         size=marks.size,
         color=mark_color,
+        min_web_ratio=marks.min_web_ratio,
     )
 
     slices = SlicerService.slice_model(model, config=config)

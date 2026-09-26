@@ -12,6 +12,7 @@ configuration options or the equivalent CLI arguments:
   degrees; `ReferenceMarkConfig.angle` is in radians.
 - `color` – outline color used when drawing marks.
 - `size` – size of every new mark. Without it the size follows the distance from the model origin.
+- `min_web_ratio` – the least material between two holes, and between a hole and an outline, as a multiple of the layer height. It is a key of the config file only, `[marks]` `min_web_ratio`, with no command-line flag.
 
 These correspond to the CLI flags `--mark-tolerance`, `--mark-min-distance`,
 `--available-shapes`, `--mark-angle`, `--mark-color` and `--mark-size` respectively.
@@ -61,6 +62,7 @@ beats the default.
 | `marks.min_distance` | `--mark-min-distance` | `10.0` |
 | `marks.shapes` | `--available-shapes` | `["circle", "square", "triangle", "arrow"]` |
 | `marks.angle` | `--mark-angle` | `0.0` |
+| `marks.min_web_ratio` | none | `0.5` |
 
 `--mark-color`, `--scale-factor`, `--target-height`, `--stl-file` and
 `--output-folder` are not settings and have no key.

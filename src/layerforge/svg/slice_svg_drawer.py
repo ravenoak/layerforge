@@ -1,9 +1,9 @@
 from shapely.geometry import Point, Polygon
 from svgwrite import Drawing
 
+from layerforge.domain.shapes.registry import ShapeFactory
 from layerforge.models.reference_marks import ReferenceMark
 from layerforge.models.slicing import Slice
-from layerforge.svg.drawing.shape_factory import ShapeFactory
 from layerforge.svg.drawing.strategy_context import StrategyContext
 
 

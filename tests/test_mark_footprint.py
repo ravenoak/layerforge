@@ -18,6 +18,7 @@ from layerforge.models.reference_marks import (
     ReferenceMarkConfig,
     ReferenceMarkManager,
     ReferenceMarkService,
+    mark_reach,
 )
 from layerforge.models.slicing.slice import Slice
 
@@ -158,3 +159,50 @@ def test_the_command_drops_a_hole_with_too_little_material_around_it(tmp_path):
 def test_the_web_ratio_of_the_config_file_reaches_the_slices(tmp_path):
     assert "<circle" in _run_bar(tmp_path, 6, config="[marks]\nmin_web_ratio = 0.2\n")
     assert "<circle" not in _run_bar(tmp_path, 8, config="[marks]\nmin_web_ratio = 0.7\n")
+
+
+@pytest.mark.parametrize("side", [6.0, 6.002, 6.005])
+@pytest.mark.parametrize("shape", ["circle", "square", "triangle", "arrow"])
+def test_every_point_the_calculator_chooses_survives_the_adjuster(shape, side):
+    """#157: the calculator's disc must hold the hole that the adjuster checks.
+
+    Size 3 and layer height 3 give a web of 1.5, so the centre of a 6 wide piece is
+    exactly at the calculator's limit. The circle's outline reaches 1.5018, past its disc.
+    """
+    piece = box(0, 0, side, side)
+    config = {"size": 3, "min_distance": 3, "available_shapes": [shape]}
+    chosen = ReferenceMarkCalculator.get_stable_marks(
+        _slice(piece, layer_height=3.0, **config),
+        [],
+        config=ReferenceMarkConfig(**config),
+    )
+    layer = _slice(piece, layer_height=3.0, **config)
+    ReferenceMarkService.process_slice(layer)
+    assert len(layer.ref_marks) == len(chosen)
+
+
+def test_the_check_of_a_circle_agrees_with_the_drawn_circle_at_the_boundary():
+    """#157: the outline lies outside the drawn circle, so a circle that crosses is never kept.
+
+    The drawn circle of size 3 has radius 1.5. A piece 0.0005 narrower than the circle on
+    each side is crossed by it, and a piece 0.005 wider than the outline's reach is not.
+    """
+    circle = ReferenceMark(0, 0, "circle", 3)
+    crossed = box(-1.4995, -1.4995, 1.4995, 1.4995)
+    clear = box(-1.508, -1.508, 1.508, 1.508)
+    assert _adjust([circle], [crossed], min_distance=0) == []
+    assert _adjust([circle], [clear], min_distance=0) == [circle]
+
+
+def test_the_reach_of_the_circle_is_a_little_over_half_its_size_and_the_others_are_half():
+    """#157: measured on the outline that the adjuster checks."""
+    assert mark_reach("circle", 10) == pytest.approx(5 / math.cos(math.pi / 64))
+    for name in ("square", "triangle", "arrow"):
+        assert mark_reach(name, 10) == pytest.approx(5.0)
+
+
+def test_the_calculator_refuses_a_shape_name_that_is_not_registered():
+    """The disc is sized by the outlines of the available shapes, so an unknown name raises."""
+    layer = _slice(box(0, 0, 40, 40), layer_height=3.0, available_shapes=["hexagon"])
+    with pytest.raises(ValueError, match="hexagon"):
+        ReferenceMarkCalculator.get_stable_marks(layer, [], config=layer.config)

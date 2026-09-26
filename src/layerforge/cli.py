@@ -47,7 +47,7 @@ def _check_output_folder(folder: str) -> None:
     ``lstat`` sees a dangling symlink, which ``exists`` does not and ``mkdir`` still fails on.
     Unlike ``lexists`` it does not hide an error such as a name that is too long.
     The folder is not made here, so a run that fails later leaves nothing behind. Instead a
-    temporary file is made and removed in the nearest folder that exists: that is the real
+    named temporary file is made and removed in the nearest folder that exists: that is the real
     operation, which an ``os.access`` guess misses for ACLs, and it is the folder the writer
     would have to make the new one in.
     """
@@ -56,20 +56,21 @@ def _check_output_folder(folder: str) -> None:
     path = Path(folder)
     try:
         blocker = next((p for p in (path, *path.parents) if _lexists(p)), None)
-    except OSError as exc:
+    except (OSError, ValueError) as exc:  # ValueError: an embedded null byte
         raise click.BadParameter(
-            f"cannot use {folder}: {exc.strerror}", param_hint="--output-folder"
+            f"cannot use {folder}: {getattr(exc, 'strerror', None) or exc}",
+            param_hint="--output-folder",
         ) from exc
     if blocker is None:
         return
     if not blocker.is_dir():
         raise click.BadParameter(f"{blocker} is not a folder", param_hint="--output-folder")
     try:
-        with tempfile.TemporaryFile(dir=blocker):
+        with tempfile.NamedTemporaryFile(dir=blocker):
             pass
     except OSError as exc:
         raise click.BadParameter(
-            f"cannot write to {blocker}: {exc.strerror}", param_hint="--output-folder"
+            f"cannot write to {blocker}: {exc.strerror or exc}", param_hint="--output-folder"
         ) from exc
 
 

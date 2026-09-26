@@ -204,8 +204,9 @@ def test_cli_names_a_config_file_even_when_a_later_check_fails(tmp_path, monkeyp
     assert "Using settings from layerforge.toml" in result.stderr
 
 
+# Root can write to a read-only folder, and Windows has no such mode (and no geteuid).
 needs_permission_checks = pytest.mark.skipif(
-    os.geteuid() == 0, reason="root can write to a read-only folder"
+    getattr(os, "geteuid", lambda: 0)() == 0, reason="the process can write to a mode 555 folder"
 )
 
 
@@ -261,3 +262,8 @@ def test_cli_output_folder_check_leaves_nothing_behind(tmp_path):
 def test_cli_output_folder_name_that_is_too_long_is_reported_before_the_stl_prompt(tmp_path):
     """``lexists`` hides ``File name too long`` as "does not exist", and ``mkdir`` then fails."""
     _assert_output_folder_refused_before_the_prompt(tmp_path / ("a" * 300))
+
+
+def test_cli_output_folder_with_a_null_byte_is_reported_before_the_stl_prompt(tmp_path):
+    """``Path.lstat`` raises ``ValueError``, not ``OSError``, for it. ``lexists`` hid that."""
+    _assert_output_folder_refused_before_the_prompt(str(tmp_path / "a\0b"))

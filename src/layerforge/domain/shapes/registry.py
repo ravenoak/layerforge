@@ -18,7 +18,20 @@ _SHAPE_REGISTRY: dict[str, type[BaseShape]] = {
 
 
 def register_shape(name: str, cls: type[BaseShape]) -> None:
-    """Register ``cls`` under ``name`` in the factory registry."""
+    """Register ``cls`` under ``name`` in the factory registry.
+
+    Raises
+    ------
+    ValueError
+        If ``cls`` does not set ``symmetry_order`` in its own body. ``None`` is a
+        valid order (unlimited), so an unset order cannot be told from it by value.
+        An inherited order is refused too, since a new outline can change it.
+    """
+    if "symmetry_order" not in vars(cls):
+        raise ValueError(
+            f"Shape class {cls.__name__} must set symmetry_order in its own body "
+            "(a whole number, or None for unlimited symmetry)."
+        )
     _SHAPE_REGISTRY[name] = cls
 
 

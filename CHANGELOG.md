@@ -21,6 +21,12 @@ output, the first release will raise the minor version.
 
 ### Changed
 
+- **Breaking:** `register_shape` raises `ValueError` for a shape class that does not set
+  `symmetry_order` in its own body (a whole number, or `None` for unlimited). Before, an
+  unset order read as 1, so a six-fold shape counted as having a direction: `choose_shape`
+  could pick it first and `rotation_symmetry` said a lone mark had no symmetry. The four
+  built-in shapes set their order and are not affected; the command line is not affected.
+  (#201)
 - **Breaking:** A new mark takes the shape with the least symmetry among `--available-shapes`
   (`marks.shapes`), not the first shape in the list that no mark uses yet, and the order of the
   list no longer matters. A shape with a direction (the triangle or the arrow) comes before

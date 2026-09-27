@@ -25,7 +25,9 @@ class BaseShape(ABC):
         outline.
     symmetry_order : int or None
         The number of turns of the outline that map it onto itself in one full
-        turn. ``None`` means unlimited (a circle).
+        turn. ``None`` means unlimited (a circle). Every shape class must set it
+        in its own body; ``register_shape`` refuses a class that does not. The
+        default of 1 here only types the attribute.
     """
 
     x: float

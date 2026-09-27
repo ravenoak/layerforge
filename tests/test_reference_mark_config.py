@@ -106,7 +106,9 @@ def test_the_sheet_and_machine_numbers_must_be_in_range(field, value):
         ReferenceMarkConfig(**{field: value})  # pyright: ignore[reportArgumentType]
 
 
-@pytest.mark.parametrize("field", ["kerf", "min_hole_ratio", "min_hole_kerf_factor"])
+@pytest.mark.parametrize(
+    "field", ["kerf", "min_hole_ratio", "min_hole_kerf_factor", "min_overlap_area"]
+)
 @pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
 def test_the_sheet_and_machine_numbers_must_be_finite(field, value):
     with pytest.raises(ValueError):

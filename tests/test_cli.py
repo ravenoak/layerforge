@@ -265,6 +265,14 @@ def test_cli_hole_factors_and_kerf_of_the_file_reach_the_slicer(sliced, tmp_path
     assert (cfg.kerf, cfg.min_hole_ratio, cfg.min_hole_kerf_factor) == (0.2, 2.0, 3.0)
 
 
+def test_cli_min_overlap_area_of_the_file_reaches_the_slicer(sliced, tmp_path):
+    (tmp_path / "layerforge.toml").write_text("[checks]\nmin_overlap_area = 2.5\n")
+
+    cfg = sliced()["config"]
+
+    assert cfg.min_overlap_area == 2.5
+
+
 def test_cli_units_state_the_default_sheet_and_kerf_in_that_unit(sliced):
     """TR-13: with --units in the defaults are 3 mm and 0.3 mm in inches, not 3 and 0.3 inches."""
     seen = sliced("--units", "in")

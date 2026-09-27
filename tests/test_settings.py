@@ -63,7 +63,7 @@ def test_all_keys_are_read(tmp_path):
         tmp_path,
         "layer_height = 2\n[marks]\nsize = 4\ntolerance = 1\nmin_distance = 2\n"
         'shapes = ["circle", "arrow"]\nangle = 90\nmin_web_ratio = 0.75\n'
-        "min_hole_ratio = 2\nmin_hole_kerf_factor = 3\n",
+        "min_hole_ratio = 2\nmin_hole_kerf_factor = 3\n[checks]\nmin_overlap_area = 5.5\n",
     )
 
     s = load_settings(cfg, {})
@@ -78,6 +78,7 @@ def test_all_keys_are_read(tmp_path):
     assert s.marks.angle == 90.0
     assert s.marks.min_web_ratio == 0.75
     assert (s.marks.min_hole_ratio, s.marks.min_hole_kerf_factor) == (2.0, 3.0)
+    assert s.checks.min_overlap_area == 5.5
 
 
 @pytest.mark.parametrize(
@@ -114,6 +115,12 @@ def test_all_keys_are_read(tmp_path):
         ("[output]\nhairline_width = 0\n", "output.hairline_width", "must be > 0"),
         ("[output]\nhairline_width = -1\n", "output.hairline_width", "must be > 0"),
         ("[output]\nhairline_width = nan\n", "output.hairline_width", "must be a finite number"),
+        ("[checks]\nmin_overlap_area = -1\n", "checks.min_overlap_area", "must be >= 0"),
+        (
+            "[checks]\nmin_overlap_area = nan\n",
+            "checks.min_overlap_area",
+            "must be a finite number",
+        ),
         ("[output]\nstroke = 1\n", "output.stroke", "Extra inputs"),
     ],
 )

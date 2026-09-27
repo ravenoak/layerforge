@@ -51,11 +51,12 @@ def plan_marks(
                 continue
             lower_poly = contours[i][pair.lower]
             upper_poly = contours[i + 1][pair.upper]
+            avoid = [*on_slice.get(pair.lower, []), *next_on_slice.get(pair.upper, [])]
             mark = ReferenceMarkCalculator.choose_mark_for_pair(
                 region,
                 [lower_poly, upper_poly],
                 carried.get(pair.lower, []),
-                on_slice.get(pair.lower, []),
+                avoid,
                 min_distance=min_distance,
                 min_web=min_web,
                 tolerance=tolerance,

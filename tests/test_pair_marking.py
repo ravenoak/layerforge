@@ -88,3 +88,22 @@ def test_a_merge_gives_the_merged_piece_two_marks_without_colliding():
     assert len(result[1]) == 2
     (m1, m2) = result[1]
     assert (m1.x, m1.y) != (m2.x, m2.y)
+
+
+def test_a_merge_avoids_a_sibling_s_mark_on_the_shared_upper_piece():
+    """Review fix: the second merge pairing must see the first's mark as `avoid` (#63).
+
+    Both branches overlap `trunk` identically here, so without the fix each merge pairing
+    is chosen independently and `choose_mark_for_pair`'s deterministic sampling would pick
+    the same candidate point (the shared centroid) for both, landing two marks on the same
+    spot of `trunk`. The fix threads the first pairing's mark into the second's `avoid` list.
+    """
+    left_branch = box(0, 0, 100, 100)
+    right_branch = box(0, 0, 100, 100)
+    trunk = box(0, 0, 100, 100)
+    cfg = ReferenceMarkConfig(min_distance=5)
+    result = plan_marks([[left_branch, right_branch], [trunk]], cfg, layer_height=3.0)
+    assert len(result[1]) == 2
+    (m1, m2) = result[1]
+    distance = ((m1.x - m2.x) ** 2 + (m1.y - m2.y) ** 2) ** 0.5
+    assert distance >= cfg.resolved(layer_height=3.0).min_distance

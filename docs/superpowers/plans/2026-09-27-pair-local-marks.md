@@ -140,7 +140,7 @@ In `src/layerforge/cli.py`, inside the `ReferenceMarkConfig(...)` construction (
 In `tests/test_defaults_documented.py`, add to the `@pytest.mark.parametrize(("name", "key"), [...])` list of `test_the_spec_config_block_states_the_default_of_each_setting` (after `("default_number_width_factor", ("number", "width_factor"))`):
 
 ```python
-        ("default_min_overlap_area", ("checks", "min_overlap_area")),
+(("default_min_overlap_area", ("checks", "min_overlap_area")),)
 ```
 
 And add `"default_min_overlap_area"` to the set literal in `test_every_default_of_the_spec_config_block_is_compared`.
@@ -335,9 +335,16 @@ def test_choose_mark_for_pair_reuses_a_candidate_that_still_fits():
     square = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)])
     candidate = ReferenceMark(x=50, y=50, shape="circle", size=3)
     mark = ReferenceMarkCalculator.choose_mark_for_pair(
-        square, [square], [candidate], [],
-        min_distance=10, min_web=0, tolerance=1,
-        available_shapes=["circle"], size=3, angle=0.0,
+        square,
+        [square],
+        [candidate],
+        [],
+        min_distance=10,
+        min_web=0,
+        tolerance=1,
+        available_shapes=["circle"],
+        size=3,
+        angle=0.0,
     )
     assert mark is candidate
 
@@ -347,9 +354,16 @@ def test_choose_mark_for_pair_retires_a_candidate_that_no_longer_fits():
     # 5 from the edge: closer than min_distance, so this candidate cannot be reused.
     candidate = ReferenceMark(x=5, y=50, shape="circle", size=3)
     mark = ReferenceMarkCalculator.choose_mark_for_pair(
-        square, [square], [candidate], [],
-        min_distance=10, min_web=0, tolerance=1,
-        available_shapes=["circle"], size=3, angle=0.0,
+        square,
+        [square],
+        [candidate],
+        [],
+        min_distance=10,
+        min_web=0,
+        tolerance=1,
+        available_shapes=["circle"],
+        size=3,
+        angle=0.0,
     )
     assert mark is not None
     assert mark is not candidate
@@ -360,9 +374,16 @@ def test_choose_mark_for_pair_picks_the_shape_before_the_point():
     """#198: the disc must match the chosen shape's own reach, not the largest in the list."""
     square = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)])
     mark = ReferenceMarkCalculator.choose_mark_for_pair(
-        square, [square], [], [],
-        min_distance=1, min_web=0, tolerance=1,
-        available_shapes=["circle", "triangle"], size=3, angle=0.0,
+        square,
+        [square],
+        [],
+        [],
+        min_distance=1,
+        min_web=0,
+        tolerance=1,
+        available_shapes=["circle", "triangle"],
+        size=3,
+        angle=0.0,
     )
     assert mark is not None
     assert mark.shape == "triangle"  # least symmetry order wins (choose_shape, #61)
@@ -372,9 +393,16 @@ def test_choose_mark_for_pair_avoids_a_mark_from_the_other_pairing():
     square = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)])
     other_pairing_mark = ReferenceMark(x=50, y=50, shape="circle", size=3)
     mark = ReferenceMarkCalculator.choose_mark_for_pair(
-        square, [square], [], [other_pairing_mark],
-        min_distance=1, min_web=0, tolerance=1,
-        available_shapes=["circle"], size=3, angle=0.0,
+        square,
+        [square],
+        [],
+        [other_pairing_mark],
+        min_distance=1,
+        min_web=0,
+        tolerance=1,
+        available_shapes=["circle"],
+        size=3,
+        angle=0.0,
     )
     assert mark is None or Point(mark.x, mark.y).distance(Point(50, 50)) >= 1
 
@@ -382,9 +410,16 @@ def test_choose_mark_for_pair_avoids_a_mark_from_the_other_pairing():
 def test_choose_mark_for_pair_returns_none_when_nothing_fits():
     tiny = Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
     mark = ReferenceMarkCalculator.choose_mark_for_pair(
-        tiny, [tiny], [], [],
-        min_distance=10, min_web=0, tolerance=1,
-        available_shapes=["circle"], size=3, angle=0.0,
+        tiny,
+        [tiny],
+        [],
+        [],
+        min_distance=10,
+        min_web=0,
+        tolerance=1,
+        available_shapes=["circle"],
+        size=3,
+        angle=0.0,
     )
     assert mark is None
 ```
@@ -424,7 +459,12 @@ def _fits_region(
 
 
 def _clear_of_gap(
-    x: float, y: float, others: Sequence[ReferenceMark], min_distance: float, radius: float, min_web: float
+    x: float,
+    y: float,
+    others: Sequence[ReferenceMark],
+    min_distance: float,
+    radius: float,
+    min_web: float,
 ) -> bool:
     """True when ``(x, y)`` is far enough from every mark in ``others``.
 
@@ -543,7 +583,9 @@ def test_a_single_layer_gets_no_marks():
 
 
 def test_two_identical_layers_share_one_mark():
-    result = plan_marks([[SQUARE], [SQUARE]], ReferenceMarkConfig(min_distance=10), layer_height=3.0)
+    result = plan_marks(
+        [[SQUARE], [SQUARE]], ReferenceMarkConfig(min_distance=10), layer_height=3.0
+    )
     assert len(result) == 2
     assert len(result[0]) == 1
     assert len(result[1]) == 1
@@ -661,9 +703,7 @@ def plan_marks(
     tolerance = require(cfg.tolerance, "tolerance")
     size = require(cfg.size, "size")
     min_web = cfg.min_web_ratio * layer_height
-    pairs = adjacent_pairs(
-        contours, min_overlap_area=cfg.min_overlap_area, clearance=min_distance
-    )
+    pairs = adjacent_pairs(contours, min_overlap_area=cfg.min_overlap_area, clearance=min_distance)
 
     result: list[list[ReferenceMark]] = [[] for _ in contours]
     carried: dict[int, list[ReferenceMark]] = {}
@@ -758,7 +798,11 @@ import logging
 
 from shapely.geometry import Point, Polygon
 
-from layerforge.models.reference_marks import ReferenceMark, ReferenceMarkAdjuster, ReferenceMarkConfig
+from layerforge.models.reference_marks import (
+    ReferenceMark,
+    ReferenceMarkAdjuster,
+    ReferenceMarkConfig,
+)
 
 
 class Slice:
@@ -979,9 +1023,16 @@ from layerforge.models.reference_marks import ReferenceMark, ReferenceMarkCalcul
 def test_choosing_in_a_square_stays_inside_it():
     square = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)])
     mark = ReferenceMarkCalculator.choose_mark_for_pair(
-        square, [square], [], [],
-        min_distance=10, min_web=0, tolerance=1,
-        available_shapes=["circle"], size=3, angle=0.0,
+        square,
+        [square],
+        [],
+        [],
+        min_distance=10,
+        min_web=0,
+        tolerance=1,
+        available_shapes=["circle"],
+        size=3,
+        angle=0.0,
     )
     assert mark is not None
     assert square.contains(Point(mark.x, mark.y))
@@ -992,9 +1043,16 @@ def test_a_candidate_at_the_right_place_is_reused():
     square = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)])
     candidate = ReferenceMark(x=50, y=50, shape="circle", size=3)
     mark = ReferenceMarkCalculator.choose_mark_for_pair(
-        square, [square], [candidate], [],
-        min_distance=10, min_web=0, tolerance=1,
-        available_shapes=["circle"], size=3, angle=0.0,
+        square,
+        [square],
+        [candidate],
+        [],
+        min_distance=10,
+        min_web=0,
+        tolerance=1,
+        available_shapes=["circle"],
+        size=3,
+        angle=0.0,
     )
     assert mark is candidate
 
@@ -1033,9 +1091,16 @@ def _plate_with_hole() -> Polygon:
 def test_marks_avoid_holes():
     plate = _plate_with_hole()
     mark = ReferenceMarkCalculator.choose_mark_for_pair(
-        plate, [plate], [], [],
-        min_distance=5, min_web=0, tolerance=1,
-        available_shapes=["circle"], size=3, angle=0.0,
+        plate,
+        [plate],
+        [],
+        [],
+        min_distance=5,
+        min_web=0,
+        tolerance=1,
+        available_shapes=["circle"],
+        size=3,
+        angle=0.0,
     )
     assert mark is not None
     assert plate.contains(Point(mark.x, mark.y))
@@ -1101,9 +1166,16 @@ def test_a_new_point_is_stored_marks_or_out_of_snapping_range(stored, tolerance)
     square = Polygon([(0, 0), (30, 0), (30, 30), (0, 30)])
     candidates = [ReferenceMark(x=x, y=y, shape="circle", size=1) for x, y in stored]
     mark = ReferenceMarkCalculator.choose_mark_for_pair(
-        square, [square], candidates, [],
-        min_distance=5, min_web=0, tolerance=tolerance,
-        available_shapes=["circle"], size=1, angle=0.0,
+        square,
+        [square],
+        candidates,
+        [],
+        min_distance=5,
+        min_web=0,
+        tolerance=tolerance,
+        available_shapes=["circle"],
+        size=1,
+        angle=0.0,
     )
     if mark is None or (mark.x, mark.y) in stored:
         return
@@ -1150,9 +1222,16 @@ def test_the_chosen_mark_fits_inside_the_polygon(coords):
     min_distance = require(cfg.min_distance, "min_distance")
     size = require(cfg.size, "size")
     mark = ReferenceMarkCalculator.choose_mark_for_pair(
-        poly, [poly], [], [],
-        min_distance=min_distance, min_web=0, tolerance=require(cfg.tolerance, "tolerance"),
-        available_shapes=cfg.available_shapes, size=size, angle=cfg.angle,
+        poly,
+        [poly],
+        [],
+        [],
+        min_distance=min_distance,
+        min_web=0,
+        tolerance=require(cfg.tolerance, "tolerance"),
+        available_shapes=cfg.available_shapes,
+        size=size,
+        angle=cfg.angle,
     )
     if mark is None:
         return
@@ -1402,9 +1481,7 @@ def test_every_slice_of_the_sheared_cylinder_gets_a_mark(sheared_cylinder_stl):
     """#107's acceptance test: with tolerance and min_distance comparable to the shear, retirement
     (not a stale, drifting mark) keeps every slice covered."""
     model = Model(TrimeshMesh.load(str(sheared_cylinder_stl)), layer_height=3.0)
-    slices = SlicerService.slice_model(
-        model, ReferenceMarkConfig(tolerance=25, min_distance=10)
-    )
+    slices = SlicerService.slice_model(model, ReferenceMarkConfig(tolerance=25, min_distance=10))
     assert all(len(s.ref_marks) >= 1 for s in slices), (
         f"slices with no mark: {[s.index for s in slices if not s.ref_marks]}"
     )

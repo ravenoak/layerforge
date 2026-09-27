@@ -36,6 +36,9 @@ class ReferenceMarkConfig(BaseModel):
     kerf: float = Field(default=0.3, ge=0, allow_inf_nan=False)
     min_hole_ratio: float = Field(default=1.0, gt=0, allow_inf_nan=False)
     min_hole_kerf_factor: float = Field(default=1.5, ge=0, allow_inf_nan=False)
+    # TR-9: how large an overlap between two pieces of adjacent layers must be to share a
+    # mark. Lives on this config, not only on Settings, because plan_marks reads it here.
+    min_overlap_area: float = Field(default=0.0, ge=0, allow_inf_nan=False)
 
     @field_validator("available_shapes")
     @classmethod

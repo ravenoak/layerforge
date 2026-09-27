@@ -121,7 +121,7 @@ How common tools read the output, which TR-17 rests on:
 
 | ID | Requirement | Closes |
 |---|---|---|
-| TR-16 | Every number in TR-2 to TR-15 that depends on the machine, the material or judgment is a setting. Each has a default and a config-file key (see the table). The common ones also have a command-line option. A setting is taken from the command line first, then from the config file, then from its default. The config file is TOML. Its path is `--config`, or `layerforge.toml` in the current directory if that file exists. Lengths are in `--units`. Unknown keys, wrong types and out-of-range values stop the run before slicing, with exit code 2 and a message that names the file and the key. Status: #87 built the mechanism and the keys `layer_height`, `marks.size`, `marks.tolerance`, `marks.min_distance`, `marks.shapes` and `marks.angle`. #74 added `units`. #85 added `marks.min_web_ratio`, which has no command-line option. #75 added `number.height` (`--number-height`) and `number.width_factor` (no option). #83 added `output.cut_color`, `output.engrave_color` (both with an option) and `output.hairline_width` (none). #62 added `kerf` (`--kerf`) and `marks.min_hole_ratio` and `marks.min_hole_kerf_factor` (no option), and made `marks.size`, `marks.tolerance` and `marks.min_distance` derived when they are not set. Each later issue adds its own keys, and until then a key that is not built is an unknown key. | G-24 (#87, done) |
+| TR-16 | Every number in TR-2 to TR-15 that depends on the machine, the material or judgment is a setting. Each has a default and a config-file key (see the table). The common ones also have a command-line option. A setting is taken from the command line first, then from the config file, then from its default. The config file is TOML. Its path is `--config`, or `layerforge.toml` in the current directory if that file exists. Lengths are in `--units`. Unknown keys, wrong types and out-of-range values stop the run before slicing, with exit code 2 and a message that names the file and the key. Status: #87 built the mechanism and the keys `layer_height`, `marks.size`, `marks.tolerance`, `marks.min_distance`, `marks.shapes` and `marks.angle`. #74 added `units`. #85 added `marks.min_web_ratio`, which has no command-line option. #75 added `number.height` (`--number-height`) and `number.width_factor` (no option). #83 added `output.cut_color`, `output.engrave_color` (both with an option) and `output.hairline_width` (none). #62 added `kerf` (`--kerf`) and `marks.min_hole_ratio` and `marks.min_hole_kerf_factor` (no option), and made `marks.size`, `marks.tolerance` and `marks.min_distance` derived when they are not set. #63 added `checks.min_overlap_area` (no command-line option). Each later issue adds its own keys, and until then a key that is not built is an unknown key. | G-24 (#87, done) |
 
 | Key | Option | Default | Basis | Used by |
 |---|---|---|---|---|
@@ -137,6 +137,7 @@ How common tools read the output, which TR-17 rests on:
 | `marks.tolerance` | `--mark-tolerance` | 0.1 × mark size | Proposed | TR-10 |
 | `marks.shapes` | `--available-shapes` | circle, square, triangle, arrow | Existing default | TR-8 |
 | `marks.angle` | `--mark-angle` (degrees) | 0 | Existing default | TR-7 |
+| `checks.min_overlap_area` | | 0 | Existing default (any overlap counts) | TR-9 |
 | `number.height` | `--number-height` | 5 mm | Proposed | TR-11 |
 | `number.width_factor` | | 0.6 | Proposed | TR-11 |
 | `number.font_family` | | bold sans-serif | Sourced | TR-11. Not built: the font is fixed. |
@@ -144,7 +145,6 @@ How common tools read the output, which TR-17 rests on:
 | `output.engrave_color` | `--engrave-color` | black | Convention | TR-14 |
 | `output.hairline_width` | | 0.01 mm | Sourced | TR-14 |
 | `checks.allow_unaligned` | `--allow-unaligned` | false | Decision | TR-12 |
-| `checks.min_overlap_area` | | 0 | Decision. Any overlap counts. | TR-2 |
 | `dowel.diameter` | `--dowel-diameter` | none (dowels are off) | Measured by the person | TR-15 |
 | `dowel.fit` | `--dowel-fit` | `slip` | Proposed | TR-15 |
 | `dowel.clearance` | | from the fit: 0.2 mm for `slip`, 0 for `press` | Proposed (from #93). Confirm with the fit ladder of #141. | TR-15 |

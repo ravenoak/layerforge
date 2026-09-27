@@ -53,6 +53,7 @@ config {
     default_min_web_ratio: Decimal = 0.5
     default_min_hole_ratio: Decimal = 1.0
     default_min_hole_kerf_factor: Decimal = 1.5
+    default_min_overlap_area: Decimal = 0.0     -- TR-9: how much overlap counts as sharing a mark
     default_shapes: List<String> = ["circle", "square", "triangle", "arrow"]
     default_cut_color: String = "red"           -- outlines and holes (TR-14)
     default_engrave_color: String = "black"     -- the number (TR-14)

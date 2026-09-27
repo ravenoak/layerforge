@@ -29,6 +29,7 @@ def test_defaults_without_a_file(tmp_path, monkeypatch):
     assert (s.output.cut_color, s.output.engrave_color) == ("red", "black")
     assert s.output.hairline_width == 0.01
     assert (s.number.height, s.number.width_factor) == (5.0, 0.6)
+    assert s.checks.min_overlap_area == 0.0
 
 
 def test_precedence_is_command_line_then_file_then_default(tmp_path):

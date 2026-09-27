@@ -16,3 +16,17 @@ def cylinder_stl(tmp_path):
     path = tmp_path / "cylinder.stl"
     mesh.export(path)
     return path
+
+
+@pytest.fixture
+def sheared_cylinder_stl(tmp_path):
+    """Radius 20, height 60, sheared 0.5 in x per unit z (#107's own evidence)."""
+    import numpy as np
+
+    mesh = trimesh.creation.cylinder(radius=20.0, height=60.0, sections=48)
+    shear = np.eye(4)
+    shear[0, 2] = 0.5  # x += 0.5 * z
+    mesh.apply_transform(shear)
+    path = tmp_path / "sheared_cylinder.stl"
+    mesh.export(path)
+    return path

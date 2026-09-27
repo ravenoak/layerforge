@@ -1,6 +1,8 @@
 """plan_marks: marks chosen per pair of adjacent layers, retired when they no longer fit (#63)."""
 
-from shapely.geometry import box
+import math
+
+from shapely.geometry import Polygon, box
 
 from layerforge.models.reference_marks import ReferenceMarkConfig
 from layerforge.models.reference_marks.pair_marking import plan_marks
@@ -88,6 +90,35 @@ def test_a_merge_gives_the_merged_piece_two_marks_without_colliding():
     assert len(result[1]) == 2
     (m1, m2) = result[1]
     assert (m1.x, m1.y) != (m2.x, m2.y)
+
+
+def test_a_no_mark_boundary_still_makes_the_next_boundary_avoid_the_lost_mark():
+    """Regression (#63, TR-10): a boundary that places no mark must still owe the next one its
+    spacing, or a fresh mark can land within tolerance of the one that just went missing.
+
+    ``slice1``'s mark ``m`` sits at (50, 22.5). ``slice2`` is two lobes joined into one piece: a
+    narrow one that overlaps only ``slice1`` and erodes away completely at ``min_distance=5``
+    (a ``region is None`` outcome -- nothing carries onto ``slice2`` at all), and a wide one that
+    overlaps only ``slice3``, close enough to ``m`` that an unconstrained fresh mark there would
+    land within ``tolerance=25`` of it. Before the fix, the ``region is None`` continue wiped
+    ``slice2``'s spacing memory outright, so the fresh mark on the wide lobe never had to avoid
+    ``m`` and landed 17 units from it, inside tolerance.
+    """
+    slice0 = box(0, 15, 100, 30)
+    slice1 = box(0, 0, 100, 30)
+    # A "T": a stem (x 45-55, y 0-29) that only overlaps `slice1`, topped by a wide bar
+    # (x 0-100, y 29-70) that only overlaps `slice3`.
+    slice2 = Polygon([(45, 0), (55, 0), (55, 29), (100, 29), (100, 70), (0, 70), (0, 29), (45, 29)])
+    slice3 = box(0, 29, 100, 50)
+    tolerance = 25
+    cfg = ReferenceMarkConfig(min_distance=5, tolerance=tolerance)
+    result = plan_marks([[slice0], [slice1], [slice2], [slice3]], cfg, layer_height=3.0)
+
+    m = result[1][0]
+    assert len(result[2]) == 1, "slice1-slice2 erodes to nothing, but slice2-slice3 still fits"
+    fresh = result[2][0]
+    distance = math.hypot(fresh.x - m.x, fresh.y - m.y)
+    assert distance > tolerance
 
 
 def test_a_merge_avoids_a_sibling_s_mark_on_the_shared_upper_piece():

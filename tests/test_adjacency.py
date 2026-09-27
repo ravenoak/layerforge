@@ -137,3 +137,20 @@ def test_an_edge_that_only_touches_is_not_part_of_the_overlap():
 
     assert isinstance(pair.overlap, Polygon)
     assert pair.overlap.equals(box(0, 0, 10, 2))
+
+
+def test_a_repairable_invalid_polygon_does_not_raise():
+    # A bow-tie: self-intersecting but shapely.make_valid can repair it.
+    bowtie = Polygon([(0, 0), (10, 10), (10, 0), (0, 10)])
+    normal = Polygon([(0, 0), (10, 0), (10, 10), (0, 10)])
+    result = adjacent_pairs([[bowtie], [normal]])
+    assert len(result) == 1
+
+
+def test_an_unrepairable_polygon_raises_a_value_error_naming_the_piece():
+    # A zero-area closed line: invalid, and make_valid resolves it to a MultiLineString
+    # with no polygon parts, so it cannot be repaired into a polygon with area.
+    degenerate = Polygon([(0, 0), (5, 5), (10, 10), (0, 0)])
+    normal = Polygon([(0, 0), (10, 0), (10, 10), (0, 10)])
+    with pytest.raises(ValueError, match="layer 0 piece 0"):
+        adjacent_pairs([[degenerate], [normal]])

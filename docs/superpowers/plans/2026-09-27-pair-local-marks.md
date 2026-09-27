@@ -137,11 +137,8 @@ In `src/layerforge/cli.py`, inside the `ReferenceMarkConfig(...)` construction (
 
 - [ ] **Step 10: Add the failing doc/spec tests**
 
-In `tests/test_defaults_documented.py`, add to the `@pytest.mark.parametrize(("name", "key"), [...])` list of `test_the_spec_config_block_states_the_default_of_each_setting` (after `("default_number_width_factor", ("number", "width_factor"))`):
-
-```python
-(("default_min_overlap_area", ("checks", "min_overlap_area")),)
-```
+In `tests/test_defaults_documented.py`, add to the `@pytest.mark.parametrize(("name", "key"), [...])` list of `test_the_spec_config_block_states_the_default_of_each_setting` (after `("default_number_width_factor", ("number", "width_factor"))`), this new element:
+`("default_min_overlap_area", ("checks", "min_overlap_area"))`
 
 And add `"default_min_overlap_area"` to the set literal in `test_every_default_of_the_spec_config_block_is_compared`.
 

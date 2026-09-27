@@ -319,26 +319,27 @@ rule TR10_SnapToStoredMark {
 
 rule TR9_RetireWhenNoLongerValid {
     when: sm: SharedMark.created
-    let next_pair = AdjacentPair{lower: sm.pair.upper}
-    requires: exists next_pair
-    let still_valid = footprint_inside_shrunken_overlap(
-        sm.upper_mark.footprint,
-        next_pair.lower,
-        next_pair.upper,
-        next_pair.stack.mark_min_distance
-    )
-    ensures:
-        if not still_valid:
-            MarkRetired(mark: sm.upper_mark, at_pair: next_pair)
+    for next_pair in AdjacentPairs where lower = sm.pair.upper:
+        let still_valid = footprint_inside_shrunken_overlap(
+            sm.upper_mark.footprint,
+            next_pair.lower,
+            next_pair.upper,
+            next_pair.stack.mark_min_distance
+        )
+        ensures:
+            if not still_valid:
+                MarkRetired(mark: sm.upper_mark, at_pair: next_pair)
     @guidance
-        -- Retirement only ever looks at the immediately following pair. A
-        -- mark stays in use while it remains valid there (its whole
-        -- footprint inside the shrunken overlap of the next pair's
-        -- outlines, TR9_SharedMarkInsideShrunkenOverlap) and is retired the
-        -- moment it is not. A retired mark is simply not offered as a
-        -- candidate at that pair; nothing looks further back or forward,
-        -- and a mark with no next pair (the top of the stack) is never
-        -- retired by this rule.
+        -- Retirement evaluates every pair whose lower piece is this mark's
+        -- upper piece independently: a split or merge (TR-8) can give a
+        -- piece more than one next pair, and a mark can retire on one
+        -- branch of a split while it stays valid on another. A mark stays
+        -- in use at a pair while its whole footprint lies inside the
+        -- shrunken overlap of that pair's outlines
+        -- (TR9_SharedMarkInsideShrunkenOverlap) and is retired there the
+        -- moment it does not; a retired mark is simply not offered as a
+        -- candidate at that pair. A mark with no next pair at all (the top
+        -- of the stack) is never retired by this rule.
 }
 
 -- Checking and failure (TR-4, TR-6, TR-12) --------------------------------------

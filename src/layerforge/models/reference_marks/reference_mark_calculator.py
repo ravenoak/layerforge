@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import random
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from shapely import make_valid
@@ -10,12 +11,56 @@ from layerforge.utils import calculate_distance
 
 from .config import ReferenceMarkConfig, require
 from .footprint import mark_reach
+from .reference_mark import ReferenceMark
+from .shape_choice import choose_shape
 
 if TYPE_CHECKING:
     from layerforge.models.slicing.slice import Slice
 
 
 _SAMPLE_SEED = 0
+
+
+def _fits_region(
+    pt: Point,
+    region: Polygon,
+    boundary_polys: Sequence[Polygon],
+    radius: float,
+    min_web: float,
+    min_distance: float,
+) -> bool:
+    """True when ``pt`` is in ``region`` and clear of every polygon's edge by enough margin.
+
+    ``region`` is already eroded by ``min_distance`` from both pieces' own outlines (the pair's
+    shrunk overlap, see the pair-local-marks design spec's note on erosion of an intersection),
+    so membership in ``region`` alone gives that clearance for a freshly sampled point. A
+    ``candidate`` inherited from an earlier run carries no such guarantee about ``region`` (it may
+    predate the current erosion, or a caller may pass an unenroded region), so each piece's edge
+    is also checked against ``min_distance`` directly here; in the pre-eroded case that check is
+    redundant with ``region.contains``, not wrong. The shape-dependent ``radius + min_web`` margin
+    is checked against each piece individually either way.
+    """
+    margin = max(min_distance, radius + min_web)
+    return region.contains(pt) and all(
+        poly.boundary.distance(pt) >= margin for poly in boundary_polys
+    )
+
+
+def _clear_of_gap(
+    x: float,
+    y: float,
+    others: Sequence[ReferenceMark],
+    min_distance: float,
+    radius: float,
+    min_web: float,
+) -> bool:
+    """True when ``(x, y)`` is far enough from every mark in ``others``.
+
+    One shared gap for the whole check, using this mark's own radius, the same approximation
+    the old whole-slice search used. The adjuster checks the exact footprints afterwards.
+    """
+    gap = max(min_distance, 2 * radius + min_web)
+    return all(calculate_distance(x, y, other.x, other.y) >= gap for other in others)
 
 
 class ReferenceMarkCalculator:
@@ -155,3 +200,48 @@ class ReferenceMarkCalculator:
     ) -> list[tuple[float, float]]:
         """Compatibility alias for :meth:`get_stable_marks`."""
         return ReferenceMarkCalculator.get_stable_marks(layer, existing_marks, config=config)
+
+    @staticmethod
+    def choose_mark_for_pair(
+        region: Polygon,
+        boundary_polys: Sequence[Polygon],
+        candidates: Sequence[ReferenceMark],
+        avoid: Sequence[ReferenceMark],
+        *,
+        min_distance: float,
+        min_web: float,
+        tolerance: float,
+        available_shapes: Sequence[str],
+        size: float,
+        angle: float,
+    ) -> ReferenceMark | None:
+        """Return the mark for one pair's shared region (TR-9).
+
+        Tries each of ``candidates`` first (TR-10: reuse before creating); a candidate that no
+        longer fits ``region`` or now collides with ``avoid`` is retired — simply not returned,
+        never mutated. ``avoid`` holds marks already committed on the same piece by a different
+        pairing (a split or a merge) and is spacing-only, never a source of inheritance. Falls
+        back to choosing a shape (#198: before the point, so the disc matches it) and sampling
+        a fresh point in ``region``. Returns ``None`` when nothing fits.
+        """
+        for candidate in candidates:
+            radius = mark_reach(candidate.shape, candidate.size)
+            pt = Point(candidate.x, candidate.y)
+            others = [m for m in avoid if m is not candidate]
+            if _fits_region(
+                pt, region, boundary_polys, radius, min_web, min_distance
+            ) and _clear_of_gap(candidate.x, candidate.y, others, min_distance, radius, min_web):
+                return candidate
+
+        shape = choose_shape(available_shapes)
+        radius = mark_reach(shape, size)
+        for x, y in ReferenceMarkCalculator._sample_points(region):
+            pt = Point(x, y)
+            if not _fits_region(pt, region, boundary_polys, radius, min_web, min_distance):
+                continue
+            if not _clear_of_gap(x, y, avoid, min_distance, radius, min_web):
+                continue
+            if any(calculate_distance(x, y, m.x, m.y) <= tolerance for m in avoid):
+                continue
+            return ReferenceMark(x=x, y=y, shape=shape, size=size, angle=angle)
+        return None

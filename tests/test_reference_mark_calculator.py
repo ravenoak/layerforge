@@ -1,36 +1,96 @@
-import pytest
-
-pytest.importorskip("shapely")
-
 from shapely.geometry import Point, Polygon
 
-from layerforge.models.reference_marks import (
-    ReferenceMarkConfig,
-    ReferenceMarkManager,
-    ReferenceMarkService,
-)
-from layerforge.models.slicing import Slice
+from layerforge.models.reference_marks import ReferenceMark, ReferenceMarkCalculator
 
 
-def test_inherit_mark_within_polygon():
+def test_choose_mark_for_pair_reuses_a_candidate_that_still_fits():
     square = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)])
-    manager = ReferenceMarkManager(config=ReferenceMarkConfig(tolerance=10))
-    manager.add_or_update_mark(50, 50, "circle", 3)
-    cfg = ReferenceMarkConfig(min_distance=10)
-    sl = Slice(0, 0.0, [square], mark_manager=manager, config=cfg, layer_height=3.0)
-    ReferenceMarkService.process_slice(sl)
-    assert len(sl.ref_marks) == 1
-    assert sl.ref_marks[0].x == 50
-    assert sl.ref_marks[0].y == 50
+    candidate = ReferenceMark(x=50, y=50, shape="circle", size=3)
+    mark = ReferenceMarkCalculator.choose_mark_for_pair(
+        square,
+        [square],
+        [candidate],
+        [],
+        min_distance=10,
+        min_web=0,
+        tolerance=1,
+        available_shapes=["circle"],
+        size=3,
+        angle=0.0,
+    )
+    assert mark is candidate
 
 
-def test_generate_mark_respects_boundary():
+def test_choose_mark_for_pair_retires_a_candidate_that_no_longer_fits():
     square = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)])
-    manager = ReferenceMarkManager()
-    cfg = ReferenceMarkConfig(min_distance=10)
-    sl = Slice(1, 0.0, [square], mark_manager=manager, config=cfg, layer_height=3.0)
-    ReferenceMarkService.process_slice(sl)
-    assert len(sl.ref_marks) == 1
-    pt = Point(sl.ref_marks[0].x, sl.ref_marks[0].y)
-    assert square.contains(pt)
-    assert square.boundary.distance(pt) >= 10
+    # 5 from the edge: closer than min_distance, so this candidate cannot be reused.
+    candidate = ReferenceMark(x=5, y=50, shape="circle", size=3)
+    mark = ReferenceMarkCalculator.choose_mark_for_pair(
+        square,
+        [square],
+        [candidate],
+        [],
+        min_distance=10,
+        min_web=0,
+        tolerance=1,
+        available_shapes=["circle"],
+        size=3,
+        angle=0.0,
+    )
+    assert mark is not None
+    assert mark is not candidate
+    assert Point(mark.x, mark.y).distance(square.boundary) >= 10
+
+
+def test_choose_mark_for_pair_picks_the_shape_before_the_point():
+    """#198: the disc must match the chosen shape's own reach, not the largest in the list."""
+    square = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)])
+    mark = ReferenceMarkCalculator.choose_mark_for_pair(
+        square,
+        [square],
+        [],
+        [],
+        min_distance=1,
+        min_web=0,
+        tolerance=1,
+        available_shapes=["circle", "triangle"],
+        size=3,
+        angle=0.0,
+    )
+    assert mark is not None
+    assert mark.shape == "triangle"  # least symmetry order wins (choose_shape, #61)
+
+
+def test_choose_mark_for_pair_avoids_a_mark_from_the_other_pairing():
+    square = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)])
+    other_pairing_mark = ReferenceMark(x=50, y=50, shape="circle", size=3)
+    mark = ReferenceMarkCalculator.choose_mark_for_pair(
+        square,
+        [square],
+        [],
+        [other_pairing_mark],
+        min_distance=1,
+        min_web=0,
+        tolerance=1,
+        available_shapes=["circle"],
+        size=3,
+        angle=0.0,
+    )
+    assert mark is None or Point(mark.x, mark.y).distance(Point(50, 50)) >= 1
+
+
+def test_choose_mark_for_pair_returns_none_when_nothing_fits():
+    tiny = Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
+    mark = ReferenceMarkCalculator.choose_mark_for_pair(
+        tiny,
+        [tiny],
+        [],
+        [],
+        min_distance=10,
+        min_web=0,
+        tolerance=1,
+        available_shapes=["circle"],
+        size=3,
+        angle=0.0,
+    )
+    assert mark is None

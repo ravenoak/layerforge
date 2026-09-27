@@ -174,6 +174,10 @@ output, the first release will raise the minor version.
 
 ### Fixed
 
+- `--help` no longer sends the reader to `docs/reference_mark_algorithm.md`, a path a
+  `pip` or `uv tool install` install does not have. The four mark options lost that
+  sentence, and the help ends with one link to the published page. A test checks that
+  no help line and no message in `src` names a path of the repository. (#178)
 - An error raised while the calculator tests a candidate point no longer reads as
   "outside the piece". The broad `except Exception` around it is removed, so a failure in
   shapely reaches the caller and does not hide as "no mark fits". On a stub that raised

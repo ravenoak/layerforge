@@ -416,9 +416,14 @@ invariant TR2_EveryOverlapIsAPair {
 
 invariant TR2_OneWayToAlign {
     -- Two marks are the same only if shape, size and angle match.
-    -- has_nonidentity_rotation_symmetry is a black box. It is true when
-    -- some rotation other than none maps the set of marks onto itself. It
-    -- uses the symmetry order declared for each shape (TR-7).
+    -- has_nonidentity_rotation_symmetry is a black box, built as
+    -- rotation_symmetry(marks, tolerance).has_nonidentity (#90). It is true
+    -- when some rotation other than none, about the centroid of the mark
+    -- centres, maps the set of marks onto itself. The tolerance is a length
+    -- that the caller passes; which one the check uses is decided in #92.
+    -- Angles are compared modulo the symmetry order declared for each shape
+    -- (TR-7), so a square turned a quarter is the same mark. A mark listed
+    -- twice counts once (TR-9, TR-10). Nothing calls it yet (#92).
     -- Dowel holes are excluded by using alignment_marks (TR-15).
     for pair in AdjacentPairs:
         pair.alignment_marks.count >= 1

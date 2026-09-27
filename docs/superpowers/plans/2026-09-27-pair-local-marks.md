@@ -228,7 +228,7 @@ def test_an_unrepairable_polygon_raises_a_value_error_naming_the_piece():
         adjacent_pairs([[degenerate], [normal]])
 ```
 
-Add `import pytest` and `from shapely.geometry import Polygon` at the top if not already present (check first: `Polygon` is likely already imported; `pytest` may not be, since the existing 24 tests may use only shapely fixtures — check `tests/test_adjacency.py`'s current imports before adding a duplicate).
+`tests/test_adjacency.py` already imports both `pytest` and `Polygon` (confirmed while writing this plan) — no new imports needed.
 
 - [ ] **Step 2: Run them, confirm they fail**
 
@@ -279,7 +279,7 @@ In `adjacent_pairs`, replace the loop's use of `layers` with repaired copies:
 - [ ] **Step 5: Run the tests, confirm they pass**
 
 Run: `uv run pytest tests/test_adjacency.py -v`
-Expected: PASS, all (including the 24 existing tests — repairing an already-valid polygon returns it unchanged, so nothing else moves).
+Expected: PASS, all (including the 17 existing tests — repairing an already-valid polygon returns it unchanged, so nothing else moves).
 
 - [ ] **Step 6: Run the full local check set**
 
@@ -325,9 +325,18 @@ Refs #63, #185"
 
 - [ ] **Step 1: Write the failing tests**
 
-Add to `tests/test_reference_mark_calculator.py` (keep the existing two tests and their imports; add `from layerforge.models.reference_marks import ReferenceMark, ReferenceMarkCalculator, ReferenceMarkConfig` already covers what is needed, plus `from layerforge.models.reference_marks.reference_mark_calculator import ReferenceMarkCalculator` is already the import path used):
+Replace the whole content of `tests/test_reference_mark_calculator.py`. Its current two tests
+(`test_inherit_mark_within_polygon`, `test_generate_mark_respects_boundary`) call
+`ReferenceMarkManager`, `ReferenceMarkService` and `Slice(mark_manager=...)` — all deleted in
+Task 5 — so they cannot survive this branch; their coverage is superseded by the tests below and
+by Task 5's rewrite of `tests/test_calculator_get_potential_marks.py`. Start the file with:
 
 ```python
+from shapely.geometry import Point, Polygon
+
+from layerforge.models.reference_marks import ReferenceMark, ReferenceMarkCalculator
+
+
 def test_choose_mark_for_pair_reuses_a_candidate_that_still_fits():
     square = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)])
     candidate = ReferenceMark(x=50, y=50, shape="circle", size=3)
@@ -524,7 +533,7 @@ Add the static method to `ReferenceMarkCalculator` (after `get_potential_marks`)
 - [ ] **Step 4: Run the tests, confirm they pass**
 
 Run: `uv run pytest tests/test_reference_mark_calculator.py -v`
-Expected: PASS, all 7 tests (2 existing + 5 new).
+Expected: PASS, all 5 tests.
 
 - [ ] **Step 5: Run the full local check set**
 
@@ -998,7 +1007,7 @@ __all__ = [
 - [ ] **Step 6: Run the suite, read every failure**
 
 Run: `uv run pytest -q`
-Expected: many failures in the six test files listed below — every one should be an `ImportError`, `AttributeError` or a `TypeError` about `mark_manager`/`ReferenceMarkManager`/`ReferenceMarkService`/`get_stable_marks`/`get_potential_marks`, nothing else. If a failure is not one of these, stop and investigate before continuing (it means Steps 1-5 broke something this task did not intend to touch).
+Expected: many failures in the six test files listed below — every one should be an `ImportError`, `AttributeError` or a `TypeError` about `mark_manager`/`ReferenceMarkManager`/`ReferenceMarkService`/`get_stable_marks`/`get_potential_marks`, nothing else. `tests/test_reference_mark_calculator.py` is not one of the six and needs no change here: Task 3 already replaced its two old manager/service-based tests, so it has no dependency on anything this task deletes. If a failure is not in one of the six files, or is in that file, stop and investigate before continuing (it means Steps 1-5 broke something this task did not intend to touch).
 
 - [ ] **Step 7: Rewrite `tests/test_calculator_get_potential_marks.py`**
 
@@ -1465,7 +1474,7 @@ import math
 
 import pytest
 
-pytest.importorskip("trimesh")
+trimesh = pytest.importorskip("trimesh")
 pytest.importorskip("shapely")
 
 from layerforge.models.loading.mesh import TrimeshMesh
@@ -1477,7 +1486,7 @@ from layerforge.models.slicing.slicer_service import SlicerService
 def test_every_slice_of_the_sheared_cylinder_gets_a_mark(sheared_cylinder_stl):
     """#107's acceptance test: with tolerance and min_distance comparable to the shear, retirement
     (not a stale, drifting mark) keeps every slice covered."""
-    model = Model(TrimeshMesh.load(str(sheared_cylinder_stl)), layer_height=3.0)
+    model = Model(TrimeshMesh(trimesh.load_mesh(str(sheared_cylinder_stl))), layer_height=3.0)
     slices = SlicerService.slice_model(model, ReferenceMarkConfig(tolerance=25, min_distance=10))
     assert all(len(s.ref_marks) >= 1 for s in slices), (
         f"slices with no mark: {[s.index for s in slices if not s.ref_marks]}"
@@ -1485,7 +1494,7 @@ def test_every_slice_of_the_sheared_cylinder_gets_a_mark(sheared_cylinder_stl):
 
 
 def test_no_two_distinct_marks_of_the_sheared_cylinder_are_within_tolerance(sheared_cylinder_stl):
-    model = Model(TrimeshMesh.load(str(sheared_cylinder_stl)), layer_height=3.0)
+    model = Model(TrimeshMesh(trimesh.load_mesh(str(sheared_cylinder_stl))), layer_height=3.0)
     tolerance = 25
     slices = SlicerService.slice_model(
         model, ReferenceMarkConfig(tolerance=tolerance, min_distance=10)
@@ -1520,11 +1529,11 @@ Run: `uv run pytest tests/test_pair_local_marks_end_to_end.py -v`
 Expected: since Task 5's implementation already exists, these may PASS immediately — if so, that is
 real coverage of already-built behaviour (acceptable here, unlike ordinary TDD, because the
 behaviour under test was built and verified test-first in Tasks 3-5; this task's job is to prove it
-holds on the specific fixtures #107 and TR-9 name, not to drive new implementation). If any fails,
-investigate: for `TrimeshMesh.load`, check its actual constructor/loader API first (it may take a
-path directly rather than needing `TrimeshMesh(trimesh.load(...))` — read
-`src/layerforge/models/loading/mesh.py` before assuming the signature) and fix the test to use the
-project's real loading API, not the implementation.
+holds on the specific fixtures #107 and TR-9 name, not to drive new implementation). If a test fails
+for a reason unrelated to `TrimeshMesh` (that API was checked while writing this plan: `TrimeshMesh`
+is a plain dataclass with no `.load` classmethod, so the test loads with `trimesh.load_mesh(path)`
+wrapped in `TrimeshMesh(...)`, the same as `TrimeshLoader.load_mesh` does), investigate the real
+failure instead.
 
 - [ ] **Step 4: If the shear fixture's `shear_matrix` call does not exist in the installed trimesh version**
 

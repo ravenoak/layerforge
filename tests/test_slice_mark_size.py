@@ -5,29 +5,29 @@ import logging
 import pytest
 from shapely.geometry import box
 
-from layerforge.models.reference_marks import (
-    ReferenceMarkConfig,
-    ReferenceMarkManager,
-    ReferenceMarkService,
-)
+from layerforge.models.reference_marks import ReferenceMarkConfig
+from layerforge.models.reference_marks.pair_marking import plan_marks
 from layerforge.models.slicing.slice import Slice
-
-
-def _slice(contours, layer_height, **config) -> Slice:
-    cfg = ReferenceMarkConfig(**config)
-    manager = ReferenceMarkManager(config=cfg.resolved(layer_height))
-    return Slice(0, 0.0, contours, mark_manager=manager, config=cfg, layer_height=layer_height)
-
 
 NEAR = box(0, 0, 20, 20)
 FAR = box(200, 0, 220, 20)
 
 
+def _one_new_mark_size(layer_height: float, **config) -> float:
+    """The size of the one mark two identical, fully-overlapping layers share."""
+    cfg = ReferenceMarkConfig(**config)
+    marks = plan_marks([[NEAR], [NEAR]], cfg, layer_height)
+    assert len(marks[0]) == 1
+    return marks[0][0].size
+
+
 def test_a_new_mark_has_the_size_of_the_sheet_wherever_it_lies():
-    """The old rule gave 3 near the origin and 5 far from it."""
-    layer = _slice([NEAR, FAR], layer_height=3.0)
-    ReferenceMarkService.process_slice(layer)
-    assert [m.size for m in layer.ref_marks] == [3.0, 3.0]
+    """The old rule gave 3 near the origin and 5 far from it; NEAR and FAR are no longer both
+    testable in one call now that marks are chosen per pair, not per polygon of one slice -- see
+    the next test, which keeps both pieces and both sizes."""
+    cfg = ReferenceMarkConfig()
+    marks = plan_marks([[NEAR, FAR], [NEAR, FAR]], cfg, layer_height=3.0)
+    assert [m.size for m in marks[0]] == [3.0, 3.0]
 
 
 @pytest.mark.parametrize(
@@ -39,19 +39,15 @@ def test_a_new_mark_has_the_size_of_the_sheet_wherever_it_lies():
     ],
 )
 def test_the_default_size_is_the_larger_of_the_sheet_term_and_the_kerf_term(layer_height, expected):
-    layer = _slice([NEAR], layer_height=layer_height)
-    ReferenceMarkService.process_slice(layer)
-    assert [m.size for m in layer.ref_marks] == [pytest.approx(expected)]
+    assert _one_new_mark_size(layer_height) == pytest.approx(expected)
 
 
 def test_a_configured_size_replaces_the_sheet_rule():
-    layer = _slice([NEAR, FAR], layer_height=3.0, size=7.0)
-    ReferenceMarkService.process_slice(layer)
-    assert [m.size for m in layer.ref_marks] == [7.0, 7.0]
+    assert _one_new_mark_size(3.0, size=7.0) == pytest.approx(7.0)
 
 
 def test_the_slice_resolves_its_config_with_its_layer_height():
-    config = _slice([NEAR], layer_height=3.0).config
+    config = Slice(0, 0.0, [NEAR], config=ReferenceMarkConfig(), layer_height=3.0).config
     assert (config.size, config.min_distance) == (3.0, 3.0)
     assert config.tolerance == pytest.approx(0.3)
 
@@ -59,9 +55,7 @@ def test_the_slice_resolves_its_config_with_its_layer_height():
 def test_a_slice_needs_its_layer_height():
     """#165 item 1: without it there is no web and no derived size, so it is required."""
     with pytest.raises(TypeError, match="layer_height"):
-        Slice(  # pyright: ignore[reportCallIssue]
-            0, 0.0, [], mark_manager=ReferenceMarkManager()
-        )
+        Slice(0, 0.0, [])  # pyright: ignore[reportCallIssue]
 
 
 def test_a_size_below_the_least_hole_size_warns_once_and_still_runs(caplog):

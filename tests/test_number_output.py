@@ -14,7 +14,6 @@ from click.testing import CliRunner
 from shapely.geometry import Point, Polygon, box
 
 from layerforge.cli import cli
-from layerforge.models.reference_marks import ReferenceMarkManager
 from layerforge.models.slicing import Slice
 from layerforge.svg.drawing.strategy_context import StrategyContext
 from layerforge.svg.slice_svg_drawer import SliceSVGDrawer
@@ -234,8 +233,7 @@ def test_the_warning_says_when_no_height_fits(caplog):
     ctx = StrategyContext()
     register_shape_strategies(ctx)
     piece = box(0, 0, 0.001, 0.001)  # the smallest test height, 0.005, is larger than the piece
-    slice_obj = Slice(3, 0.0, [piece], mark_manager=ReferenceMarkManager(), layer_height=3.0)
-    slice_obj.ref_marks = []
+    slice_obj = Slice(3, 0.0, [piece], layer_height=3.0)
 
     with caplog.at_level(logging.WARNING):
         SliceSVGDrawer.draw_slice(svgwrite.Drawing(), slice_obj, ctx)

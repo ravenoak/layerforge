@@ -2,11 +2,8 @@ import logging
 import math
 
 from layerforge.models import Model, Slice
-from layerforge.models.reference_marks import (
-    ReferenceMarkConfig,
-    ReferenceMarkManager,
-    ReferenceMarkService,
-)
+from layerforge.models.reference_marks import ReferenceMarkConfig
+from layerforge.models.reference_marks.pair_marking import plan_marks
 
 
 class SlicerService:
@@ -59,7 +56,7 @@ class SlicerService:
         List[Slice]
             A list of the slices
         """
-        # Resolve once: every slice and the store then share one size, one minimum distance
+        # Resolve once: every slice and plan_marks then share one size, one minimum distance
         # and one snapping tolerance (TR-6, TR-10, #108).
         cfg = (config or ReferenceMarkConfig()).resolved(model.layer_height)
         least = cfg.min_size(model.layer_height)
@@ -73,19 +70,19 @@ class SlicerService:
         slice_positions = SlicerService.calculate_slice_positions(
             float(min_bound[2]), float(max_bound[2]), model.layer_height
         )
-        slices: list[Slice] = []
-        mark_manager = ReferenceMarkManager(config=cfg)
-        for index, position in enumerate(slice_positions):
-            contours = model.calculate_slice_contours(position)
-            slice_ = Slice(
-                index=index,
-                position=position,
-                contours=contours,
-                mark_manager=mark_manager,
+        contours = [model.calculate_slice_contours(p) for p in slice_positions]
+        marks = plan_marks(contours, cfg, model.layer_height)
+        slices = [
+            Slice(
+                index=i,
+                position=p,
+                contours=c,
                 config=cfg,
                 layer_height=model.layer_height,
+                ref_marks=m,
             )
-            # Process and adjust reference marks outside of the slicing logic
-            ReferenceMarkService.process_slice(slice_)
-            slices.append(slice_)
+            for i, (p, c, m) in enumerate(zip(slice_positions, contours, marks, strict=True))
+        ]
+        for slice_ in slices:
+            slice_.adjust_marks()
         return slices

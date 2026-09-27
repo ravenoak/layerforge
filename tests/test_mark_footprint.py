@@ -2,6 +2,7 @@
 
 import logging
 import math
+from collections.abc import Sequence
 
 import pytest
 from click.testing import CliRunner
@@ -16,10 +17,10 @@ from layerforge.models.reference_marks import (
     ReferenceMarkAdjuster,
     ReferenceMarkCalculator,
     ReferenceMarkConfig,
-    ReferenceMarkManager,
-    ReferenceMarkService,
     mark_reach,
 )
+from layerforge.models.reference_marks.config import require
+from layerforge.models.reference_marks.shape_choice import choose_shape
 from layerforge.models.slicing.slice import Slice
 
 PIECE = box(0, 0, 20, 20)
@@ -89,25 +90,50 @@ BAR = box(0, 0, 40, 6)
 
 def _slice(polygon, layer_height=3.0, **config):
     cfg = ReferenceMarkConfig(**config)
-    return Slice(
-        0,
-        0.0,
-        [polygon],
-        mark_manager=ReferenceMarkManager(config=cfg),
-        config=cfg,
-        layer_height=layer_height,
+    return Slice(0, 0.0, [polygon], config=cfg, layer_height=layer_height)
+
+
+def _choose(layer: Slice, candidates: Sequence[ReferenceMark] = ()) -> ReferenceMark | None:
+    """The mark `choose_mark_for_pair` gives for a single polygon of a `Slice` (#63).
+
+    There is only one piece and no second slice, so the pair's region and boundary are
+    both that piece itself -- the same simplification `plan_marks` makes for a pair whose
+    shrunk overlap is the piece it came from.
+    """
+    (poly,) = layer.contours
+    cfg = layer.config
+    return ReferenceMarkCalculator.choose_mark_for_pair(
+        poly,
+        [poly],
+        list(candidates),
+        [],
+        min_distance=require(cfg.min_distance, "min_distance"),
+        min_web=layer.min_web,
+        tolerance=require(cfg.tolerance, "tolerance"),
+        available_shapes=cfg.available_shapes,
+        size=require(cfg.size, "size"),
+        angle=cfg.angle,
     )
+
+
+def _process(layer: Slice) -> None:
+    """The slice-level equivalent of the old `ReferenceMarkService.process_slice` (#63)."""
+    mark = _choose(layer)
+    if mark is not None:
+        layer.ref_marks.append(mark)
+    layer.adjust_marks()
 
 
 def test_the_calculator_does_not_choose_a_point_whose_hole_would_cross_the_outline():
     # The centre of the bar is 3 from each edge, so the centre rule passes for size 8.
     layer = _slice(BAR, size=8, min_distance=1)
-    assert ReferenceMarkCalculator.get_stable_marks(layer, [], config=layer.config) == []
+    assert _choose(layer) is None
 
 
 def test_the_calculator_does_not_inherit_a_mark_whose_hole_would_cross_the_outline():
     layer = _slice(BAR, size=8, min_distance=1)
-    assert ReferenceMarkCalculator.get_stable_marks(layer, [(20, 3)], config=layer.config) == []
+    inherited = ReferenceMark(x=20, y=3, shape=choose_shape(layer.config.available_shapes), size=8)
+    assert _choose(layer, [inherited]) is None
 
 
 def test_the_web_comes_from_the_layer_height_and_the_ratio():
@@ -116,14 +142,14 @@ def test_the_web_comes_from_the_layer_height_and_the_ratio():
     thin = _slice(BAR, layer_height=2.0, size=3, min_distance=1)  # web 0.5 * 2 = 1
     no_web = _slice(BAR, layer_height=4.0, size=3, min_distance=1, min_web_ratio=0)  # web 0
     for layer in (thick, thin, no_web):
-        ReferenceMarkService.process_slice(layer)
+        _process(layer)
     assert (len(thick.ref_marks), len(thin.ref_marks), len(no_web.ref_marks)) == (0, 1, 1)
 
 
 def test_the_warning_for_a_slice_without_marks_names_the_mark_size_too(caplog):
     layer = _slice(BAR, size=8, min_distance=1)
     with caplog.at_level(logging.WARNING):
-        ReferenceMarkService.process_slice(layer)
+        _process(layer)
     (record,) = [r for r in caplog.records if r.levelno == logging.WARNING]
     assert "--mark-min-distance" in record.getMessage()
     assert "--mark-size" in record.getMessage()
@@ -174,14 +200,10 @@ def test_every_point_the_calculator_chooses_survives_the_adjuster(shape, side):
     """
     piece = box(0, 0, side, side)
     config = {"size": 3, "min_distance": 3, "available_shapes": [shape]}
-    chosen = ReferenceMarkCalculator.get_stable_marks(
-        _slice(piece, layer_height=3.0, **config),
-        [],
-        config=ReferenceMarkConfig(**config),
-    )
+    chosen = _choose(_slice(piece, layer_height=3.0, **config))
     layer = _slice(piece, layer_height=3.0, **config)
-    ReferenceMarkService.process_slice(layer)
-    assert len(layer.ref_marks) == len(chosen)
+    _process(layer)
+    assert len(layer.ref_marks) == (0 if chosen is None else 1)
 
 
 def test_the_check_of_a_circle_agrees_with_the_drawn_circle_at_the_boundary():
@@ -208,7 +230,7 @@ def test_the_calculator_refuses_a_shape_name_that_is_not_registered():
     """The disc is sized by the outlines of the available shapes, so an unknown name raises."""
     layer = _slice(box(0, 0, 40, 40), layer_height=3.0, available_shapes=["hexagon"])
     with pytest.raises(ValueError, match="hexagon"):
-        ReferenceMarkCalculator.get_stable_marks(layer, [], config=layer.config)
+        _choose(layer)
 
 
 def test_a_mark_with_an_unregistered_shape_name_is_an_error_and_not_a_skipped_check():

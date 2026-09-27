@@ -2,21 +2,15 @@ from __future__ import annotations
 
 import random
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
 
 from shapely import make_valid
 from shapely.geometry import Point, Polygon
 
 from layerforge.utils import calculate_distance
 
-from .config import ReferenceMarkConfig, require
 from .footprint import mark_reach
 from .reference_mark import ReferenceMark
 from .shape_choice import choose_shape
-
-if TYPE_CHECKING:
-    from layerforge.models.slicing.slice import Slice
-
 
 _SAMPLE_SEED = 0
 
@@ -75,15 +69,6 @@ class ReferenceMarkCalculator:
     """
 
     @staticmethod
-    def _stability_score(points: list[tuple[float, float]]) -> float:
-        """Return the total pairwise distance between ``points``."""
-        score = 0.0
-        for i, p1 in enumerate(points):
-            for p2 in points[i + 1 :]:
-                score += calculate_distance(p1[0], p1[1], p2[0], p2[1])
-        return score
-
-    @staticmethod
     def _sample_points(poly: Polygon, samples: int = 4) -> list[tuple[float, float]]:
         """Return ``samples`` candidate points inside ``poly``.
 
@@ -122,86 +107,6 @@ class ReferenceMarkCalculator:
         return pts
 
     @staticmethod
-    def get_stable_marks(
-        layer: Slice,
-        existing_marks: list[tuple[float, float]],
-        config: ReferenceMarkConfig | None = None,
-    ) -> list[tuple[float, float]]:
-        """Return stable mark positions for ``layer`` respecting ``config.min_distance``.
-
-        The hole of a mark must fit too (TR-5). Its shape and angle are not known yet for a
-        new mark, so a mark is taken as a disc that holds the outline of every available
-        shape at any angle. Its radius is the farthest reach of those outlines from the
-        centre, which is a little over half the size for the circle (#157). The disc must
-        lie inside the piece with ``layer.min_web`` to spare, and two discs must be
-        ``layer.min_web`` apart.
-        """
-        cfg = (config or layer.config).resolved(layer.layer_height)
-        min_distance = require(cfg.min_distance, "min_distance")
-        tolerance = require(cfg.tolerance, "tolerance")
-        min_web = layer.min_web
-        reach_per_size = max(mark_reach(name, 1.0) for name in cfg.available_shapes)
-        radius = require(cfg.size, "size") * reach_per_size
-
-        def clear_of_outline(x: float, y: float, poly: Polygon) -> bool:
-            edge = poly.boundary.distance(Point(x, y))
-            return edge >= min_distance and edge >= radius + min_web
-
-        def clear_of(x: float, y: float, other: tuple[float, float]) -> bool:
-            gap = 2 * radius + min_web
-            return calculate_distance(x, y, other[0], other[1]) >= max(min_distance, gap)
-
-        selected: list[tuple[float, float]] = []
-        for poly in layer.contours:
-            # Try to inherit an existing mark that is inside the polygon
-            inherited = None
-            for x, y in existing_marks:
-                pt = Point(x, y)
-                if (
-                    poly.contains(pt)
-                    and clear_of_outline(x, y, poly)
-                    and all(clear_of(x, y, other) for other in selected)
-                ):
-                    inherited = (x, y)
-                    break
-            if inherited:
-                selected.append(inherited)
-                continue
-
-            candidates = ReferenceMarkCalculator._sample_points(poly)
-            taken = [*existing_marks, *selected]
-            best_pt = None
-            best_score = -1.0
-            for cand in candidates:
-                x, y = cand
-                pt = Point(x, y)
-                if not clear_of_outline(x, y, poly):
-                    continue
-                if not all(clear_of(x, y, other) for other in selected):
-                    continue
-                # A point within the snapping range of a stored mark, or of a mark
-                # chosen in this slice, would be taken for that mark (TR-10). The
-                # stored mark did not pass the checks above, so skip the point.
-                if any(calculate_distance(x, y, mx, my) <= tolerance for mx, my in taken):
-                    continue
-                score = ReferenceMarkCalculator._stability_score(selected + [cand])
-                if score > best_score:
-                    best_score = score
-                    best_pt = cand
-            if best_pt:
-                selected.append(best_pt)
-        return selected
-
-    @staticmethod
-    def get_potential_marks(
-        layer: Slice,
-        existing_marks: list[tuple[float, float]],
-        config: ReferenceMarkConfig | None = None,
-    ) -> list[tuple[float, float]]:
-        """Compatibility alias for :meth:`get_stable_marks`."""
-        return ReferenceMarkCalculator.get_stable_marks(layer, existing_marks, config=config)
-
-    @staticmethod
     def choose_mark_for_pair(
         region: Polygon,
         boundary_polys: Sequence[Polygon],
@@ -222,7 +127,12 @@ class ReferenceMarkCalculator:
         never mutated. ``avoid`` holds marks already committed on the same piece by a different
         pairing (a split or a merge) and is spacing-only, never a source of inheritance. Falls
         back to choosing a shape (#198: before the point, so the disc matches it) and sampling
-        a fresh point in ``region``. Returns ``None`` when nothing fits.
+        a fresh point in ``region``, clear of both ``avoid`` and every retired candidate (TR-10:
+        a fresh point must never coincide with a mark position already ruled out this call, or it
+        could be mistaken for that mark). In the one real caller, ``plan_marks``, ``avoid`` already
+        contains everything ``candidates`` does, so this is a no-op there; it only matters when the
+        function is called in isolation, as this module's own tests do. Returns ``None`` when
+        nothing fits.
         """
         for candidate in candidates:
             radius = mark_reach(candidate.shape, candidate.size)
@@ -233,15 +143,16 @@ class ReferenceMarkCalculator:
             ) and _clear_of_gap(candidate.x, candidate.y, others, min_distance, radius, min_web):
                 return candidate
 
+        avoid_all = [*avoid, *candidates]
         shape = choose_shape(available_shapes)
         radius = mark_reach(shape, size)
         for x, y in ReferenceMarkCalculator._sample_points(region):
             pt = Point(x, y)
             if not _fits_region(pt, region, boundary_polys, radius, min_web, min_distance):
                 continue
-            if not _clear_of_gap(x, y, avoid, min_distance, radius, min_web):
+            if not _clear_of_gap(x, y, avoid_all, min_distance, radius, min_web):
                 continue
-            if any(calculate_distance(x, y, m.x, m.y) <= tolerance for m in avoid):
+            if any(calculate_distance(x, y, m.x, m.y) <= tolerance for m in avoid_all):
                 continue
             return ReferenceMark(x=x, y=y, shape=shape, size=size, angle=angle)
         return None

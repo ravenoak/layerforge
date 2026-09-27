@@ -20,7 +20,13 @@ def _mark_attributes(svg_file: str) -> dict[str, str] | None:
     return None
 
 
-def test_mark_shape_and_position_inherited(cylinder_stl, tmp_path):
+def test_a_shared_mark_is_identical_in_the_two_slices_that_hold_it(cylinder_stl, tmp_path):
+    """TR-10: same centre, shape, size and angle in both layers a shared mark appears in.
+
+    A straight cylinder overlaps its neighbours enough that consecutive slices share a mark;
+    this does not assert every slice holds the *same* mark (that would be the pre-#63 bug, G-7)
+    -- only that wherever a mark IS shared, its two appearances agree exactly.
+    """
     out_dir = tmp_path / "svgs"
     process_model(
         stl_file=str(cylinder_stl),
@@ -32,9 +38,9 @@ def test_mark_shape_and_position_inherited(cylinder_stl, tmp_path):
     assert files, "no svg files generated"
 
     positions = [pos for pos in (_mark_attributes(str(f)) for f in files) if pos]
-    # There should be at least two slices with marks to compare
-    assert len(positions) >= 2
-
-    first = positions[0]
-    for pos in positions[1:]:
-        assert pos == first
+    assert len(positions) >= 2, "expected at least one pair of consecutive slices with a mark"
+    # Consecutive marks come from a shared point on a nearly-straight cylinder; a real assertion
+    # of TR-10 needs two ADJACENT slices' marks, which is exactly `positions[i]`/`positions[i+1]`
+    # here since every slice of this fixture gets a mark.
+    for earlier, later in zip(positions, positions[1:], strict=False):
+        assert earlier == later

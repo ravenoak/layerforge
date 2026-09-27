@@ -30,7 +30,14 @@ def plan_marks(
     ``contours[i]`` is the pieces of slice ``i``. The result is the same length, one list of
     marks per slice. A mark is chosen inside the shrunk overlap of two adjacent pieces (TR-9)
     and is retired -- excluded from the next pair's candidates -- the moment it no longer fits.
-    Retirement only ever looks at the immediately previous pair; nothing looks further back.
+    Reuse of a retired mark never survives past the one boundary where it stopped fitting.
+
+    A boundary that places no mark at all -- because its region is empty or nothing sampled
+    clears tolerance -- still owes the next boundary its spacing: the position(s) that were in
+    play keep propagating, avoid-only, through consecutive no-mark boundaries until a piece
+    either gets a mark of its own (which then takes over as what the boundary after it must
+    avoid) or the run ends. This keeps a fresh mark from ever landing within tolerance of one
+    that only just went missing (TR-10), without ever making the missing mark reusable.
     """
     cfg = config.resolved(layer_height)
     min_distance = require(cfg.min_distance, "min_distance")
@@ -46,16 +53,18 @@ def plan_marks(
         next_carried: dict[int, list[ReferenceMark]] = {}
         next_on_slice: dict[int, list[ReferenceMark]] = {}
         for pair in boundary:
+            candidates = carried.get(pair.lower, [])
+            avoid = [*on_slice.get(pair.lower, []), *next_on_slice.get(pair.upper, [])]
             region = _largest_part(pair.shrunk)
             if region is None:
+                next_on_slice.setdefault(pair.upper, []).extend([*avoid, *candidates])
                 continue
             lower_poly = contours[i][pair.lower]
             upper_poly = contours[i + 1][pair.upper]
-            avoid = [*on_slice.get(pair.lower, []), *next_on_slice.get(pair.upper, [])]
             mark = ReferenceMarkCalculator.choose_mark_for_pair(
                 region,
                 [lower_poly, upper_poly],
-                carried.get(pair.lower, []),
+                candidates,
                 avoid,
                 min_distance=min_distance,
                 min_web=min_web,
@@ -65,6 +74,7 @@ def plan_marks(
                 angle=cfg.angle,
             )
             if mark is None:
+                next_on_slice.setdefault(pair.upper, []).extend([*avoid, *candidates])
                 continue
             result[i].append(mark)
             result[i + 1].append(mark)

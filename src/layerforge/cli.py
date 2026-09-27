@@ -20,6 +20,10 @@ from layerforge.writers import SVGFileWriter
 # The help text states each default from here, so it cannot drift from the settings.
 _DEFAULTS = Settings()
 
+_MARK_OPTIONS_URL = (
+    "https://ravenoak.github.io/layerforge/reference_mark_algorithm/#parameter-effects"
+)
+
 
 class ConflictingOptionsError(ValueError):
     """Raised when mutually exclusive CLI options are provided."""
@@ -297,7 +301,7 @@ def process_model(
     )
 
 
-@click.command()
+@click.command(epilog=f"\b\nThe mark options are explained at\n{_MARK_OPTIONS_URL}")
 @click.option(
     "--stl-file",
     default=None,
@@ -353,31 +357,24 @@ def process_model(
     "--mark-tolerance",
     default=None,
     type=float,
-    help="Tolerance when matching existing marks. "
-    f"Default {TOLERANCE_FACTOR:g} x the mark size. "
-    "See docs/reference_mark_algorithm.md#parameter-effects.",
+    help=f"Tolerance when matching existing marks. Default {TOLERANCE_FACTOR:g} x the mark size.",
 )
 @click.option(
     "--mark-min-distance",
     default=None,
     type=float,
-    help="Minimum distance from contours and between marks. "
-    "Default: the mark size. "
-    "See docs/reference_mark_algorithm.md#parameter-effects.",
+    help="Minimum distance from contours and between marks. Default: the mark size.",
 )
 @click.option(
     "--available-shapes",
     default=None,
-    help="Comma separated list of mark shapes. "
-    f"Default {','.join(_DEFAULTS.marks.shapes)}. "
-    "See docs/reference_mark_algorithm.md#parameter-effects.",
+    help=f"Comma separated list of mark shapes. Default {','.join(_DEFAULTS.marks.shapes)}.",
 )
 @click.option(
     "--mark-angle",
     default=None,
     type=float,
-    help=f"Default mark orientation in degrees. Default {_DEFAULTS.marks.angle}. "
-    "See docs/reference_mark_algorithm.md#parameter-effects.",
+    help=f"Default mark orientation in degrees. Default {_DEFAULTS.marks.angle}.",
 )
 @click.option(
     "--cut-color",

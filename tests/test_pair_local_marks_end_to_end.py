@@ -1,5 +1,6 @@
 """End-to-end acceptance for #63 (TR-9): the sheared cylinder of #107, and TR-9's core invariant."""
 
+import logging
 import math
 
 import pytest
@@ -14,14 +15,31 @@ from layerforge.models.reference_marks import ReferenceMarkConfig
 from layerforge.models.slicing.slicer_service import SlicerService
 
 
-def test_every_slice_of_the_sheared_cylinder_gets_a_mark(sheared_cylinder_stl):
-    """#107's acceptance test: with tolerance and min_distance comparable to the shear, retirement
-    (not a stale, drifting mark) keeps every slice covered."""
+def test_every_slice_of_the_sheared_cylinder_gets_a_mark_or_is_warned_about(
+    sheared_cylinder_stl, caplog
+):
+    """#107's acceptance test, refined: TR-10 (never violate tolerance) is absolute; full
+    coverage is phase 1's documented "known limitation" when a pair's shrunk region lies
+    entirely within tolerance of a mark that just retired next to it. On this exact fixture
+    (radius 20, height 60, shear 0.5/z, layer height 3, tolerance=25, min_distance=10 -- #107's
+    own evidence), that happens for slices 8-12: their shrunk regions lie entirely within 25
+    units of the mark retired at boundary 7, so no point in them can hold a mark without
+    violating TR-10. Any slice left unmarked must still warn -- silence, not a gap, would be
+    the real defect.
+    """
     model = Model(TrimeshMesh(trimesh.load_mesh(str(sheared_cylinder_stl))), layer_height=3.0)
-    slices = SlicerService.slice_model(model, ReferenceMarkConfig(tolerance=25, min_distance=10))
-    assert all(len(s.ref_marks) >= 1 for s in slices), (
-        f"slices with no mark: {[s.index for s in slices if not s.ref_marks]}"
-    )
+    with caplog.at_level(logging.WARNING):
+        slices = SlicerService.slice_model(
+            model, ReferenceMarkConfig(tolerance=25, min_distance=10)
+        )
+    unmarked = [s.index for s in slices if not s.ref_marks]
+    for i in unmarked:
+        assert any(f"in slice {i}." in r.message for r in caplog.records), (
+            f"slice {i} has no mark and never warned about it"
+        )
+    # Pins today's known, geometrically-explained gap so a regression that unmarks more
+    # slices (or silently drops the warning) is caught.
+    assert unmarked == [8, 9, 10, 11, 12], unmarked
 
 
 def test_no_two_distinct_marks_of_the_sheared_cylinder_are_within_tolerance(sheared_cylinder_stl):

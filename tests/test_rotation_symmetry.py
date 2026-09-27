@@ -210,6 +210,18 @@ def test_a_mark_with_a_value_that_is_not_finite_is_refused(field: str, value: fl
         rotation_symmetry([mark(5, 0, "triangle"), bad], tolerance=TOL)
 
 
+def test_the_one_to_one_match_rejects_a_double_use_of_one_mark() -> None:
+    """Three circles close enough that one mark could image two others (#204).
+
+    Without the one-to-one match in ``_maps_onto_itself``, one mark of this set could stand in
+    for two different turned images, and the 240.945 degree turn would wrongly gain a second,
+    157.286 degree partner. `symmetry.py:191`, `unused.remove(best)`, is what removes a mark from
+    the pool once it is used, and this set fails when that line is missing.
+    """
+    circles = [mark(0.0, 0.0, "circle"), mark(0.0, 1.5e-6, "circle"), mark(1e-6, 2e-6, "circle")]
+    assert turns(circles) == [round(math.degrees(4.205290475992353))]
+
+
 def test_a_mark_with_an_unknown_shape_is_refused() -> None:
     with pytest.raises(ValueError, match="hexagon"):
         rotation_symmetry([mark(0, 0, "hexagon")], tolerance=TOL)

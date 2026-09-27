@@ -163,7 +163,13 @@ def _maps_onto_itself(
     theta: float,
     tolerance: float,
 ) -> bool:
-    """True when turning every mark by ``theta`` about ``centre`` lands each on its own mark."""
+    """True when turning every mark by ``theta`` about ``centre`` lands each on its own mark.
+
+    ``unused`` holds the marks not yet claimed as another mark's image, and each match removes
+    its mark from it (#204). Without that, two marks less than ``2 * tolerance`` apart could both
+    be matched to the same image, so a turn that only sends one mark onto a shared spot would
+    wrongly pass. See ``test_the_one_to_one_match_rejects_a_double_use_of_one_mark``.
+    """
     cx, cy = centre
     cos, sin = math.cos(theta), math.sin(theta)
     unused = list(marks)

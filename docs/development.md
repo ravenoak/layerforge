@@ -269,6 +269,10 @@ New pull requests open with a checklist from
 - The tiny profile of svgwrite has no `dominant-baseline`, so the number is centred by
   `text-anchor="middle"` and a baseline shift of 0.35 x the font size. That shift and the
   width factor 0.6 were checked by eye only (#191).
+- A hypothesis property that passes on its first run proves nothing until a mutant turns it red. In #91 the first version killed 6 of 9 mutants; the survivors pointed at cases the strategy never built (a mark listed twice, a second mark on the ray of the first). Probe each survivor before you call it defensive: one of them was a real unsafe case in #90.
+- `rotation_symmetry` merges a mark that is listed twice (TR-10). A copy weights the centroid, and the centroid is the only centre it tries.
+- Its cost is cubic on sets with a lot of symmetry (400 marks in a ring: 10 s) and small on sets with none (#203).
+- After an edit script or a summary says a file changed, grep the file for the text. The Session F paragraph of the backlog was "done" in a summary and absent from the repo.
 
 ## Common Error Messages
 

@@ -11,7 +11,7 @@ configuration options or the equivalent CLI arguments:
 
 - `tolerance` – distance used when matching an existing mark. Without it, 0.1 times the mark size.
 - `min_distance` – minimum distance a mark must maintain from contours and other marks. Without it, the mark size.
-- `available_shapes` – list of shapes for new marks. A new mark takes the first shape not yet in use.
+- `available_shapes` – the shapes a new mark may take. The order does not matter. A new mark takes the shape with a direction (the triangle, else the arrow) if one is listed, because it fixes rotation. A circle or a square alone cannot.
 - `angle` – default orientation angle for generated marks. The CLI flag takes
   degrees; `ReferenceMarkConfig.angle` is in radians.
 - `size` – size of every new mark. Without it the size is the larger of `min_hole_ratio` times the layer height (the sheet thickness) and `min_hole_kerf_factor` times the kerf. It does not depend on where the mark lies or on the size of the model. A size below that minimum is a warning, not an error.
@@ -29,7 +29,8 @@ for the kerf.
    stability metric implemented in ``ReferenceMarkCalculator``.
 2. Marks inherited from earlier slices keep their original position and shape so layers
    remain easy to align.
-3. Newly created marks take the first unused shape from ``available_shapes`` and are filtered by
+3. Newly created marks take the shape from ``available_shapes`` with the least symmetry (a
+   triangle or an arrow, then a square, then a circle) and are filtered by
    ``ReferenceMarkAdjuster`` to ensure a minimum distance from contours and other
    marks.
 

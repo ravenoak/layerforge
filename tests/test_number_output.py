@@ -96,6 +96,21 @@ def _number_box(text: ET.Element):
     return box(x - 0.3 * height, centre_y - height / 2, x + 0.3 * height, centre_y + height / 2)
 
 
+def _mark_holes(root: ET.Element) -> list[Polygon]:
+    """The area of each drawn mark, whatever its shape (a polygon or a circle, #61)."""
+    holes: list[Polygon] = []
+    for el in root.iter():
+        if el.get("class") != "mark":
+            continue
+        if el.tag == f"{SVG}circle":
+            centre = Point(float(el.get("cx", "")), float(el.get("cy", "")))
+            holes.append(centre.buffer(float(el.get("r", ""))))
+        else:
+            points = [tuple(map(float, p.split(","))) for p in el.get("points", "").split()]
+            holes.append(Polygon(points))
+    return holes
+
+
 def test_the_number_lies_clear_of_the_outline_and_the_marks(cube_stl, tmp_path):
     for root in _slices(cube_stl, tmp_path / "out"):
         (text,) = root.iter(f"{SVG}text")
@@ -103,11 +118,10 @@ def test_the_number_lies_clear_of_the_outline_and_the_marks(cube_stl, tmp_path):
         (outline,) = [p for p in root.iter(f"{SVG}polygon") if p.get("class") == "outline"]
         points = [tuple(map(float, p.split(","))) for p in outline.get("points", "").split()]
         assert Polygon(points).contains(number)
-        for circle in root.iter(f"{SVG}circle"):
-            disc = Point(float(circle.get("cx", "")), float(circle.get("cy", ""))).buffer(
-                float(circle.get("r", ""))
-            )
-            assert not number.intersects(disc)
+        holes = _mark_holes(root)
+        assert holes, "there is a mark to keep clear of"
+        for hole in holes:
+            assert not number.intersects(hole)
 
 
 def test_a_piece_too_small_for_the_number_warns_once_per_slice(tmp_path, caplog):
@@ -127,6 +141,9 @@ def test_a_piece_too_small_for_the_number_warns_once_per_slice(tmp_path, caplog)
                 str(out),
                 "--mark-size",
                 "1",
+                # A circle covers more of a small piece than the triangle of the defaults.
+                "--available-shapes",
+                "circle",
             ],
         )
 
@@ -178,7 +195,7 @@ def _number_warnings(stl: Path, out: Path, caplog: pytest.LogCaptureFixture, *ar
 def test_the_warning_gives_a_height_that_makes_it_go_away(tmp_path, caplog):
     """The hint is a number that you can use: applied, no piece is left without room."""
     stl = tmp_path / "small.stl"
-    trimesh.creation.box(extents=(10, 10, 10)).export(stl)
+    trimesh.creation.box(extents=(8, 8, 10)).export(stl)
 
     messages = _number_warnings(stl, tmp_path / "a", caplog)
     assert len(messages) == 4  # one for each slice
@@ -189,9 +206,22 @@ def test_the_warning_gives_a_height_that_makes_it_go_away(tmp_path, caplog):
     assert _number_warnings(stl, tmp_path / "b", caplog, "--number-height", hint) == []
 
 
+def test_a_10_mm_cube_at_the_defaults_leaves_the_number_room(tmp_path, caplog):
+    """#61: the triangle of the defaults is smaller than the circle was.
+
+    With circle marks the 10 mm cube warned in all 4 slices and needed a number of 4.83.
+    """
+    stl = tmp_path / "cube.stl"
+    trimesh.creation.box(extents=(10, 10, 10)).export(stl)
+
+    assert _number_warnings(stl, tmp_path / "a", caplog) == []
+    circles = _number_warnings(stl, tmp_path / "b", caplog, "--available-shapes", "circle")
+    assert len(circles) == 4
+
+
 def test_the_warning_names_the_key_of_the_config_file_too(tmp_path, caplog):
     stl = tmp_path / "small.stl"
-    trimesh.creation.box(extents=(10, 10, 10)).export(stl)
+    trimesh.creation.box(extents=(8, 8, 10)).export(stl)
 
     (message, *_) = _number_warnings(stl, tmp_path / "a", caplog)
 

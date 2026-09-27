@@ -30,6 +30,11 @@ def box_stl(tmp_path: Path, request: pytest.FixtureRequest) -> Path:
     return path
 
 
+def _marks(root: ET.Element) -> list[ET.Element]:
+    """The elements drawn as reference marks, whatever their shape (#61)."""
+    return [el for el in root.iter() if el.get("class") == "mark"]
+
+
 def _run_cli(*args: str) -> subprocess.CompletedProcess[str]:
     exe = shutil.which("layerforge", path=str(Path(sys.executable).parent))
     if exe is None:
@@ -68,18 +73,18 @@ def test_cli_writes_one_svg_per_slice(
     files = sorted(out.glob("slice_*.svg"))
     assert [f.name for f in files] == [f"slice_{i:03d}.svg" for i in range(len(positions))]
 
-    marks: list[tuple[str | None, str | None]] = []
+    marks: list[str | None] = []
     view_boxes: set[str | None] = set()
     for index, path in enumerate(files):
         root = ET.parse(path).getroot()
         view_boxes.add(root.get("viewBox"))
         contours = [p for p in root.iter(f"{SVG}polygon") if p.get("class") == "outline"]
-        circles = list(root.iter(f"{SVG}circle"))
+        drawn_marks = _marks(root)
         labels = [t.text for t in root.iter(f"{SVG}text")]
         assert contours, f"{path.name} has no contour"
-        assert circles, f"{path.name} has no reference mark"
+        assert drawn_marks, f"{path.name} has no reference mark"
         assert str(index) in labels
-        marks.append((circles[0].get("cx"), circles[0].get("cy")))
+        marks.append(drawn_marks[0].get("points"))
 
     # All layers share one frame, so they can be laid over each other.
     assert len(view_boxes) == 1
@@ -175,7 +180,7 @@ def test_cli_a_10_mm_cube_gets_marks_with_the_default_options(tmp_path: Path) ->
     files = sorted(out.glob("slice_*.svg"))
     assert len(files) == 4  # 10 mm at the default sheet of 3 mm
     for path in files:
-        assert list(ET.parse(path).getroot().iter(f"{SVG}circle")), f"{path.name} has no mark"
+        assert _marks(ET.parse(path).getroot()), f"{path.name} has no mark"
 
 
 def test_cli_units_in_give_marks_of_a_sensible_size_without_setting_a_length(
@@ -186,7 +191,16 @@ def test_cli_units_in_give_marks_of_a_sensible_size_without_setting_a_length(
     trimesh.creation.box(extents=(1, 1, 1)).export(stl)
     out = tmp_path / "out"
 
-    result = _run_cli("--stl-file", str(stl), "--units", "in", "--output-folder", str(out))
+    result = _run_cli(
+        "--stl-file",
+        str(stl),
+        "--units",
+        "in",
+        "--available-shapes",
+        "circle",
+        "--output-folder",
+        str(out),
+    )
 
     assert result.returncode == 0, result.stderr
     assert "--mark-min-distance" not in result.stderr

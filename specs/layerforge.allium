@@ -376,7 +376,7 @@ rule FR15_FR21_PlaceMarks {
                 else:
                     -- FR-20, FR-21: new mark.
                     let appearance = Appearance{
-                        shape: next_shape(slice.run.marks, slice.run.available_shapes),
+                        shape: choose_shape(slice.run.available_shapes),
                         size: slice.run.mark_size,
                         angle: slice.run.angle
                     }
@@ -397,13 +397,15 @@ rule FR15_FR21_PlaceMarks {
         -- mark or of a mark placed on this slice is skipped (FR-17); candidates are the centroid (if inside the contour) plus points from a
         -- fixed-seed generator inside the bounding box. The score is the sum of pairwise
         -- distances over the candidate and the marks already placed. The hole of
-        -- a new mark must fit (TR-5). Its shape and angle are not known yet, so
+        -- a new mark must fit (TR-5). The point is chosen before the shape is, so
         -- a mark is a disc that holds the outline of every available shape at its
         -- size (radius: the farthest reach of those outlines from the centre, a
         -- little over half the size for the circle, FR-27): the disc lies inside
         -- the boundary by at least the web, and two discs are at least the web apart.
-        -- next_shape gives the first shape not yet registered, else the first
-        -- shape (G-5). mark_size is the requested size, else the least hole
+        -- The disc counts every available shape, though only one is drawn (#198).
+        -- choose_shape gives the available shape with the least symmetry (FR-20):
+        -- the lowest symmetry order first, then the larger outline, then the name.
+        -- The order of the list does not matter. mark_size is the requested size, else the least hole
         -- size for the sheet (FR-21). A mark_size below min_mark_size logs one
         -- warning for the run and the run goes on (TR-6). Registered marks are shared by
         -- every slice, not only neighbours (G-7).
@@ -541,9 +543,8 @@ surface Command {
 -- Open Questions
 ------------------------------------------------------------
 
--- G-4  One mark per contour cannot fix rotation.
--- G-5  Shapes do not cycle once all are used.
+-- G-4  One mark per contour, and nothing checks that adjacent layers align in one way.
 -- G-7  Marks are inherited from any earlier slice, not only neighbours.
 -- G-16 Overlapping shells in one mesh give false holes.
--- G-4, G-5 and G-7 have targets in
+-- G-4 and G-7 have targets in
 -- docs/alignment_requirements.md (TR-1 to TR-16).

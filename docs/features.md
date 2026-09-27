@@ -14,9 +14,11 @@ marks so the slices can be realigned during reassembly.
 3. **Adjustment** – After initial placement the marks are filtered by
    :class:`ReferenceMarkAdjuster` to ensure they do not overlap each other or sit
    too close to the contours.
-4. **Shape choice** – A new mark takes the first configured shape (circle,
-   square, triangle, arrow by default) that no mark uses yet. Once every shape is
-   in use, new marks take the first shape again.
+4. **Shape choice** – A new mark takes the configured shape with the least
+   symmetry: a triangle or an arrow (they have a direction), then a square, then a
+   circle. Of two shapes with a direction the larger wins, so the defaults give the
+   triangle. The order of the list does not matter. Every mark of a run has one
+   angle, so one mark with a direction fixes the rotation of its piece.
 
 This process results in clear reference markers that maintain alignment between
 layers without interfering with the slice geometry.

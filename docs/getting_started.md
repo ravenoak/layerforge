@@ -46,13 +46,13 @@ exit 0
 files [demo_output/slice_000.svg, ..., demo_output/slice_003.svg]
 ```
 
-Opening the first SVG shows the contour, one reference mark (the red circle) and the layer number:
+Opening the first SVG shows the contour, one reference mark (the red triangle) and the layer number:
 
 ```xml
 <?xml version="1.0" encoding="utf-8" ?>
 <svg ...>
   <polygon class="outline" fill="none" points="..." stroke="red" stroke-width="0.01" />
-  <circle class="mark" cx="-0.0" cy="0.0" fill="none" r="2.5" stroke="red" stroke-width="0.01" />
+  <polygon class="mark" fill="none" points="2.5,0.0 -1.9151,1.607 -1.9151,-1.607" stroke="red" stroke-width="0.01" />
   <text fill="black" font-family="sans-serif" font-size="5.0" font-weight="bold" text-anchor="middle" x="..." y="...">0</text>
 </svg>
 ```

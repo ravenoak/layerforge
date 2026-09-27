@@ -58,14 +58,13 @@ def _clear_of_gap(
 
 
 class ReferenceMarkCalculator:
-    """Class to calculate reference marks for a slice.
+    """Chooses the reference mark for one pair's shared region (TR-9).
 
-    The calculator evaluates candidate points inside each polygon and selects
-    those that maximize a simple geometric stability metric. The metric used is
-    inspired by GDOP (Geometric Dilution of Precision) and rewards points that
-    are well spread out.  Marks therefore rarely lie exactly at the centroid of
-    the contour; rather, candidates are sampled and the most stable arrangement
-    is chosen.
+    ``choose_mark_for_pair`` reuses the first carried candidate that still fits; failing that, it
+    tries sample points in the order ``_sample_points`` returns them (the centroid first, then a
+    fixed-seed random sequence) and returns the first one that fits. This is first-fit, not a
+    maximized stability score, so a mark often does land at or near the centroid, since that is
+    usually the first point tried.
     """
 
     @staticmethod

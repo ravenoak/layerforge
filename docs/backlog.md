@@ -31,7 +31,7 @@ Sizes are my estimates: S under an hour, M one session, L several sessions. Noth
 | 13 | #75 | Number placement and fit (done, #184; moved to session E with #83, which shares the fill colour and `font-size` of TR-14) | M | #87, #85 | The number is now load-bearing (TR-3). It also sits on the first hole today. | no |
 | 14 | #83 | SVG for the laser (done, #182) | M | #87, #74 | Colour groups, hairline, number only. Removes `--mark-color`. Colour does not set the operation in every program (TR-17). | no: red cut and black engrave stay as default groups. The probe of #141 shows what your software does. |
 | 15 | #89 | Adjacent pieces and overlap (done, #186: `adjacent_pairs`, not yet used by the command) | M | none (#73 decided) | Foundation for #63 and #92. | no |
-| 16 | #90 | Rotational symmetry test | M | #84 | The core safety check (TR-2). | no |
+| 16 | #90 | Rotational symmetry test (done, the PR of this row: `rotation_symmetry`, API only) | M | #84 | The core safety check (TR-2). | no |
 | 17 | #91 | Brute-force oracle for #90 | S to M | #90 | Guards the safety check. Write it in the same session as #90 if possible. | no |
 | 18 | #61 | Shape choice by need | M | #90, #84 | Removes the rotation-blind first circle. | no |
 | 19 | #63 | Marks for pairs of layers, with look-ahead | L | #89, #85, #62 | The largest change. The one-pass loop must look at the next layer. | decide bores versus pair-local was settled: pair-local |

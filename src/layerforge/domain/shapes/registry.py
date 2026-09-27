@@ -27,6 +27,28 @@ def registered_shapes() -> list[str]:
     return sorted(_SHAPE_REGISTRY)
 
 
+def _shape_class(shape_type: str) -> type[BaseShape]:
+    """Return the class registered under ``shape_type``, or raise ``ValueError``."""
+    shape_cls = _SHAPE_REGISTRY.get(shape_type)
+    if not shape_cls:
+        available = ", ".join(registered_shapes())
+        raise ValueError(f"Unknown shape type: {shape_type}. Available shapes: {available}")
+    return shape_cls
+
+
+def shape_symmetry_order(shape_type: str) -> int | None:
+    """Return the rotational symmetry order of the shape registered under ``shape_type``.
+
+    ``None`` means unlimited (a circle).
+
+    Raises
+    ------
+    ValueError
+        If ``shape_type`` has not been registered.
+    """
+    return _shape_class(shape_type).symmetry_order
+
+
 class ShapeFactory:
     """Factory class for creating shapes."""
 
@@ -40,8 +62,5 @@ class ShapeFactory:
             If ``shape_type`` has not been registered.
         """
 
-        shape_cls = _SHAPE_REGISTRY.get(shape_type)
-        if not shape_cls:
-            available = ", ".join(registered_shapes())
-            raise ValueError(f"Unknown shape type: {shape_type}. Available shapes: {available}")
+        shape_cls = _shape_class(shape_type)
         return cast(BaseShape, cast(Any, shape_cls)(*args, **kwargs))

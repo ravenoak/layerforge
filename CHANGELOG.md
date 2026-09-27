@@ -140,6 +140,11 @@ output, the first release will raise the minor version.
 - `adjacent_pairs` in `layerforge.models.slicing.adjacency` (Python API). For each two adjacent
   layers it returns the pairs of overlapping pieces, each with its overlap and the overlap moved
   in by a clearance. Nothing in the command uses it yet. (#89)
+- `rotation_symmetry` in `layerforge.models.reference_marks` (Python API). Given marks and a
+  tolerance, it returns the turns other than none that map the marks onto themselves, each mark
+  keeping its shape, size and angle (TR-2). A circle alone, or several circles in one place,
+  has unlimited symmetry. It raises `ValueError` for a tolerance that is not positive and
+  finite. A mark listed twice counts once. Nothing in the command uses it yet. (#90)
 - `--number-height` and the config-file table `[number]` with `height` and `width_factor`.
   `place_number` in `layerforge.models.slicing.number` returns where the number of a piece
   goes. (#75)

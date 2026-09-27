@@ -21,13 +21,33 @@ output, the first release will raise the minor version.
 
 ### Changed
 
+- **Breaking:** A new mark takes the shape with the least symmetry among `--available-shapes`
+  (`marks.shapes`), not the first shape in the list that no mark uses yet, and the order of the
+  list no longer matters. A shape with a direction (the triangle or the arrow) comes before
+  the square, and the square before the circle. Of the two with a direction, the larger outline
+  wins, so the defaults give a triangle for every mark. Every mark of a run has one angle, so
+  one mark with a direction fixes the rotation of its piece (TR-2, TR-8). Measured on a 20 mm
+  cube at layer height 5: slice 0 held a circle mark (`<circle ... r="2.5">`) and now holds a
+  triangle (`<polygon class="mark" points="2.5,0.0 -1.9151,1.607 -1.9151,-1.607">`) at the
+  same point, the centre. The outline is the same, and the number moves from (5.958, -3.183)
+  to (5.670, 6.459), because it sits where its box is farthest from the cuts. Two 20 mm cubes
+  side by side got a circle and a square in slice 0 and now get two triangles. A 10 mm cube at
+  the defaults warned that the number did not fit in all 4 slices (it needed 4.83 mm) and now
+  gives no warning. An 8 mm and a 9 mm box still warn in all 4 slices, with hints of 3.75 and
+  4.58 mm instead of 3.25 and 4.01. `--available-shapes circle` gives circle marks again. The
+  `Slice._select_unique_shape` method is removed; `choose_shape` in
+  `layerforge.models.reference_marks.shape_choice` replaces it. The points are still chosen
+  with a disc that holds every listed shape, so a shape that is never used still takes room
+  (#198). (#61, G-5)
 - **Breaking:** The label is the layer number alone (`0`, `1`, ...), not `Slice N`. It is
   `--number-height` tall (5 mm by default), centred, in bold sans-serif, and placed where its
   box is farthest from the outline, the holes and every mark, the kerf away from each. Before,
   it sat at the centroid at 1/20 of the drawing and could cross an outline or a hole. When it
   fits nowhere, it is drawn at the middle of the piece and one warning names the slice.
   Measured at the defaults, a 10 mm cube warns in all 4 slices, since the mark (3 mm) and the
-  number (5 mm) do not fit in 10 mm, and 20 mm and 40 mm cubes give no warning. (#75, G-18)
+  number (5 mm) do not fit in 10 mm, and 20 mm and 40 mm cubes give no warning. (Measured with
+  circle marks; since #61 the default mark is a triangle and the 10 mm cube gives no warning.)
+  (#75, G-18)
 - **Breaking:** Python API. `SliceSVGDrawer.draw_slice` no longer takes `padding` or
   `font_size`; the number comes from `SVGStyle` (`number_height`, `number_width_factor`,
   `number_clearance`). (#75, #171)
@@ -130,8 +150,8 @@ output, the first release will raise the minor version.
 
 - The warning that a number does not fit now gives the tallest height that does fit
   (`Try --number-height 4.83 (number.height in the config file)`), or says that no height
-  fits. Measured: the 10 mm cube at the defaults needs 4.83 mm, not 5, and warns in all 4
-  slices without it. The warning that no mark fits also names the config keys
+  fits. Measured, with circle marks and before #61: the 10 mm cube at the defaults needs
+  4.83 mm, not 5, and warns in all 4 slices without it. The warning that no mark fits also names the config keys
   (`marks.min_distance`, `marks.size`) beside the options. `largest_fitting_height` in
   `layerforge.models.slicing.number` finds the height. (#190, #189)
 - A warning when `--cut-color` and `--engrave-color` are the same colour (compared as text,

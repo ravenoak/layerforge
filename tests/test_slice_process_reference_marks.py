@@ -167,4 +167,4 @@ def test_the_slice_and_the_store_snap_with_the_same_tolerance():
     sl = Slice(0, 0.0, [contour], mark_manager=manager, config=cfg, layer_height=3.0)
     sl.process_reference_marks()
     assert [(m.x, m.y) for m in sl.ref_marks] == [(0, 0)]
-    assert [(m.shape, m.x, m.y) for m in manager.marks] == [("square", 0, 30), ("circle", 0, 0)]
+    assert [(m.shape, m.x, m.y) for m in manager.marks] == [("square", 0, 30), ("triangle", 0, 0)]

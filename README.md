@@ -68,7 +68,7 @@ python -c "import layerforge; print(layerforge.__version__)"
 - Generate SVG files with contours, slice numbers and reference marks.
 - Reference marks are chosen using a geometric stability metric inspired by GDOP.
 - Marks inherit shape, position and angle between slices and are adjusted to avoid overlaps.
-- Supports multiple mark shapes (circle, square, triangle, arrow) for easy identification.
+- Supports four mark shapes (circle, square, triangle, arrow). A new mark takes a shape with a direction, the triangle by default, so one mark fixes rotation.
 
 ## Configuration
 
@@ -80,7 +80,7 @@ The CLI exposes parameters for tuning reference mark generation:
 - `--mark-size` – size of every new mark. Without it the size is the larger of the layer height (the sheet thickness) and 1.5 times the kerf, so it does not depend on the size of the model.
 - `--mark-tolerance` – distance used when matching an existing mark. Without it, 0.1 times the mark size.
 - `--mark-min-distance` – minimum distance from contours and between marks. Without it, the mark size.
-- `--available-shapes` – comma separated list of shapes to choose from when creating marks.
+- `--available-shapes` – comma separated list of the shapes a mark may take. The order does not matter; a shape with a direction is preferred.
 - `--mark-angle` – default orientation angle for generated marks in degrees.
 - `--number-height` – the height of the layer number on each piece, in `--units`. Default 5 mm. It is placed clear of the outline, the holes and the marks, and a warning says when it does not fit.
 - `--cut-color` and `--engrave-color` – the colours of the cut lines (default red) and of the number (default black).

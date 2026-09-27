@@ -472,8 +472,12 @@ invariant TR6_MarkSizeFromStack {
 }
 
 invariant TR8_ShapesFromAvailable {
-    -- The choice of shapes is guided by TR-2. Only the limit set by
-    -- --available-shapes is stated here.
+    -- Only the limit set by --available-shapes is stated here. The choice
+    -- inside the limit is built as choose_shape (#61): the shape with the least
+    -- symmetry order, so a shape with a direction when one is available, then
+    -- the larger outline, then the name. The order of the list does not matter.
+    -- Every mark of a run has one angle, so one such mark fixes the rotation
+    -- of its piece (TR-2). Two marks on one piece come with #63.
     for m in Marks:
         m.role = alignment implies m.shape in m.piece.layer.stack.available_shapes
 }

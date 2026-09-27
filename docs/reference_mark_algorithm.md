@@ -102,14 +102,17 @@ flowchart LR
 
 ### `available_shapes`
 
-When a new mark is required it takes the first shape in the list that no mark
-uses yet. Once all shapes are in use, new marks take the first shape again.
+A new mark takes the shape with the least symmetry that the list allows: a triangle
+or an arrow (they have a direction), then a square, then a circle. Of two shapes with the
+same symmetry the one with the larger outline wins, so the default list gives the triangle.
+The order of the list does not matter. Every mark of a run has the same angle, so a mark
+with a direction fixes the rotation of its piece and a circle or a square does not.
 
 ```mermaid
 flowchart LR
-    N[New mark] --> U{Unused shape left?}
-    U -- yes --> F[First unused shape]
-    U -- no --> S[First shape in the list]
+    N[New mark] --> D{Shape with a direction listed?}
+    D -- yes --> L[The larger of them]
+    D -- no --> S[The square before the circle]
 ```
 
 ### `angle`

@@ -10,6 +10,7 @@ from layerforge.models.reference_marks import (
     ReferenceMarkManager,
 )
 from layerforge.models.reference_marks.config import require
+from layerforge.models.reference_marks.shape_choice import choose_shape
 
 
 class Slice:
@@ -102,7 +103,7 @@ class Slice:
                     )
                 )
             else:
-                new_shape = self._select_unique_shape()
+                new_shape = choose_shape(self.config.available_shapes)
                 self.mark_manager.add_or_update_mark(
                     x,
                     y,
@@ -152,18 +153,3 @@ class Slice:
                 f"in slice {self.index}. Try a smaller --mark-min-distance or --mark-size "
                 "(marks.min_distance or marks.size in the config file)."
             )
-
-    def _select_unique_shape(self) -> str:
-        """Select a unique shape for a reference mark.
-
-        Returns
-        -------
-        str
-            A unique shape for the reference mark.
-        """
-        available_shapes = self.config.available_shapes
-        used_shapes = {mark.shape for mark in self.mark_manager.marks}
-        for shape in available_shapes:
-            if shape not in used_shapes:
-                return shape
-        return available_shapes[0]

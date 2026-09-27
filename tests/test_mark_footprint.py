@@ -129,6 +129,10 @@ def test_the_warning_for_a_slice_without_marks_names_the_mark_size_too(caplog):
     assert "--mark-size" in record.getMessage()
 
 
+# A mark is drawn as a polygon or a circle, by its shape (#61); the class tells it apart.
+MARK = 'class="mark"'
+
+
 def _run_bar(tmp_path, width, *args, config=None):
     """Slice a 20 x ``width`` x 10 bar in two layers of 5 and return slice 0 as text."""
     stl = tmp_path / "bar.stl"
@@ -147,17 +151,17 @@ def _run_bar(tmp_path, width, *args, config=None):
 
 def test_the_command_keeps_a_hole_with_enough_material_around_it(tmp_path):
     # A bar 8 wide: the hole (size 2) is 3 from each edge, and the web is 0.5 x 5 = 2.5.
-    assert "<circle" in _run_bar(tmp_path, 8)
+    assert MARK in _run_bar(tmp_path, 8)
 
 
 def test_the_command_drops_a_hole_with_too_little_material_around_it(tmp_path):
     # A bar 6 wide: the hole is 2 from each edge, less than the web of 2.5.
-    assert "<circle" not in _run_bar(tmp_path, 6)
+    assert MARK not in _run_bar(tmp_path, 6)
 
 
 def test_the_web_ratio_of_the_config_file_reaches_the_slices(tmp_path):
-    assert "<circle" in _run_bar(tmp_path, 6, config="[marks]\nmin_web_ratio = 0.2\n")
-    assert "<circle" not in _run_bar(tmp_path, 8, config="[marks]\nmin_web_ratio = 0.7\n")
+    assert MARK in _run_bar(tmp_path, 6, config="[marks]\nmin_web_ratio = 0.2\n")
+    assert MARK not in _run_bar(tmp_path, 8, config="[marks]\nmin_web_ratio = 0.7\n")
 
 
 @pytest.mark.parametrize("side", [6.0, 6.002, 6.005])

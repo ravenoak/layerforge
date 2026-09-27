@@ -57,7 +57,7 @@ def test_every_cut_element_has_the_cut_colour_a_hairline_and_no_fill(cube_stl, t
     assert slices
     for root in slices:
         cut = _cut(root)
-        assert list(root.iter(f"{SVG}circle")), "no mark"
+        assert [el for el in cut if el.get("class") == "mark"], "no mark"
         for el in cut:
             assert el.get("stroke") == "red", el.attrib
             assert el.get("stroke-width") == "0.01", el.attrib

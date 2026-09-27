@@ -11,14 +11,12 @@ from layerforge.cli import process_model
 NS = {"svg": "http://www.w3.org/2000/svg"}
 
 
-def _circle_position(svg_file: str) -> tuple[float, float] | None:
-    tree = ET.parse(svg_file)
-    root = tree.getroot()
-    for circle in root.findall(".//svg:circle", NS):
-        if circle.attrib.get("stroke") == "red":
-            cx = float(circle.attrib["cx"])
-            cy = float(circle.attrib["cy"])
-            return cx, cy
+def _mark_attributes(svg_file: str) -> dict[str, str] | None:
+    """The attributes of the first mark, so its shape and its position are both compared."""
+    root = ET.parse(svg_file).getroot()
+    for element in root.iter():
+        if element.attrib.get("class") == "mark":
+            return dict(element.attrib)
     return None
 
 
@@ -33,7 +31,7 @@ def test_mark_shape_and_position_inherited(cylinder_stl, tmp_path):
     files = sorted(out_dir.glob("slice_*.svg"))
     assert files, "no svg files generated"
 
-    positions = [pos for pos in (_circle_position(str(f)) for f in files) if pos]
+    positions = [pos for pos in (_mark_attributes(str(f)) for f in files) if pos]
     # There should be at least two slices with marks to compare
     assert len(positions) >= 2
 

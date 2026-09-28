@@ -1,6 +1,7 @@
 from shapely.geometry import Point, Polygon
 
 from layerforge.models.reference_marks import ReferenceMark, ReferenceMarkCalculator
+from layerforge.models.reference_marks.footprint import mark_reach
 
 
 def test_choose_mark_for_pair_reuses_a_candidate_that_still_fits():
@@ -76,7 +77,12 @@ def test_choose_mark_for_pair_avoids_a_mark_from_the_other_pairing():
         size=3,
         angle=0.0,
     )
-    assert mark is None or Point(mark.x, mark.y).distance(Point(50, 50)) >= 1
+    # This fixture's gap is 2 * mark_reach("circle", 3) (~3.0, not the 1 this test used to
+    # assert): a vacuous `mark is None or ...` used to pass even if the function always
+    # returned None, so this now requires a mark and checks the real bound.
+    assert mark is not None
+    gap = 2 * mark_reach("circle", 3)
+    assert Point(mark.x, mark.y).distance(Point(50, 50)) >= gap
 
 
 def test_choose_mark_for_pair_returns_none_when_nothing_fits():

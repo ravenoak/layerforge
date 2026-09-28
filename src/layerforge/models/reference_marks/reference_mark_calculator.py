@@ -136,6 +136,12 @@ class ReferenceMarkCalculator:
         for candidate in candidates:
             radius = mark_reach(candidate.shape, candidate.size)
             pt = Point(candidate.x, candidate.y)
+            # Identity, not equality: `calculate_slice_contours` builds each slice's pieces with
+            # `symmetric_difference` (see `Model.calculate_slice_contours`), so real slice pieces
+            # never spatially overlap and a carried point can fit at most one sibling's region.
+            # `candidate` is therefore the only entry `avoid` could legitimately hold that is the
+            # very mark being tested here, so comparing by object identity (not just by not being
+            # a coincidentally-equal point) correctly excludes only that one entry.
             others = [m for m in avoid if m is not candidate]
             if _fits_region(
                 pt, region, boundary_polys, radius, min_web, min_distance

@@ -23,8 +23,12 @@ output, the first release will raise the minor version.
 
 - **Breaking:** Marks are chosen per pair of adjacent layers, not once per slice against every
   mark of the whole run (TR-9, #63). A mark is retired the moment it stops fitting the next
-  pair's shrunk overlap; nothing looks further back than the immediate neighbour, and none is
-  ever shared with a slice beyond it. A single-slice model now gets no marks at all, since
+  pair's shrunk overlap, and retirement itself never looks further back than the immediate
+  neighbour. That does not stop a mark from ending up shared across the whole run: when the
+  geometry never stops fitting it, nothing forces a retirement, so a straight, undrifting shape
+  (a plain cube, a straight cylinder) gets one mark that is reused at every boundary and holds
+  through every layer of the stack (a known, accepted gap in TR-9's "no mark in every layer"
+  clause, tracked in #215). A single-slice model now gets no marks at all, since
   there is nothing to align it to. Measured on the sheared cylinder of #107 (radius 20, height
   60, shear 0.5 per z, layer height 3, `tolerance=25`, `min_distance=10`): 15 of its 20 slices
   get a mark, and the other 5 (slices 8 to 12) warn instead of staying silently unmarked, since

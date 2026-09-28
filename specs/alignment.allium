@@ -3,8 +3,17 @@
 --
 -- STATUS: TARGET, MOSTLY NOT BUILT. This spec describes intended behavior.
 -- TR-9's pair-local reuse and retirement (TR9_RetireWhenNoLongerValid,
--- TR9_SharedMarkInsideShrunkenOverlap, TR9_NoMarkInEveryLayer) is now built
--- (#63). TR10_SnapToStoredMark still describes a whole-stack registry
+-- TR9_SharedMarkInsideShrunkenOverlap) is now built (#63): a mark is
+-- retired the moment it stops fitting the next pair's shrunk overlap, and
+-- each shared mark sits inside that shrunk overlap. TR9_NoMarkInEveryLayer
+-- is not built: nothing forces a mark to retire when the geometry never
+-- stops fitting it, so a straight, undrifting shape (a plain cube, a
+-- straight cylinder) gets one mark that is reused at every boundary and
+-- ends up a hole in every layer of the stack, three or more layers
+-- included. This invariant is written as the spec's target, not a built
+-- guarantee, for non-drifting geometry. Real enforcement (e.g. a forced
+-- periodic retirement) is a follow-up: #215.
+-- TR10_SnapToStoredMark still describes a whole-stack registry
 -- lookup (nearest_stored_mark(stack, ...)); the built code has no such
 -- registry (#63 deliberately removed the one it replaced) and only checks
 -- tolerance against the one pairing in play, so this rule is not built and

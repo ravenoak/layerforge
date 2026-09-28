@@ -33,6 +33,7 @@ class Slice:
         *,
         layer_height: float,
         ref_marks: list[ReferenceMark] | None = None,
+        total_slices: int | None = None,
     ):
         """Initialize the slice.
 
@@ -52,6 +53,11 @@ class Slice:
             (``config.min_web_ratio`` times it).
         ref_marks : list of ReferenceMark, optional
             The marks `plan_marks` chose for this slice (#63). Empty when not given.
+        total_slices : int, optional
+            How many slices the whole run has. Only used to tell a single-slice model (which
+            has no neighbour to align a mark to, so no size or distance change can help) apart
+            from a multi-slice run in ``_warn_about_unmarked_contours``. ``None`` when unknown,
+            which keeps the general multi-slice warning.
         """
         self.layer_height = layer_height
         self.contours = contours
@@ -59,6 +65,7 @@ class Slice:
         self.config = (config or ReferenceMarkConfig()).resolved(layer_height)
         self.position = position
         self.ref_marks: list[ReferenceMark] = list(ref_marks) if ref_marks is not None else []
+        self.total_slices = total_slices
 
     @property
     def min_web(self) -> float:
@@ -83,10 +90,23 @@ class Slice:
         self._warn_about_unmarked_contours()
 
     def _warn_about_unmarked_contours(self) -> None:
-        """Log a warning if some contours of the slice ended up with no mark."""
+        """Log a warning if some contours of the slice ended up with no mark.
+
+        A single-slice model has no adjacent layer to align a mark to at all (`plan_marks`
+        needs a pair of layers), so no size or distance change can fix it; that case gets its
+        own message instead of the generic one, which would be wrong advice there.
+        """
         points = [Point(mark.x, mark.y) for mark in self.ref_marks]
         unmarked = [c for c in self.contours if not any(c.contains(p) for p in points)]
-        if unmarked:
+        if not unmarked:
+            return
+        if self.total_slices == 1:
+            logging.warning(
+                f"No reference mark fits {len(unmarked)} of {len(self.contours)} contours "
+                f"in slice {self.index}. This model has only one layer; there is no "
+                "neighbouring layer to align a mark to."
+            )
+        else:
             logging.warning(
                 f"No reference mark fits {len(unmarked)} of {len(self.contours)} contours "
                 f"in slice {self.index}. Try a smaller --mark-min-distance or --mark-size "

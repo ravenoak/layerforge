@@ -80,6 +80,7 @@ class SlicerService:
                 config=cfg,
                 layer_height=model.layer_height,
                 ref_marks=m,
+                total_slices=len(slice_positions),
             )
             for i, (p, c, m) in enumerate(zip(slice_positions, contours, marks, strict=True))
         ]

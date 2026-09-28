@@ -21,6 +21,33 @@ output, the first release will raise the minor version.
 
 ### Changed
 
+- **Breaking:** Marks are chosen per pair of adjacent layers, not once per slice against every
+  mark of the whole run (TR-9, #63). A mark is retired the moment it stops fitting the next
+  pair's shrunk overlap, and retirement itself never looks further back than the immediate
+  neighbour. That does not stop a mark from ending up shared across the whole run: when the
+  geometry never stops fitting it, nothing forces a retirement, so a straight, undrifting shape
+  (a plain cube, a straight cylinder) gets one mark that is reused at every boundary and holds
+  through every layer of the stack (a known, accepted gap in TR-9's "no mark in every layer"
+  clause, tracked in #215). A single-slice model now gets no marks at all, since
+  there is nothing to align it to. Measured on the sheared cylinder of #107 (radius 20, height
+  60, shear 0.5 per z, layer height 3, `tolerance=25`, `min_distance=10`): 15 of its 20 slices
+  get a mark, and the other 5 (slices 8 to 12) warn instead of staying silently unmarked, since
+  their shrunk region lies entirely within tolerance of a mark retired at an earlier boundary in
+  the same run of unmarked boundaries (a documented, accepted gap short of #107's own "every
+  slice" acceptance line). The calculator's disc now matches the shape a new mark actually takes,
+  not the largest reach over every listed shape (#198): measured on a 6.003 mm square box 9 mm
+  tall at layer height 3
+  (3 slices), the default shape list and `triangle` alone both go from 0 of 3 slices marked,
+  with the pre-fix disc sized to the circle's larger reach (reproduced by monkeypatch), to 3 of
+  3 once the shape is chosen before the point and the disc uses only that shape's own reach. (A
+  10 mm cube at layer height 5 and a 6.000 mm box give 0 of 2 and 0 of 3 either way, for an
+  unrelated reason: their half-width exactly equals `min_distance`, so the pair's shrunk region
+  is already empty before any shape is considered.) `adjacent_pairs` (#89) is now used by the
+  command, through `plan_marks`; it repairs an invalid slice contour when `shapely.make_valid`
+  can (a self-intersecting bow-tie repairs silently and pairs as before), and raises
+  `ValueError` naming the layer and piece when it cannot, instead of a raw GEOS exception or a
+  silently empty overlap (#185, item 1; items 2 and 3, cost and a float-noise threshold, are
+  still open).
 - **Breaking:** `register_shape` raises `ValueError` for a shape class that does not set
   `symmetry_order` in its own body (a whole number, or `None` for unlimited). Before, an
   unset order read as 1, so a six-fold shape counted as having a direction: `choose_shape`
@@ -205,6 +232,16 @@ output, the first release will raise the minor version.
 
 ### Fixed
 
+- `adjacent_pairs`'s polygon repair no longer raises `ValueError` for a self-intersecting
+  contour that `shapely.make_valid` resolves into a `GeometryCollection` holding a
+  `MultiPolygon` alongside the self-intersection's leftover line (rather than a bare
+  `Polygon` or `MultiPolygon`). `shapely.get_parts` does not descend into that
+  `MultiPolygon`'s own pieces, so the repair used to see no polygon at all and wrongly
+  refuse a shape with real, repairable area. A new shared helper,
+  `layerforge.utils.polygon_parts`, walks every nesting level and is now used here and by
+  the two other places that were extracting polygon parts from a repaired shape
+  (`pair_marking.py`'s `_largest_part`, `reference_mark_calculator.py`'s
+  `_sample_points`), so all three repair the same way (found by `/code-review` of #63).
 - `--help` no longer sends the reader to `docs/reference_mark_algorithm.md`, a path a
   `pip` or `uv tool install` install does not have. The four mark options lost that
   sentence, and the help ends with one link to the published page. A test checks that

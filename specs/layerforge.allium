@@ -53,6 +53,7 @@ config {
     default_min_web_ratio: Decimal = 0.5
     default_min_hole_ratio: Decimal = 1.0
     default_min_hole_kerf_factor: Decimal = 1.5
+    default_min_overlap_area: Decimal = 0.0     -- TR-9: how much overlap counts as sharing a mark
     default_shapes: List<String> = ["circle", "square", "triangle", "arrow"]
     default_cut_color: String = "red"           -- outlines and holes (TR-14)
     default_engrave_color: String = "black"     -- the number (TR-14)
@@ -82,6 +83,7 @@ entity Run {
     min_web_ratio: Decimal              -- times layer_height: the least material between holes and outlines (TR-5)
     min_hole_ratio: Decimal             -- times layer_height: a term of the least hole size (TR-6)
     min_hole_kerf_factor: Decimal       -- times kerf: the other term (TR-6)
+    min_overlap_area: Decimal           -- the least overlap that counts as a shared pairing (TR-9)
     available_shapes: List<String>
     angle: Decimal                      -- radians; the command takes degrees
     config_error: String?               -- set when the config file is unreadable or has a bad key or value (FR-30)
@@ -97,7 +99,6 @@ entity Run {
     height: mesh.max_z - mesh.min_z
     all_drawn: slices.count > 0 and slices.all(s => s.status = drawn)
     slices: Slice with run = this
-    marks: RegisteredMark with run = this   -- shared by every slice in the run
 
     -- FR-21: none of these depends on the model or on where a mark lies.
     min_mark_size: max(min_hole_ratio * layer_height, min_hole_kerf_factor * kerf)
@@ -112,12 +113,6 @@ entity Run {
         sliced -> written
         terminal: rejected, written
     }
-}
-
-entity RegisteredMark {
-    run: Run
-    at: Point
-    appearance: Appearance
 }
 
 entity Slice {
@@ -150,6 +145,7 @@ entity Contour {
 entity PlacedMark {
     slice: Slice
     contour: Contour
+    neighbour: Contour                  -- the contour of the adjacent slice this mark is shared with (TR-9)
     at: Point
     appearance: Appearance
 }
@@ -182,6 +178,7 @@ rule FR1_StartRun {
             min_web_ratio: config.default_min_web_ratio,
             min_hole_ratio: config.default_min_hole_ratio,
             min_hole_kerf_factor: config.default_min_hole_kerf_factor,
+            min_overlap_area: config.default_min_overlap_area,
             available_shapes: options.available_shapes,
             angle: radians(options.mark_angle),
             config_error: settings_file_error(options),
@@ -206,9 +203,10 @@ rule FR1_StartRun {
         -- is already in those units. Mark size, tolerance and min_distance have
         -- no default number: they follow the sheet (FR-21). A config file
         -- that passes its check and is used is named once on stderr: "Using
-        -- settings from <file>". min_web_ratio, min_hole_ratio and
-        -- min_hole_kerf_factor, hairline_width and number_width_factor have no option: each
-        -- is the config file value (the [output] or [number] table), else the default. The
+        -- settings from <file>". min_web_ratio, min_hole_ratio,
+        -- min_hole_kerf_factor and min_overlap_area, hairline_width and number_width_factor have
+        -- no option: each is the config file value (the [output], [number] or [checks] table),
+        -- else the default. The
         -- defaults of hairline_width and number_height are millimetres, stated in the units of the run
         -- like layer_height and kerf. Options are checked by the next rules. If cut_color
         -- and engrave_color are equal as text, ignoring case, one warning is logged before
@@ -355,60 +353,96 @@ rule FR15_FR21_PlaceMarks {
     when: slice: Slice.status becomes cut
     requires: slice.index = 0 or previous_slice(slice).status in {marked, adjusted, drawn}
     ensures:
-        for contour in slice.contours:
-            let chosen = choose_mark_point(
-                contour,
-                already: slice.marks,
-                registry: slice.run.marks,
-                min_distance: slice.run.min_distance
-            )
-            if chosen != null:
-                let known = nearest_registered(slice.run.marks, chosen, slice.run.tolerance)
-                if known != null:
-                    -- FR-19: the point is the registered mark, so it keeps
-                    -- the stored coordinates and appearance.
-                    PlacedMark.created(
-                        slice: slice,
-                        contour: contour,
-                        at: known.at,
-                        appearance: known.appearance
+        if slice.index > 0:
+            let lower = previous_slice(slice)
+            for contour in slice.contours:
+                for neighbour in overlapping_contours(
+                    contour, lower, min_overlap_area: slice.run.min_overlap_area
+                ):
+                    let region = shrunken_overlap(contour, neighbour, slice.run.min_distance)
+                    let candidates = lower.marks where contour = neighbour
+                    let avoid = slice.marks + (lower.marks where contour != neighbour)
+                    let reused = first_fitting_candidate(
+                        candidates, region, avoid,
+                        min_web: slice.run.min_web_ratio * slice.run.layer_height
                     )
-                else:
-                    -- FR-20, FR-21: new mark.
-                    let appearance = Appearance{
-                        shape: choose_shape(slice.run.available_shapes),
-                        size: slice.run.mark_size,
-                        angle: slice.run.angle
-                    }
-                    RegisteredMark.created(run: slice.run, at: chosen, appearance: appearance)
-                    PlacedMark.created(
-                        slice: slice,
-                        contour: contour,
-                        at: chosen,
-                        appearance: appearance
-                    )
+                    if reused != null:
+                        -- FR-19: the point is the reused mark, so it keeps
+                        -- its stored coordinates and appearance.
+                        PlacedMark.created(
+                            slice: lower, contour: neighbour, neighbour: contour,
+                            at: reused.at, appearance: reused.appearance
+                        )
+                        PlacedMark.created(
+                            slice: slice, contour: contour, neighbour: neighbour,
+                            at: reused.at, appearance: reused.appearance
+                        )
+                    else:
+                        -- FR-20, FR-21: no candidate fit. The shape is
+                        -- chosen before the point (#198).
+                        let shape = choose_shape(slice.run.available_shapes)
+                        let chosen = choose_mark_point(
+                            region,
+                            shape: shape,
+                            avoid: avoid + candidates,
+                            min_web: slice.run.min_web_ratio * slice.run.layer_height,
+                            tolerance: slice.run.tolerance
+                        )
+                        if chosen != null:
+                            let appearance = Appearance{
+                                shape: shape, size: slice.run.mark_size, angle: slice.run.angle
+                            }
+                            PlacedMark.created(
+                                slice: lower, contour: neighbour, neighbour: contour,
+                                at: chosen, appearance: appearance
+                            )
+                            PlacedMark.created(
+                                slice: slice, contour: contour, neighbour: neighbour,
+                                at: chosen, appearance: appearance
+                            )
+                        -- else: neither a candidate nor a fresh point fits.
+                        -- This pairing gets no mark; the piece may still
+                        -- carry one from its other pairing (a split or a
+                        -- merge).
         slice.status = marked
     @guidance
-        -- choose_mark_point (FR-15 to FR-18): at most one point per contour.
-        -- An earlier registered point inside the contour is reused if it is
-        -- at least min_distance from the boundary and from marks already
-        -- placed on this slice, and if its disc fits (below). Otherwise the candidate with the highest
-        -- stability score wins; a candidate within tolerance of a registered
-        -- mark or of a mark placed on this slice is skipped (FR-17); candidates are the centroid (if inside the contour) plus points from a
-        -- fixed-seed generator inside the bounding box. The score is the sum of pairwise
-        -- distances over the candidate and the marks already placed. The hole of
-        -- a new mark must fit (TR-5). The point is chosen before the shape is, so
-        -- a mark is a disc that holds the outline of every available shape at its
-        -- size (radius: the farthest reach of those outlines from the centre, a
-        -- little over half the size for the circle, FR-27): the disc lies inside
-        -- the boundary by at least the web, and two discs are at least the web apart.
-        -- The disc counts every available shape, though only one is drawn (#198).
-        -- choose_shape gives the available shape with the least symmetry (FR-20):
-        -- the lowest symmetry order first, then the larger outline, then the name.
-        -- The order of the list does not matter. mark_size is the requested size, else the least hole
-        -- size for the sheet (FR-21). A mark_size below min_mark_size logs one
-        -- warning for the run and the run goes on (TR-6). Registered marks are shared by
-        -- every slice, not only neighbours (G-7).
+        -- choose_mark_point (FR-15 to FR-18): at most one point per contour
+        -- per pairing (FR15_AtMostOneMarkPerContourPerPair). Marks are
+        -- chosen per pairing between a contour and the contour of the
+        -- immediately previous slice it overlaps by at least
+        -- min_overlap_area (overlapping_contours, TR-9): a contour with two
+        -- such neighbours (a split or a merge) can get up to two marks, one
+        -- per pairing, and a contour with none gets no mark here. A
+        -- candidate from the matching pairing at the previous boundary is
+        -- reused, unchanged, if it still fits inside the shrunk overlap of
+        -- the two outlines (shrunken_overlap: the overlap eroded by
+        -- min_distance) and stays clear, by min_distance and by the web, of
+        -- every mark already placed on either piece by a different pairing.
+        -- Reuse is first fit, in candidate order: no score is computed.
+        -- Otherwise the shape is chosen first (#198: choose_shape gives the
+        -- available shape with the least symmetry, FR-20: the lowest
+        -- symmetry order first, then the larger outline, then the name; the
+        -- order of the list does not matter), and a fresh point is the
+        -- first, in order, of the centroid (if inside the region) plus a
+        -- fixed-seed sequence of points in the region's bounding box, that
+        -- fits: clear of the two outlines by the web and by min_distance
+        -- (TR-5), clear of every candidate and already-placed mark by the
+        -- same margins, and more than tolerance from every one of them
+        -- (FR-17, TR-10), so a fresh mark is never mistaken for one that
+        -- just went missing. mark_size is the requested size, else the
+        -- least hole size for the sheet (FR-21). A mark_size below
+        -- min_mark_size logs one warning for the run and the run goes on
+        -- (TR-6). A mark's candidates come only from the immediately
+        -- previous pairing, never from a run-wide registry: once a pairing
+        -- stops offering a mark, it is gone for reuse at every pairing
+        -- after it (TR-9). The position it held keeps counting against
+        -- tolerance at the pairings after it, for as long as that piece
+        -- goes without a mark of its own, so a fresh mark still cannot land
+        -- within tolerance of one that only just went missing; it is never
+        -- offered back for reuse. A contour that is not a valid polygon is
+        -- repaired before any of this runs; one that cannot be repaired
+        -- stops the run with an error naming the slice and the contour,
+        -- rather than a lower-level geometry error (#185).
 }
 
 rule FR22_AdjustMarks {
@@ -431,9 +465,11 @@ rule FR22_AdjustMarks {
         -- (the last argument) to spare, holes of the contour included.
         -- hole_too_close_to_earlier_hole is true when that outline overlaps the
         -- outline of an earlier mark of the slice, or is nearer than the web.
-        -- The earlier mark of a close pair stays. Marks dropped here stay in
-        -- the run's registry. A slice can end with a contour that has no
-        -- mark. One warning is logged for the slice; it is still written.
+        -- The earlier mark of a close pair stays. Each slice is adjusted on
+        -- its own: dropping a mark here does not drop its copy on the
+        -- neighbour slice on the other side of the same boundary. A slice
+        -- can end with a contour that has no mark. One warning is logged
+        -- for the slice; it is still written.
 }
 
 -- SVG output (FR-24 to FR-27) ---------------------------------------------
@@ -500,8 +536,8 @@ invariant FR22_MarksClearOfEachOther {
 }
 
 invariant FR21_MarkSize {
-    for m in RegisteredMarks:
-        m.appearance.size = m.run.mark_size
+    for m in PlacedMarks:
+        m.appearance.size = m.slice.run.mark_size
 }
 
 invariant FR14_OneSliceEveryPosition {
@@ -510,10 +546,10 @@ invariant FR14_OneSliceEveryPosition {
             a != b and a.run = b.run implies a.index != b.index
 }
 
-invariant FR15_AtMostOneMarkPerContour {
+invariant FR15_AtMostOneMarkPerContourPerPair {
     for a in PlacedMarks:
         for b in PlacedMarks:
-            a != b implies a.contour != b.contour
+            a != b implies a.contour != b.contour or a.neighbour != b.neighbour
 }
 
 ------------------------------------------------------------
@@ -544,7 +580,6 @@ surface Command {
 ------------------------------------------------------------
 
 -- G-4  One mark per contour, and nothing checks that adjacent layers align in one way.
--- G-7  Marks are inherited from any earlier slice, not only neighbours.
 -- G-16 Overlapping shells in one mesh give false holes.
--- G-4 and G-7 have targets in
+-- G-4 has a target in
 -- docs/alignment_requirements.md (TR-1 to TR-16).

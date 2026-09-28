@@ -1,42 +1,71 @@
 from __future__ import annotations
 
 import random
-from typing import TYPE_CHECKING
+from collections.abc import Sequence
 
 from shapely import make_valid
 from shapely.geometry import Point, Polygon
 
-from layerforge.utils import calculate_distance
+from layerforge.utils import calculate_distance, polygon_parts
 
-from .config import ReferenceMarkConfig, require
 from .footprint import mark_reach
-
-if TYPE_CHECKING:
-    from layerforge.models.slicing.slice import Slice
-
+from .reference_mark import ReferenceMark
+from .shape_choice import choose_shape
 
 _SAMPLE_SEED = 0
 
 
-class ReferenceMarkCalculator:
-    """Class to calculate reference marks for a slice.
+def _fits_region(
+    pt: Point,
+    region: Polygon,
+    boundary_polys: Sequence[Polygon],
+    radius: float,
+    min_web: float,
+    min_distance: float,
+) -> bool:
+    """True when ``pt`` is in ``region`` and clear of every polygon's edge by enough margin.
 
-    The calculator evaluates candidate points inside each polygon and selects
-    those that maximize a simple geometric stability metric. The metric used is
-    inspired by GDOP (Geometric Dilution of Precision) and rewards points that
-    are well spread out.  Marks therefore rarely lie exactly at the centroid of
-    the contour; rather, candidates are sampled and the most stable arrangement
-    is chosen.
+    ``region`` is already eroded by ``min_distance`` from both pieces' own outlines (the pair's
+    shrunk overlap, see the pair-local-marks design spec's note on erosion of an intersection),
+    so membership in ``region`` alone gives that clearance for a freshly sampled point. A
+    ``candidate`` inherited from an earlier run carries no such guarantee about ``region`` (it may
+    predate the current erosion, or a caller may pass an unenroded region), so each piece's edge
+    is also checked against ``min_distance`` directly here; in the pre-eroded case that check is
+    redundant with ``region.contains``, not wrong. The shape-dependent ``radius + min_web`` margin
+    is checked against each piece individually either way.
     """
+    margin = max(min_distance, radius + min_web)
+    return region.contains(pt) and all(
+        poly.boundary.distance(pt) >= margin for poly in boundary_polys
+    )
 
-    @staticmethod
-    def _stability_score(points: list[tuple[float, float]]) -> float:
-        """Return the total pairwise distance between ``points``."""
-        score = 0.0
-        for i, p1 in enumerate(points):
-            for p2 in points[i + 1 :]:
-                score += calculate_distance(p1[0], p1[1], p2[0], p2[1])
-        return score
+
+def _clear_of_gap(
+    x: float,
+    y: float,
+    others: Sequence[ReferenceMark],
+    min_distance: float,
+    radius: float,
+    min_web: float,
+) -> bool:
+    """True when ``(x, y)`` is far enough from every mark in ``others``.
+
+    One shared gap for the whole check, using this mark's own radius, the same approximation
+    the old whole-slice search used. The adjuster checks the exact footprints afterwards.
+    """
+    gap = max(min_distance, 2 * radius + min_web)
+    return all(calculate_distance(x, y, other.x, other.y) >= gap for other in others)
+
+
+class ReferenceMarkCalculator:
+    """Chooses the reference mark for one pair's shared region (TR-9).
+
+    ``choose_mark_for_pair`` reuses the first carried candidate that still fits; failing that, it
+    tries sample points in the order ``_sample_points`` returns them (the centroid first, then a
+    fixed-seed random sequence) and returns the first one that fits. This is first-fit, not a
+    maximized stability score, so a mark often does land at or near the centroid, since that is
+    usually the first point tried.
+    """
 
     @staticmethod
     def _sample_points(poly: Polygon, samples: int = 4) -> list[tuple[float, float]]:
@@ -52,7 +81,7 @@ class ReferenceMarkCalculator:
         if not poly.is_valid:
             # Keep the largest polygon of the repaired shape, holes included.
             repaired = make_valid(poly)
-            parts = [g for g in getattr(repaired, "geoms", [repaired]) if isinstance(g, Polygon)]
+            parts = polygon_parts(repaired)
             if parts:
                 poly = max(parts, key=lambda g: g.area)
 
@@ -77,81 +106,58 @@ class ReferenceMarkCalculator:
         return pts
 
     @staticmethod
-    def get_stable_marks(
-        layer: Slice,
-        existing_marks: list[tuple[float, float]],
-        config: ReferenceMarkConfig | None = None,
-    ) -> list[tuple[float, float]]:
-        """Return stable mark positions for ``layer`` respecting ``config.min_distance``.
+    def choose_mark_for_pair(
+        region: Polygon,
+        boundary_polys: Sequence[Polygon],
+        candidates: Sequence[ReferenceMark],
+        avoid: Sequence[ReferenceMark],
+        *,
+        min_distance: float,
+        min_web: float,
+        tolerance: float,
+        available_shapes: Sequence[str],
+        size: float,
+        angle: float,
+    ) -> ReferenceMark | None:
+        """Return the mark for one pair's shared region (TR-9).
 
-        The hole of a mark must fit too (TR-5). Its shape and angle are not known yet for a
-        new mark, so a mark is taken as a disc that holds the outline of every available
-        shape at any angle. Its radius is the farthest reach of those outlines from the
-        centre, which is a little over half the size for the circle (#157). The disc must
-        lie inside the piece with ``layer.min_web`` to spare, and two discs must be
-        ``layer.min_web`` apart.
+        Tries each of ``candidates`` first (TR-10: reuse before creating); a candidate that no
+        longer fits ``region`` or now collides with ``avoid`` is retired — simply not returned,
+        never mutated. ``avoid`` holds marks already committed on the same piece by a different
+        pairing (a split or a merge) and is spacing-only, never a source of inheritance. Falls
+        back to choosing a shape (#198: before the point, so the disc matches it) and sampling
+        a fresh point in ``region``, clear of both ``avoid`` and every retired candidate (TR-10:
+        a fresh point must never coincide with a mark position already ruled out this call, or it
+        could be mistaken for that mark). In the one real caller, ``plan_marks``, ``avoid`` already
+        contains everything ``candidates`` does, so this is a no-op there; it only matters when the
+        function is called in isolation, as this module's own tests do. Returns ``None`` when
+        nothing fits.
         """
-        cfg = (config or layer.config).resolved(layer.layer_height)
-        min_distance = require(cfg.min_distance, "min_distance")
-        tolerance = require(cfg.tolerance, "tolerance")
-        min_web = layer.min_web
-        reach_per_size = max(mark_reach(name, 1.0) for name in cfg.available_shapes)
-        radius = require(cfg.size, "size") * reach_per_size
+        for candidate in candidates:
+            radius = mark_reach(candidate.shape, candidate.size)
+            pt = Point(candidate.x, candidate.y)
+            # Identity, not equality: `calculate_slice_contours` builds each slice's pieces with
+            # `symmetric_difference` (see `Model.calculate_slice_contours`), so real slice pieces
+            # never spatially overlap and a carried point can fit at most one sibling's region.
+            # `candidate` is therefore the only entry `avoid` could legitimately hold that is the
+            # very mark being tested here, so comparing by object identity (not just by not being
+            # a coincidentally-equal point) correctly excludes only that one entry.
+            others = [m for m in avoid if m is not candidate]
+            if _fits_region(
+                pt, region, boundary_polys, radius, min_web, min_distance
+            ) and _clear_of_gap(candidate.x, candidate.y, others, min_distance, radius, min_web):
+                return candidate
 
-        def clear_of_outline(x: float, y: float, poly: Polygon) -> bool:
-            edge = poly.boundary.distance(Point(x, y))
-            return edge >= min_distance and edge >= radius + min_web
-
-        def clear_of(x: float, y: float, other: tuple[float, float]) -> bool:
-            gap = 2 * radius + min_web
-            return calculate_distance(x, y, other[0], other[1]) >= max(min_distance, gap)
-
-        selected: list[tuple[float, float]] = []
-        for poly in layer.contours:
-            # Try to inherit an existing mark that is inside the polygon
-            inherited = None
-            for x, y in existing_marks:
-                pt = Point(x, y)
-                if (
-                    poly.contains(pt)
-                    and clear_of_outline(x, y, poly)
-                    and all(clear_of(x, y, other) for other in selected)
-                ):
-                    inherited = (x, y)
-                    break
-            if inherited:
-                selected.append(inherited)
+        avoid_all = [*avoid, *candidates]
+        shape = choose_shape(available_shapes)
+        radius = mark_reach(shape, size)
+        for x, y in ReferenceMarkCalculator._sample_points(region):
+            pt = Point(x, y)
+            if not _fits_region(pt, region, boundary_polys, radius, min_web, min_distance):
                 continue
-
-            candidates = ReferenceMarkCalculator._sample_points(poly)
-            taken = [*existing_marks, *selected]
-            best_pt = None
-            best_score = -1.0
-            for cand in candidates:
-                x, y = cand
-                pt = Point(x, y)
-                if not clear_of_outline(x, y, poly):
-                    continue
-                if not all(clear_of(x, y, other) for other in selected):
-                    continue
-                # A point within the snapping range of a stored mark, or of a mark
-                # chosen in this slice, would be taken for that mark (TR-10). The
-                # stored mark did not pass the checks above, so skip the point.
-                if any(calculate_distance(x, y, mx, my) <= tolerance for mx, my in taken):
-                    continue
-                score = ReferenceMarkCalculator._stability_score(selected + [cand])
-                if score > best_score:
-                    best_score = score
-                    best_pt = cand
-            if best_pt:
-                selected.append(best_pt)
-        return selected
-
-    @staticmethod
-    def get_potential_marks(
-        layer: Slice,
-        existing_marks: list[tuple[float, float]],
-        config: ReferenceMarkConfig | None = None,
-    ) -> list[tuple[float, float]]:
-        """Compatibility alias for :meth:`get_stable_marks`."""
-        return ReferenceMarkCalculator.get_stable_marks(layer, existing_marks, config=config)
+            if not _clear_of_gap(x, y, avoid_all, min_distance, radius, min_web):
+                continue
+            if any(calculate_distance(x, y, m.x, m.y) <= tolerance for m in avoid_all):
+                continue
+            return ReferenceMark(x=x, y=y, shape=shape, size=size, angle=angle)
+        return None

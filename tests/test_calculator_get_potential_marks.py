@@ -7,46 +7,49 @@ from hypothesis import given
 from hypothesis import strategies as st
 from shapely.geometry import Point, Polygon
 
-from layerforge.models.reference_marks import (
-    ReferenceMarkCalculator,
-    ReferenceMarkConfig,
-    ReferenceMarkManager,
-)
-from layerforge.models.slicing.slice import Slice
+from layerforge.models.reference_marks import ReferenceMark, ReferenceMarkCalculator
 
 
-def create_slice(polygons, manager=None, cfg=None):
-    manager = manager or ReferenceMarkManager(config=cfg)
-    cfg = cfg or ReferenceMarkConfig()
-    return Slice(0, 0.0, polygons, mark_manager=manager, config=cfg, layer_height=3.0)
-
-
-def test_potential_marks_inside_polygon():
+def test_choosing_in_a_square_stays_inside_it():
     square = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)])
-    cfg = ReferenceMarkConfig(min_distance=10)
-    sl = create_slice([square], cfg=cfg)
+    mark = ReferenceMarkCalculator.choose_mark_for_pair(
+        square,
+        [square],
+        [],
+        [],
+        min_distance=10,
+        min_web=0,
+        tolerance=1,
+        available_shapes=["circle"],
+        size=3,
+        angle=0.0,
+    )
+    assert mark is not None
+    assert square.contains(Point(mark.x, mark.y))
+    assert square.boundary.distance(Point(mark.x, mark.y)) >= 10
 
-    marks = ReferenceMarkCalculator.get_potential_marks(sl, [], config=cfg)
-    assert len(marks) == 1
-    x, y = marks[0]
-    pt = Point(x, y)
-    assert square.contains(pt)
-    assert square.boundary.distance(pt) >= 10  # the min_distance set above
 
-
-def test_existing_mark_inherited():
+def test_a_candidate_at_the_right_place_is_reused():
     square = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)])
-    cfg = ReferenceMarkConfig(min_distance=10)
-    sl = create_slice([square], cfg=cfg)
-
-    marks = ReferenceMarkCalculator.get_potential_marks(sl, [(50, 50)], config=cfg)
-    assert marks == [(50, 50)]
+    candidate = ReferenceMark(x=50, y=50, shape="circle", size=3)
+    mark = ReferenceMarkCalculator.choose_mark_for_pair(
+        square,
+        [square],
+        [candidate],
+        [],
+        min_distance=10,
+        min_web=0,
+        tolerance=1,
+        available_shapes=["circle"],
+        size=3,
+        angle=0.0,
+    )
+    assert mark is candidate
 
 
 def test_sample_points_generate_multiple_unique_points():
     square = Polygon([(0, 0), (100, 0), (100, 100), (0, 100)])
     pts = ReferenceMarkCalculator._sample_points(square, samples=4)
-    # should return centroid plus at least one other unique point
     assert len(pts) >= 2
     assert len(set(pts)) == len(pts)
     for x, y in pts:
@@ -77,11 +80,20 @@ def _plate_with_hole() -> Polygon:
 
 def test_marks_avoid_holes():
     plate = _plate_with_hole()
-    cfg = ReferenceMarkConfig(min_distance=5)
-    sl = create_slice([plate], cfg=cfg)
-
-    (mark,) = ReferenceMarkCalculator.get_stable_marks(sl, [], config=cfg)
-    assert plate.contains(Point(*mark))
+    mark = ReferenceMarkCalculator.choose_mark_for_pair(
+        plate,
+        [plate],
+        [],
+        [],
+        min_distance=5,
+        min_web=0,
+        tolerance=1,
+        available_shapes=["circle"],
+        size=3,
+        angle=0.0,
+    )
+    assert mark is not None
+    assert plate.contains(Point(mark.x, mark.y))
 
 
 def test_sample_points_stay_out_of_holes():
@@ -139,15 +151,22 @@ _COORD = st.floats(0, 30).map(lambda v: round(v, 3))
     stored=st.lists(st.tuples(_COORD, _COORD), max_size=4),
     tolerance=st.floats(1, 30).map(lambda v: round(v, 3)),
 )
-def test_chosen_points_are_stored_marks_or_out_of_snapping_range(stored, tolerance):
+def test_a_new_point_is_stored_marks_or_out_of_snapping_range(stored, tolerance):
     """A point within the tolerance of a stored mark must be that mark (TR-10)."""
     square = Polygon([(0, 0), (30, 0), (30, 30), (0, 30)])
-    cfg = ReferenceMarkConfig(min_distance=5, tolerance=tolerance)
-    chosen = ReferenceMarkCalculator.get_stable_marks(create_slice([square], cfg=cfg), stored, cfg)
-
-    new = [p for p in chosen if p not in stored]
-    for x, y in new:
-        assert all(math.hypot(x - sx, y - sy) > tolerance for sx, sy in stored)
-    for i, (x1, y1) in enumerate(new):
-        for x2, y2 in new[i + 1 :]:
-            assert math.hypot(x1 - x2, y1 - y2) > tolerance
+    candidates = [ReferenceMark(x=x, y=y, shape="circle", size=1) for x, y in stored]
+    mark = ReferenceMarkCalculator.choose_mark_for_pair(
+        square,
+        [square],
+        candidates,
+        [],
+        min_distance=5,
+        min_web=0,
+        tolerance=tolerance,
+        available_shapes=["circle"],
+        size=1,
+        angle=0.0,
+    )
+    if mark is None or (mark.x, mark.y) in stored:
+        return
+    assert all(math.hypot(mark.x - sx, mark.y - sy) > tolerance for sx, sy in stored)

@@ -114,6 +114,14 @@ class NumberSettings(BaseModel):
     width_factor: float = Field(default=_STYLE.number_width_factor, gt=0)  # no option (TR-16)
 
 
+class ChecksSettings(BaseModel):
+    """The ``[checks]`` table: when two pieces of adjacent layers count as sharing a mark (TR-9)."""
+
+    model_config = _STRICT
+
+    min_overlap_area: float = Field(default=0.0, ge=0)  # no option (TR-16)
+
+
 class Settings(BaseModel):
     """Every setting of a run.
 
@@ -131,6 +139,7 @@ class Settings(BaseModel):
     marks: MarkSettings = Field(default_factory=MarkSettings)
     output: OutputSettings = Field(default_factory=OutputSettings)
     number: NumberSettings = Field(default_factory=NumberSettings)
+    checks: ChecksSettings = Field(default_factory=ChecksSettings)
 
 
 def load_settings(path: Path | None, overrides: Mapping[str, object]) -> Settings:

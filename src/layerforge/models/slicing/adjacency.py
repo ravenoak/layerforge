@@ -5,8 +5,11 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 import shapely
+from shapely import make_valid
 from shapely.geometry import MultiPolygon, Polygon
 from shapely.ops import unary_union
+
+from layerforge.utils import polygon_parts
 
 
 @dataclass(frozen=True)
@@ -44,6 +47,23 @@ def _area_of(geometry: shapely.Geometry) -> Polygon | MultiPolygon:
     return merged if isinstance(merged, (Polygon, MultiPolygon)) else Polygon()
 
 
+def _repaired(polygon: Polygon, layer_index: int, piece_index: int) -> Polygon:
+    """Return ``polygon``, repaired if it is not valid (the same approach `_sample_points` uses).
+
+    Raises
+    ------
+    ValueError
+        If ``polygon`` cannot be repaired into a polygon with area, naming where it came from.
+    """
+    if polygon.is_valid:
+        return polygon
+    repaired = make_valid(polygon)
+    parts = polygon_parts(repaired)
+    if not parts:
+        raise ValueError(f"layer {layer_index} piece {piece_index} is not a valid polygon")
+    return max(parts, key=lambda g: g.area)
+
+
 def adjacent_pairs(
     layers: Sequence[Sequence[Polygon]],
     *,
@@ -74,8 +94,13 @@ def adjacent_pairs(
     _check("min_overlap_area", min_overlap_area)
     _check("clearance", clearance)
 
+    fixed_layers = [
+        [_repaired(piece, layer_index, piece_index) for piece_index, piece in enumerate(layer)]
+        for layer_index, layer in enumerate(layers)
+    ]
+
     result: list[list[AdjacentPair]] = []
-    for lower_layer, upper_layer in zip(layers, layers[1:], strict=False):
+    for lower_layer, upper_layer in zip(fixed_layers, fixed_layers[1:], strict=False):
         pairs: list[AdjacentPair] = []
         for i, lower in enumerate(lower_layer):
             for j, upper in enumerate(upper_layer):

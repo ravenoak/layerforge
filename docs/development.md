@@ -50,9 +50,10 @@ mark steps are on the [Alignment requirements](alignment_requirements.md) page.
 ## Expected Workflow
 
 1. Build a :class:`Model` using :class:`ModelFactory` and the desired mesh loader.
-2. Call :meth:`SlicerService.slice_model` to produce a list of :class:`Slice` objects.
-3. Use :class:`ReferenceMarkService` to process each slice so reference marks are calculated and adjusted.
-4. Pass the processed slices to :class:`SVGGenerator` (via the CLI or directly) to write SVG files.
+2. Call :meth:`SlicerService.slice_model` to produce a list of :class:`Slice` objects. It
+   chooses every slice's marks in one pass, with `plan_marks` (#63), then calls each
+   :class:`Slice`'s `adjust_marks` to filter them to what actually fits.
+3. Pass the processed slices to :class:`SVGGenerator` (via the CLI or directly) to write SVG files.
 
 ## Running the Tests
 

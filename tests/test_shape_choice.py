@@ -16,12 +16,10 @@ from shapely.geometry import box
 from layerforge.models.reference_marks import (
     ReferenceMark,
     ReferenceMarkConfig,
-    ReferenceMarkManager,
-    ReferenceMarkService,
+    plan_marks,
     rotation_symmetry,
 )
 from layerforge.models.reference_marks.shape_choice import choose_shape
-from layerforge.models.slicing.slice import Slice
 
 DEFAULTS = ["circle", "square", "triangle", "arrow"]
 
@@ -84,33 +82,25 @@ def test_marks_of_the_chosen_shape_at_one_angle_can_be_stacked_one_way_only(
     assert not rotation_symmetry(marks, tolerance=1e-6).has_nonidentity
 
 
-def _slice(contours, layer_height=3.0, manager=None, **config) -> Slice:
+def _marks(contours, layer_height=3.0, **config) -> list[ReferenceMark]:
+    """The marks `plan_marks` gives one slice, using a second identical slice as its neighbour.
+
+    A single slice has no neighbour to pair with, so it gets no marks at all (#63, G-7);
+    two identical, fully-overlapping slices share one pair per piece instead.
+    """
     cfg = ReferenceMarkConfig(**config)
-    manager = manager or ReferenceMarkManager(config=cfg.resolved(layer_height))
-    return Slice(0, 0.0, contours, mark_manager=manager, config=cfg, layer_height=layer_height)
+    return plan_marks([contours, contours], cfg, layer_height)[0]
 
 
 @pytest.mark.parametrize("shapes", [["arrow", "triangle"], ["triangle", "arrow"]])
 def test_a_slice_marks_with_the_shape_of_greatest_need_whatever_the_list_order(shapes):
-    layer = _slice([box(0, 0, 20, 20)], available_shapes=shapes)
-    ReferenceMarkService.process_slice(layer)
-    assert [m.shape for m in layer.ref_marks] == ["triangle"]
+    marks = _marks([box(0, 0, 20, 20)], available_shapes=shapes)
+    assert [m.shape for m in marks] == ["triangle"]
 
 
 def test_two_pieces_of_one_slice_get_the_same_directional_shape():
-    layer = _slice([box(0, 0, 20, 20), box(100, 0, 120, 20)])
-    ReferenceMarkService.process_slice(layer)
-    assert [m.shape for m in layer.ref_marks] == ["triangle", "triangle"]
-
-
-def test_a_stored_mark_keeps_its_shape_when_the_list_changes():
-    manager = ReferenceMarkManager()
-    first = _slice([box(0, 0, 20, 20)], manager=manager, available_shapes=["circle"])
-    ReferenceMarkService.process_slice(first)
-    second = _slice([box(0, 0, 20, 20)], manager=manager, available_shapes=["arrow", "triangle"])
-    ReferenceMarkService.process_slice(second)
-    assert [m.shape for m in first.ref_marks] == ["circle"]
-    assert [m.shape for m in second.ref_marks] == ["circle"]
+    marks = _marks([box(0, 0, 20, 20), box(100, 0, 120, 20)])
+    assert [m.shape for m in marks] == ["triangle", "triangle"]
 
 
 def test_every_slice_of_a_cube_at_the_defaults_has_marks_that_fix_the_rotation():

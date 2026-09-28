@@ -181,6 +181,7 @@ def _run(
         kerf=settings.kerf,
         min_hole_ratio=marks.min_hole_ratio,
         min_hole_kerf_factor=marks.min_hole_kerf_factor,
+        min_overlap_area=settings.checks.min_overlap_area,
     )
 
     slices = SlicerService.slice_model(model, config=config)

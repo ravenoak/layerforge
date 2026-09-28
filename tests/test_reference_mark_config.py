@@ -38,6 +38,15 @@ def test_size_defaults_to_none():
     assert ReferenceMarkConfig().size is None
 
 
+def test_min_overlap_area_defaults_to_zero():
+    assert ReferenceMarkConfig().min_overlap_area == 0.0
+
+
+def test_min_overlap_area_must_be_non_negative_and_finite():
+    with pytest.raises(ValueError):
+        ReferenceMarkConfig(min_overlap_area=-1.0)
+
+
 def test_size_min_distance_and_tolerance_are_derived_when_not_set():
     """TR-6 and TR-10: they come from the sheet, so the config holds no number for them."""
     cfg = ReferenceMarkConfig()
@@ -97,7 +106,9 @@ def test_the_sheet_and_machine_numbers_must_be_in_range(field, value):
         ReferenceMarkConfig(**{field: value})  # pyright: ignore[reportArgumentType]
 
 
-@pytest.mark.parametrize("field", ["kerf", "min_hole_ratio", "min_hole_kerf_factor"])
+@pytest.mark.parametrize(
+    "field", ["kerf", "min_hole_ratio", "min_hole_kerf_factor", "min_overlap_area"]
+)
 @pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
 def test_the_sheet_and_machine_numbers_must_be_finite(field, value):
     with pytest.raises(ValueError):

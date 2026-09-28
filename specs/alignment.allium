@@ -1,9 +1,26 @@
 -- allium: 3
 -- alignment.allium
 --
--- STATUS: TARGET, NOT BUILT. This spec describes intended behavior. The
--- current tool does not do any of it. What the tool does today is in
--- layerforge.allium and docs/requirements.md.
+-- STATUS: TARGET, MOSTLY NOT BUILT. This spec describes intended behavior.
+-- TR-9's pair-local reuse and retirement (TR9_RetireWhenNoLongerValid,
+-- TR9_SharedMarkInsideShrunkenOverlap) is now built (#63): a mark is
+-- retired the moment it stops fitting the next pair's shrunk overlap, and
+-- each shared mark sits inside that shrunk overlap. TR9_NoMarkInEveryLayer
+-- is not built: nothing forces a mark to retire when the geometry never
+-- stops fitting it, so a straight, undrifting shape (a plain cube, a
+-- straight cylinder) gets one mark that is reused at every boundary and
+-- ends up a hole in every layer of the stack, three or more layers
+-- included. This invariant is written as the spec's target, not a built
+-- guarantee, for non-drifting geometry. Real enforcement (e.g. a forced
+-- periodic retirement) is a follow-up: #215.
+-- TR10_SnapToStoredMark still describes a whole-stack registry
+-- lookup (nearest_stored_mark(stack, ...)); the built code has no such
+-- registry (#63 deliberately removed the one it replaced) and only checks
+-- tolerance against the one pairing in play, so this rule is not built and
+-- may need to be revised to match the pair-local design rather than simply
+-- implemented as written. The rest of the tool does not do any of this
+-- spec yet. What the tool does today is in layerforge.allium and
+-- docs/requirements.md.
 --
 -- Scope: layers, pieces, reference marks (holes), shared marks between
 --   adjacent pieces, shapes and their rotational symmetry, the number of a
@@ -309,11 +326,30 @@ rule TR10_SnapToStoredMark {
         -- in range, the nearer one wins.
 }
 
--- TR-9: a mark stays in use while it remains valid in the next layer and
--- is retired when it leaves the outline or clearance. That is a lifecycle
--- of a mark across layers. This spec has no such lifecycle yet, because
--- "valid in the next layer" means the mark's whole footprint lies inside
--- the shrunken overlap of the two outlines (TR9_SharedMarkInsideShrunkenOverlap).
+rule TR9_RetireWhenNoLongerValid {
+    when: sm: SharedMark.created
+    for next_pair in AdjacentPairs where lower = sm.pair.upper:
+        let still_valid = footprint_inside_shrunken_overlap(
+            sm.upper_mark.footprint,
+            next_pair.lower,
+            next_pair.upper,
+            next_pair.stack.mark_min_distance
+        )
+        ensures:
+            if not still_valid:
+                MarkRetired(mark: sm.upper_mark, at_pair: next_pair)
+    @guidance
+        -- Retirement evaluates every pair whose lower piece is this mark's
+        -- upper piece independently: a split or merge (TR-8) can give a
+        -- piece more than one next pair, and a mark can retire on one
+        -- branch of a split while it stays valid on another. A mark stays
+        -- in use at a pair while its whole footprint lies inside the
+        -- shrunken overlap of that pair's outlines
+        -- (TR9_SharedMarkInsideShrunkenOverlap) and is retired there the
+        -- moment it does not; a retired mark is simply not offered as a
+        -- candidate at that pair. A mark with no next pair at all (the top
+        -- of the stack) is never retired by this rule.
+}
 
 -- Checking and failure (TR-4, TR-6, TR-12) --------------------------------------
 
@@ -425,6 +461,11 @@ invariant TR2_OneWayToAlign {
     -- (TR-7), so a square turned a quarter is the same mark. A mark listed
     -- twice counts once (TR-9, TR-10). Nothing calls it yet (#92).
     -- Dowel holes are excluded by using alignment_marks (TR-15).
+    -- Known gap (#63, phase 1): the built code can leave a pairing with zero
+    -- alignment marks, when neither a carried candidate nor a fresh point
+    -- clears the shrunken overlap and stays clear of every mark already
+    -- placed on either piece. This invariant's >= 1 is the target; it is
+    -- not yet always met.
     for pair in AdjacentPairs:
         pair.alignment_marks.count >= 1
             and not has_nonidentity_rotation_symmetry(pair.alignment_marks)
@@ -477,7 +518,9 @@ invariant TR8_ShapesFromAvailable {
     -- symmetry order, so a shape with a direction when one is available, then
     -- the larger outline, then the name. The order of the list does not matter.
     -- Every mark of a run has one angle, so one such mark fixes the rotation
-    -- of its piece (TR-2). Two marks on one piece come with #63.
+    -- of its piece (TR-2). A piece can carry two marks (#63): one per
+    -- pairing, when the piece splits into or merges from two pieces of the
+    -- adjacent layer.
     for m in Marks:
         m.role = alignment implies m.shape in m.piece.layer.stack.available_shapes
 }
@@ -506,9 +549,28 @@ invariant TR10_SharedMarkIsOneMark {
             and s.lower_mark.angle = s.upper_mark.angle
 }
 
--- TR-9, "no alignment mark is a hole in every layer of a stack of three or
--- more layers": defined on the page (same centre, shape, size and angle, as
--- in TR10_SharedMarkIsOneMark) but not yet written as an invariant.
+invariant TR9_NoMarkInEveryLayer {
+    -- In a stack of three or more layers, no alignment mark is a hole in
+    -- every layer. "The same mark" is identity by centre, shape, size and
+    -- angle, as in TR10_SharedMarkIsOneMark. Dowel holes are excluded by
+    -- checking only alignment marks (TR-15), as elsewhere in this file.
+    for stack in Stacks:
+        stack.layers.count >= 3 implies
+            not Marks.any(m =>
+                m.role = alignment
+                    and m.piece.layer.stack = stack
+                    and stack.layers.all(l =>
+                        Marks.any(other =>
+                            other.role = alignment
+                                and other.piece.layer = l
+                                and other.centre = m.centre
+                                and other.shape = m.shape
+                                and other.size = m.size
+                                and other.angle = m.angle
+                        )
+                    )
+            )
+}
 
 -- Shapes (TR-7) -------------------------------------------------------------
 

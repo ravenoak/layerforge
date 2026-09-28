@@ -17,7 +17,13 @@ SQUARE = box(0, 0, 10, 10)
 
 def test_a_single_slice_model_gets_the_no_neighbour_message(caplog):
     slice_ = Slice(
-        0, 0.0, [SQUARE], config=ReferenceMarkConfig(), layer_height=3.0, ref_marks=[], total_slices=1
+        0,
+        0.0,
+        [SQUARE],
+        config=ReferenceMarkConfig(),
+        layer_height=3.0,
+        ref_marks=[],
+        total_slices=1,
     )
     with caplog.at_level(logging.WARNING):
         slice_.adjust_marks()
@@ -30,7 +36,13 @@ def test_a_single_slice_model_gets_the_no_neighbour_message(caplog):
 
 def test_a_multi_slice_run_keeps_the_size_and_distance_advice(caplog):
     slice_ = Slice(
-        0, 0.0, [SQUARE], config=ReferenceMarkConfig(), layer_height=3.0, ref_marks=[], total_slices=3
+        0,
+        0.0,
+        [SQUARE],
+        config=ReferenceMarkConfig(),
+        layer_height=3.0,
+        ref_marks=[],
+        total_slices=3,
     )
     with caplog.at_level(logging.WARNING):
         slice_.adjust_marks()

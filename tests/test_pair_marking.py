@@ -170,7 +170,9 @@ def test_a_merge_of_many_pieces_keeps_the_avoid_list_linear_not_exponential():
     """
     n = 22
     lower = [box(k * 20, 0, k * 20 + 10, 10) for k in range(n)]
-    upper = [box(k * 20, 0, k * 20 + 10, 10) for k in range(n)]  # full overlap with lower: real marks
+    upper = [
+        box(k * 20, 0, k * 20 + 10, 10) for k in range(n)
+    ]  # full overlap with lower: real marks
     width = n * 20 + 10
     merged = [box(0, 9, width, 19)]  # 1-unit sliver overlap with each `upper` piece: erodes away
     above = [box(0, 9, width, 19)]  # full overlap with `merged`: must scan its accumulated list
@@ -184,4 +186,6 @@ def test_a_merge_of_many_pieces_keeps_the_avoid_list_linear_not_exponential():
     assert len(result[1]) == n
     # A linear accumulation finishes in well under a second; the pre-fix doubling bug took
     # 3.7s at this same n=22 on the machine this test was written on.
-    assert elapsed < 2.0, f"plan_marks took {elapsed:.2f}s: the avoid list may be growing exponentially again"
+    assert elapsed < 2.0, (
+        f"plan_marks took {elapsed:.2f}s: the avoid list may be growing exponentially again"
+    )

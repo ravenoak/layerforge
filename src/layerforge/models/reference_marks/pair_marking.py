@@ -59,7 +59,14 @@ def plan_marks(
             avoid = [*on_slice.get(pair.lower, []), *next_on_slice.get(pair.upper, [])]
             region = _largest_part(pair.shrunk)
             if region is None:
-                next_on_slice.setdefault(pair.upper, []).extend([*avoid, *candidates])
+                # `next_on_slice[pair.upper]` already holds every earlier pairing's contribution
+                # into this same upper piece (that is the second half of `avoid`, above), and
+                # `candidates` is always a subset of `on_slice.get(pair.lower, [])` (both are
+                # populated together in the mark-found branch below). Extending by `avoid` and
+                # `candidates` here would re-add both, doubling the list on every failed pairing
+                # into a shared upper piece -- exponential on a merge. Only the new contribution,
+                # `on_slice.get(pair.lower, [])`, needs to be added.
+                next_on_slice.setdefault(pair.upper, []).extend(on_slice.get(pair.lower, []))
                 continue
             lower_poly = contours[i][pair.lower]
             upper_poly = contours[i + 1][pair.upper]
@@ -76,9 +83,14 @@ def plan_marks(
                 angle=cfg.angle,
             )
             if mark is None:
-                next_on_slice.setdefault(pair.upper, []).extend([*avoid, *candidates])
+                # Same reasoning as the `region is None` branch above.
+                next_on_slice.setdefault(pair.upper, []).extend(on_slice.get(pair.lower, []))
                 continue
-            result[i].append(mark)
+            # A reused candidate was already appended to `result[i]` -- either as a fresh mark
+            # in an earlier boundary's `result[i + 1]`, or as this piece's own fresh mark just
+            # below -- so only a freshly chosen mark (not one of `candidates`) needs adding here.
+            if not any(mark is c for c in candidates):
+                result[i].append(mark)
             result[i + 1].append(mark)
             on_slice.setdefault(pair.lower, []).append(mark)
             next_carried.setdefault(pair.upper, []).append(mark)

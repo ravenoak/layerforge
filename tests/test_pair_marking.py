@@ -1,6 +1,7 @@
 """plan_marks: marks chosen per pair of adjacent layers, retired when they no longer fit (#63)."""
 
 import math
+import time
 
 from shapely.geometry import Polygon, box
 
@@ -138,3 +139,49 @@ def test_a_merge_avoids_a_sibling_s_mark_on_the_shared_upper_piece():
     (m1, m2) = result[1]
     distance = ((m1.x - m2.x) ** 2 + (m1.y - m2.y) ** 2) ** 0.5
     assert distance >= cfg.resolved(layer_height=3.0).min_distance
+
+
+def test_a_stack_of_three_identical_layers_does_not_double_count_the_reused_mark():
+    """Regression (review of #63): reusing a candidate must not append it to `result[i]` twice.
+
+    Before the fix, the middle slice of three identical stacked squares held the same mark
+    object twice ([1, 2, 1] marks per slice) because the reuse branch re-appended a mark that
+    an earlier boundary had already added to that slice's list.
+    """
+    result = plan_marks(
+        [[SQUARE], [SQUARE], [SQUARE]], ReferenceMarkConfig(min_distance=10), layer_height=3.0
+    )
+    assert [len(marks) for marks in result] == [1, 1, 1]
+
+
+def test_a_merge_of_many_pieces_keeps_the_avoid_list_linear_not_exponential():
+    """Regression (Critical, final review of #63): a failed pairing into a shared upper piece
+    must not duplicate the running avoid list on every failure, or a merge of many pieces
+    blows the list up exponentially (measured before the fix: 4096 entries at 12 merging
+    pieces, 16.7M at 24, 914MB peak memory).
+
+    Each of ``n`` lower pieces overlaps the single wide ``merged`` piece only in a 1-unit-tall
+    sliver that eroded away to nothing at ``min_distance=2``, so every one of the ``n``
+    pairings takes the no-mark branch into the same shared upper piece -- a merge. A further
+    real pairing (``merged`` -> ``above``) then has to scan whatever `plan_marks` accumulated
+    for `merged`: with the pre-fix doubling bug this pairing's cost is exponential in ``n`` and
+    the whole call takes seconds even at ``n=22``; fixed, the accumulated list is linear in
+    ``n`` and the call stays fast regardless.
+    """
+    n = 22
+    lower = [box(k * 20, 0, k * 20 + 10, 10) for k in range(n)]
+    upper = [box(k * 20, 0, k * 20 + 10, 10) for k in range(n)]  # full overlap with lower: real marks
+    width = n * 20 + 10
+    merged = [box(0, 9, width, 19)]  # 1-unit sliver overlap with each `upper` piece: erodes away
+    above = [box(0, 9, width, 19)]  # full overlap with `merged`: must scan its accumulated list
+    cfg = ReferenceMarkConfig(min_distance=2)
+
+    start = time.monotonic()
+    result = plan_marks([lower, upper, merged, above], cfg, layer_height=3.0)
+    elapsed = time.monotonic() - start
+
+    assert len(result[0]) == n, "every lower/upper pairing should still get a mark"
+    assert len(result[1]) == n
+    # A linear accumulation finishes in well under a second; the pre-fix doubling bug took
+    # 3.7s at this same n=22 on the machine this test was written on.
+    assert elapsed < 2.0, f"plan_marks took {elapsed:.2f}s: the avoid list may be growing exponentially again"

@@ -21,6 +21,28 @@ output, the first release will raise the minor version.
 
 ### Changed
 
+- **Breaking:** Marks are chosen per pair of adjacent layers, not once per slice against every
+  mark of the whole run (TR-9, #63). A mark is retired the moment it stops fitting the next
+  pair's shrunk overlap; nothing looks further back than the immediate neighbour, and none is
+  ever shared with a slice beyond it. A single-slice model now gets no marks at all, since
+  there is nothing to align it to. Measured on the sheared cylinder of #107 (radius 20, height
+  60, shear 0.5 per z, layer height 3, `tolerance=25`, `min_distance=10`): 15 of its 20 slices
+  get a mark, and the other 5 (slices 8 to 12) warn instead of staying silently unmarked, since
+  their shrunk region lies entirely within tolerance of the mark retired at the boundary before
+  them (a documented, accepted gap short of #107's own "every slice" acceptance line). The
+  calculator's disc now matches the shape a new mark actually takes, not the largest reach over
+  every listed shape (#198): measured on a 6.003 mm square box 9 mm tall at layer height 3
+  (3 slices), the default shape list and `triangle` alone both go from 0 of 3 slices marked,
+  with the pre-fix disc sized to the circle's larger reach (reproduced by monkeypatch), to 3 of
+  3 once the shape is chosen before the point and the disc uses only that shape's own reach. (A
+  10 mm cube at layer height 5 and a 6.000 mm box give 0 of 2 and 0 of 3 either way, for an
+  unrelated reason: their half-width exactly equals `min_distance`, so the pair's shrunk region
+  is already empty before any shape is considered.) `adjacent_pairs` (#89) is now used by the
+  command, through `plan_marks`; it repairs an invalid slice contour when `shapely.make_valid`
+  can (a self-intersecting bow-tie repairs silently and pairs as before), and raises
+  `ValueError` naming the layer and piece when it cannot, instead of a raw GEOS exception or a
+  silently empty overlap (#185, item 1; items 2 and 3, cost and a float-noise threshold, are
+  still open).
 - **Breaking:** `register_shape` raises `ValueError` for a shape class that does not set
   `symmetry_order` in its own body (a whole number, or `None` for unlimited). Before, an
   unset order read as 1, so a six-fold shape counted as having a direction: `choose_shape`

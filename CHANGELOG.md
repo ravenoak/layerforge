@@ -28,10 +28,11 @@ output, the first release will raise the minor version.
   there is nothing to align it to. Measured on the sheared cylinder of #107 (radius 20, height
   60, shear 0.5 per z, layer height 3, `tolerance=25`, `min_distance=10`): 15 of its 20 slices
   get a mark, and the other 5 (slices 8 to 12) warn instead of staying silently unmarked, since
-  their shrunk region lies entirely within tolerance of the mark retired at the boundary before
-  them (a documented, accepted gap short of #107's own "every slice" acceptance line). The
-  calculator's disc now matches the shape a new mark actually takes, not the largest reach over
-  every listed shape (#198): measured on a 6.003 mm square box 9 mm tall at layer height 3
+  their shrunk region lies entirely within tolerance of a mark retired at an earlier boundary in
+  the same run of unmarked boundaries (a documented, accepted gap short of #107's own "every
+  slice" acceptance line). The calculator's disc now matches the shape a new mark actually takes,
+  not the largest reach over every listed shape (#198): measured on a 6.003 mm square box 9 mm
+  tall at layer height 3
   (3 slices), the default shape list and `triangle` alone both go from 0 of 3 slices marked,
   with the pre-fix disc sized to the circle's larger reach (reproduced by monkeypatch), to 3 of
   3 once the shape is chosen before the point and the disc uses only that shape's own reach. (A

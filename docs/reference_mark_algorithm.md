@@ -1,44 +1,48 @@
 # Reference Mark Algorithm
 
-This page details how LayerForge selects and refines alignment marks for each
-slice. The algorithm is based on a geometric stability metric inspired by GDOP
-(Geometric Dilution of Precision). It ensures marks remain consistent between
-layers while avoiding overlaps.
+This page details how LayerForge selects alignment marks for each pair of
+adjacent layers, and carries them from one pair to the next (TR-9). A mark is
+chosen inside two pieces' shared, shrunk overlap, reused across boundaries while
+it still fits, and retired -- never revived -- the moment it does not.
 
-## Candidate Scoring
+A single-slice model has no adjacent layer to pair with at all, so it gets no
+marks: there is nothing to align it to.
 
-For each contour a set of candidate points is sampled. The
-`ReferenceMarkCalculator` computes a **stability score** equal to the total
-pairwise distance between the points. Higher scores mean the marks are farther
-apart and thus easier to align.
+## Choosing a Mark for a Pair
 
-```python
-class ReferenceMarkCalculator:
-    @staticmethod
-    def _stability_score(points: list[tuple[float, float]]) -> float:
-        score = 0.0
-        for i, p1 in enumerate(points):
-            for p2 in points[i + 1 :]:
-                score += calculate_distance(p1[0], p1[1], p2[0], p2[1])
-        return score
-```
+For one pair of adjacent pieces, `ReferenceMarkCalculator.choose_mark_for_pair`
+first tries every candidate carried from the boundary before it, in the order
+given, and reuses the first one that still fits the new shrunk overlap and stays
+clear of every mark already placed nearby. Only when none of them fit does it
+choose a shape and sample fresh points inside the shared region -- the centroid
+first, then a fixed-seed random sequence -- returning the first point that fits.
+This is reuse-then-first-fit, not a maximised stability score, so a mark often
+lands at or near the centroid, since that is usually the first point tried.
 
-Marks are chosen iteratively. Marks from earlier layers are tried
-first; otherwise the best scoring candidate is selected.
+## Carrying Marks Between Pairs
 
-## Inheriting Marks
-
-When processing a slice, the algorithm checks whether any stored mark lies inside
-a contour at a safe distance from the edges. If so, that mark is reused and keeps
-its original shape **as well as its orientation angle**. This
-inheritance gives each layer a shared set of identifiers for accurate reassembly.
+`plan_marks` walks the boundaries between adjacent slices in order, one boundary
+of lookback at a time: a mark carried from the pairing right before it, on the
+same piece, is reused when it still fits; otherwise a fresh mark is chosen for
+this pairing alone. A mark is retired -- simply not carried further -- the
+instant it stops fitting; nothing revives one from farther back, and reuse never
+survives past the one boundary where it stopped fitting.
 
 ```mermaid
 flowchart TD
-    A[Previous slice marks] --> B{Inside polygon?}
-    B -- yes --> C[Reuse mark]
-    B -- no --> D[Evaluate candidates]
+    A[Candidate carried from the boundary before] --> B{Still fits, and clear of nearby marks?}
+    B -- yes --> C[Reuse it]
+    B -- no --> D[Sample a fresh point]
 ```
+
+A boundary that places no mark at all -- because its shrunk region is empty, or
+nothing sampled clears tolerance -- still owes the next boundary its spacing: the
+position(s) that were in play keep propagating, avoid-only, through consecutive
+no-mark boundaries until a piece either gets a mark of its own (which then takes
+over what the boundary after it must avoid) or the run ends. Within one such run
+of consecutive no-mark boundaries, this keeps a fresh mark from landing within
+tolerance of the position that would otherwise be forgotten (TR-10), without ever
+making that missing mark itself reusable.
 
 ## Adjusting Marks
 
@@ -64,8 +68,8 @@ class ReferenceMarkAdjuster:
         return adjusted
 ```
 
-The final mark set thus respects minimum distances while preserving inherited
-shapes whenever possible.
+The final mark set thus respects minimum distances while keeping a reused
+mark's shape and angle whenever possible.
 
 ## Parameter Effects
 
@@ -133,16 +137,23 @@ a 3&nbsp;mm sheet and a 0.3&nbsp;mm kerf that is a size of 3, a distance of 3 an
 the size of the model. So set `--layer-height` and `--kerf` for your material and machine, and leave
 the rest.
 
-- **Small pieces** – a mark needs room for its hole and for the web on each side. At the defaults a
-  square piece must be a little over 6&nbsp;mm wide (6.003 gets no mark and 6.004 gets one; measured on a
-  3&nbsp;mm sheet). A 10&nbsp;mm cube gets a mark in every layer. If a contour gets no mark, the warning names
-  the slice: use a smaller `--mark-size`, or a thinner sheet.
+- **Small pieces** – a mark needs room for its hole and for the web on each side. At the defaults
+  (a 3&nbsp;mm sheet) a stack needs a little over 6&nbsp;mm width for a mark: measured on a
+  6&nbsp;mm-square piece 9&nbsp;mm tall (three 3&nbsp;mm layers, so two boundaries), a 6.000&nbsp;mm
+  width gets no mark on any of its three slices, while 6.003&nbsp;mm and 6.004&nbsp;mm each get one
+  on every slice (`tests/test_disc_matches_chosen_shape.py`). A 10&nbsp;mm cube at the same defaults
+  gets marks throughout. If a contour gets no mark, the warning names the slice: use a smaller
+  `--mark-size`, or a thinner sheet -- unless the warning instead says the model has only one
+  layer, in which case no size or distance change helps.
 - **Thick sheet** – the mark grows with the sheet (a 5&nbsp;mm sheet gives a size of 5, and its web is
   2.5), so a 10&nbsp;mm cube gets no marks at that sheet. Set a smaller `--mark-size`; a size below the
   least hole size for the sheet is a warning, not an error.
 - **Large models** – the defaults need no change. Raise `--mark-tolerance` only if a mark drifts between
   layers.
 
-## Planned changes
+## Still open
 
-This page describes the algorithm as it is. The target adds a check that adjacent layers can be aligned in exactly one way, shapes chosen to fix rotation, marks chosen per pair of layers, and sizes that follow the sheet thickness. See [Alignment requirements](alignment_requirements.md).
+This page describes the algorithm as it now runs: shapes chosen to fix rotation, marks chosen
+per pair of adjacent layers, and sizes that follow the sheet thickness are all built. Still open:
+a check that adjacent layers can be aligned in exactly one way (TR-2, #92). See
+[Alignment requirements](alignment_requirements.md).

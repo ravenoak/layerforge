@@ -9,6 +9,8 @@ from shapely import make_valid
 from shapely.geometry import MultiPolygon, Polygon
 from shapely.ops import unary_union
 
+from layerforge.utils import polygon_parts
+
 
 @dataclass(frozen=True)
 class AdjacentPair:
@@ -56,7 +58,7 @@ def _repaired(polygon: Polygon, layer_index: int, piece_index: int) -> Polygon:
     if polygon.is_valid:
         return polygon
     repaired = make_valid(polygon)
-    parts = [g for g in shapely.get_parts(repaired) if isinstance(g, Polygon) and g.area > 0]
+    parts = polygon_parts(repaired)
     if not parts:
         raise ValueError(f"layer {layer_index} piece {piece_index} is not a valid polygon")
     return max(parts, key=lambda g: g.area)

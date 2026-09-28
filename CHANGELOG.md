@@ -227,6 +227,16 @@ output, the first release will raise the minor version.
 
 ### Fixed
 
+- `adjacent_pairs`'s polygon repair no longer raises `ValueError` for a self-intersecting
+  contour that `shapely.make_valid` resolves into a `GeometryCollection` holding a
+  `MultiPolygon` alongside the self-intersection's leftover line (rather than a bare
+  `Polygon` or `MultiPolygon`). `shapely.get_parts` does not descend into that
+  `MultiPolygon`'s own pieces, so the repair used to see no polygon at all and wrongly
+  refuse a shape with real, repairable area. A new shared helper,
+  `layerforge.utils.polygon_parts`, walks every nesting level and is now used here and by
+  the two other places that were extracting polygon parts from a repaired shape
+  (`pair_marking.py`'s `_largest_part`, `reference_mark_calculator.py`'s
+  `_sample_points`), so all three repair the same way (found by `/code-review` of #63).
 - `--help` no longer sends the reader to `docs/reference_mark_algorithm.md`, a path a
   `pip` or `uv tool install` install does not have. The four mark options lost that
   sentence, and the help ends with one link to the published page. A test checks that

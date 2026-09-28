@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from shapely import make_valid
 from shapely.geometry import Point, Polygon
 
-from layerforge.utils import calculate_distance
+from layerforge.utils import calculate_distance, polygon_parts
 
 from .footprint import mark_reach
 from .reference_mark import ReferenceMark
@@ -81,7 +81,7 @@ class ReferenceMarkCalculator:
         if not poly.is_valid:
             # Keep the largest polygon of the repaired shape, holes included.
             repaired = make_valid(poly)
-            parts = [g for g in getattr(repaired, "geoms", [repaired]) if isinstance(g, Polygon)]
+            parts = polygon_parts(repaired)
             if parts:
                 poly = max(parts, key=lambda g: g.area)
 

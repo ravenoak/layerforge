@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import shapely
 from shapely.geometry import MultiPolygon, Polygon
 
 from layerforge.models.slicing.adjacency import adjacent_pairs
+from layerforge.utils import polygon_parts
 
 from .config import ReferenceMarkConfig, require
 from .reference_mark import ReferenceMark
@@ -16,9 +16,11 @@ def _largest_part(region: Polygon | MultiPolygon) -> Polygon | None:
     """Return the biggest polygon of ``region``, or ``None`` if it has no area.
 
     A pair's shrunk overlap can be split into several disjoint pieces; phase 1 places a mark
-    in the largest one only (a documented simplification, see the design spec's Non-goals).
+    in the largest one only (a documented simplification: see the design spec's "Design"
+    section on erosion of an intersection; the choice of the largest part only, rather than
+    every part, is not itself called out in the spec's Non-goals).
     """
-    parts = [p for p in shapely.get_parts(region) if isinstance(p, Polygon) and p.area > 0]
+    parts = polygon_parts(region)
     return max(parts, key=lambda p: p.area) if parts else None
 
 

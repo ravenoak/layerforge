@@ -3,6 +3,7 @@
 import math
 
 import pytest
+from shapely import make_valid
 from shapely.geometry import MultiPolygon, Point, Polygon, box
 
 from layerforge.models.slicing.adjacency import AdjacentPair, adjacent_pairs
@@ -144,6 +145,20 @@ def test_a_repairable_invalid_polygon_does_not_raise():
     bowtie = Polygon([(0, 0), (10, 10), (10, 0), (0, 10)])
     normal = Polygon([(0, 0), (10, 0), (10, 10), (0, 10)])
     result = adjacent_pairs([[bowtie], [normal]])
+    assert len(result) == 1
+
+
+def test_a_polygon_that_repairs_into_a_geometrycollection_does_not_raise():
+    """Review fix: `make_valid` can return a `GeometryCollection` holding a `MultiPolygon`
+    plus the leftover line of a self-intersection, not just a bare `Polygon`/`MultiPolygon`.
+    `shapely.get_parts` does not descend into that `MultiPolygon`'s own pieces, so a naive
+    `isinstance(part, Polygon)` filter over `get_parts(repaired)` sees no `Polygon` at all and
+    wrongly raises, though the shape has 50 units of real, repairable area (see
+    `layerforge.utils.polygon_parts`)."""
+    spiky = Polygon([(0, 0), (10, 10), (10, 0), (0, 10), (0, 0), (5, 0), (5, -5), (5, 0)])
+    assert make_valid(spiky).geom_type == "GeometryCollection"  # pins the repro, not the fix
+    normal = Polygon([(0, 0), (10, 0), (10, 10), (0, 10)])
+    result = adjacent_pairs([[spiky], [normal]])
     assert len(result) == 1
 
 

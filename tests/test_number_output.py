@@ -143,6 +143,7 @@ def test_a_piece_too_small_for_the_number_warns_once_per_slice(tmp_path, caplog)
                 # A circle covers more of a small piece than the triangle of the defaults.
                 "--available-shapes",
                 "circle",
+                "--allow-unaligned",  # a lone circle is refused; this test is about the number
             ],
         )
 
@@ -214,7 +215,9 @@ def test_a_10_mm_cube_at_the_defaults_leaves_the_number_room(tmp_path, caplog):
     trimesh.creation.box(extents=(10, 10, 10)).export(stl)
 
     assert _number_warnings(stl, tmp_path / "a", caplog) == []
-    circles = _number_warnings(stl, tmp_path / "b", caplog, "--available-shapes", "circle")
+    circles = _number_warnings(
+        stl, tmp_path / "b", caplog, "--available-shapes", "circle", "--allow-unaligned"
+    )
     assert len(circles) == 4
 
 

@@ -10,6 +10,7 @@ from layerforge.models.loading import LoaderFactory
 from layerforge.models.reference_marks import ReferenceMarkConfig
 from layerforge.models.reference_marks.config import TOLERANCE_FACTOR
 from layerforge.models.slicing.adjacency import UnrepairableContourError
+from layerforge.models.slicing.alignment_check import check_alignment
 from layerforge.settings import Settings, find_config_file, merge_settings, read_config_file
 from layerforge.svg import SVGGenerator
 from layerforge.svg.drawing import StrategyContext
@@ -194,6 +195,22 @@ def _run(
             f"Cannot slice '{stl_file}': slice {exc.layer_index}, piece {exc.piece_index} "
             "is not a valid polygon and cannot be repaired. The mesh may be broken at that height."
         ) from exc
+
+    failures = check_alignment(slices)
+    if failures:
+        lines = [failure.message() for failure in failures]
+        if not settings.checks.allow_unaligned:
+            raise click.ClickException(
+                "\n".join(
+                    [
+                        *lines,
+                        "Nothing was written. Use --allow-unaligned to write the files anyway.",
+                    ]
+                )
+            )
+        for line in lines:
+            logging.warning(line)
+
     svg_writer = SVGFileWriter()
     style = SVGStyle(
         cut_color=output.cut_color,
@@ -305,6 +322,7 @@ def process_model(
         cut_color=cut_color,
         engrave_color=engrave_color,
         number_height=number_height,
+        allow_unaligned=allow_unaligned,
     )
     _run(
         settings,
@@ -464,6 +482,7 @@ def cli(
             cut_color=cut_color,
             engrave_color=engrave_color,
             number_height=number_height,
+            allow_unaligned=allow_unaligned,
         )
     except ConflictingOptionsError as exc:
         click.echo(str(exc))

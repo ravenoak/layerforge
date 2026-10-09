@@ -145,7 +145,7 @@ def test_cli_missing_file_fails_without_output(tmp_path: Path) -> None:
     assert not list(out.glob("*.svg"))
 
 
-def test_cli_warns_when_no_mark_fits(box_stl: Path, tmp_path: Path) -> None:
+def test_cli_refuses_when_no_mark_fits(box_stl: Path, tmp_path: Path) -> None:
     """At layer height 5 the default mark (size 5, web 2.5) does not fit a 10 mm cube."""
     out = tmp_path / "out"
     result = _run_cli(
@@ -157,6 +157,27 @@ def test_cli_warns_when_no_mark_fits(box_stl: Path, tmp_path: Path) -> None:
         str(out),
         "--target-height",
         "10",
+    )
+    assert result.returncode == 1
+    assert "--mark-min-distance" in result.stderr
+    assert "--allow-unaligned" in result.stderr
+    assert not list(out.glob("slice_*.svg"))
+
+
+def test_cli_writes_with_a_warning_when_no_mark_fits_and_allow_unaligned(
+    box_stl: Path, tmp_path: Path
+) -> None:
+    out = tmp_path / "out"
+    result = _run_cli(
+        "--stl-file",
+        str(box_stl),
+        "--layer-height",
+        str(LAYER_HEIGHT),
+        "--output-folder",
+        str(out),
+        "--target-height",
+        "10",
+        "--allow-unaligned",
     )
     assert result.returncode == 0, result.stderr
     assert "--mark-min-distance" in result.stderr
@@ -198,6 +219,7 @@ def test_cli_units_in_give_marks_of_a_sensible_size_without_setting_a_length(
         "in",
         "--available-shapes",
         "circle",
+        "--allow-unaligned",  # a lone circle is refused by the check; this test is about the size
         "--output-folder",
         str(out),
     )
@@ -233,7 +255,13 @@ def test_cli_config_file_sets_every_mark_size(box_stl: Path, tmp_path: Path) -> 
     )
     out = tmp_path / "out"
     result = _run_cli(
-        "--stl-file", str(box_stl), "--config", str(config), "--output-folder", str(out)
+        "--stl-file",
+        str(box_stl),
+        "--config",
+        str(config),
+        "--output-folder",
+        str(out),
+        "--allow-unaligned",  # a lone circle is refused by the check; this test is about the size
     )
     assert result.returncode == 0, result.stderr
     radii = {

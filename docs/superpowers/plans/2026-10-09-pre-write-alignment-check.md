@@ -281,7 +281,7 @@ Expected: all pass (10 tests: the parametrized one counts twice).
 
 - [ ] **Step 5: Mutation check**
 
-Copy `alignment_check.py` to the scratchpad. In the copy under test, change `if not shared:` to `if False:` is forbidden, so instead change `if not shared:` to `if len(shared) < 0:`. Run `uv run pytest tests/test_alignment_check.py -q`. Expected: the "no marks" tests fail (an empty set is read as unlimited symmetry, reason `rotation_not_fixed`). Restore from the copy and re-run: all pass.
+Copy `alignment_check.py` to the scratchpad. In the real file, change `if not shared:` to `if len(shared) < 0:`. Run `uv run pytest tests/test_alignment_check.py -q`. Expected: the "no marks" tests fail (an empty set is read as unlimited symmetry, reason `rotation_not_fixed`). Restore from the copy and re-run: all pass.
 
 - [ ] **Step 6: Format, lint, types, commit**
 
@@ -768,7 +768,7 @@ Replace the last two sentences of the `FR22_AdjustMarks` guidance (`A slice can 
 
 - [ ] **Step 8: The spec of this work**
 
-In `docs/superpowers/specs/2026-10-09-pre-write-alignment-check-design.md` change the first Testing bullet "the thin tube exits 1" to "the cone exits 1" (the thin tube needs a boolean engine that is not a dependency), and the Status line to `Status: approved 2026-10-09, built in #92.`
+In `docs/superpowers/specs/2026-10-09-pre-write-alignment-check-design.md` change the first Testing bullet "the thin tube exits 1" to "the cone exits 1" (the thin tube needs a boolean engine that is not a dependency), and the Status line to `Status: approved 2026-10-09, built in #92.` Replace the two example lines under "The command" with the two messages that `AlignmentFailure.message()` returns, copied from a run.
 
 - [ ] **Step 9: Backlog**
 

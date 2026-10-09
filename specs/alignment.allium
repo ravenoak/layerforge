@@ -18,7 +18,9 @@
 -- pairing, as ReferenceMarkCalculator.choose_mark_for_pair does. There is
 -- no whole-stack registry (#63 removed it), so nothing snaps a point to
 -- a mark elsewhere in the stack. The rest of the tool does not do any of
--- this spec yet. What the tool does today is in layerforge.allium and
+-- this spec yet, except TR-12 for TR-2 (#92): check_alignment refuses a
+-- stack with a pair that is not alignable in one way, before any file is
+-- written. What the tool does today is in layerforge.allium and
 -- docs/requirements.md.
 --
 -- Scope: layers, pieces, reference marks (holes), shared marks between
@@ -55,8 +57,7 @@ value Outline {
 }
 
 value Failure {
-    layer: Layer
-    piece: Piece
+    pair: AdjacentPair
     reason: FailureReason
 }
 
@@ -77,8 +78,10 @@ enum DowelMode { hole | centre }
 -- TR-13
 enum Units { mm | cm | `in` }
 
--- TR-12: the three checks that stop a write.
-enum FailureReason { not_alignable | number_does_not_fit | mark_misplaced }
+-- TR-12: the two ways a pair of pieces fails the check. A number that does not fit (TR-3)
+-- and a number that would overprint a mark (TR-5) are warnings, not failures (owner's
+-- decision, 2026-10-09).
+enum FailureReason { no_shared_mark | rotation_not_fixed }
 
 ------------------------------------------------------------
 -- Entities and Variants
@@ -385,15 +388,14 @@ rule TR12_RefuseUnalignedWrite {
     ensures:
         for failure in stack.failures:
             FailureReported(
-                layer: failure.layer,
-                piece: failure.piece,
+                pair: failure.pair,
                 reason: failure.reason
             )
         stack.exit_code = 1
         stack.status = refused
     @guidance
-        -- Nothing is written. Each failure goes to stderr with the slice,
-        -- the piece and the reason.
+        -- Nothing is written. Each failure goes to stderr with the slices and
+        -- the pieces of the pair, and the reason.
 }
 
 rule TR12_WriteWithWarnings {
@@ -403,8 +405,7 @@ rule TR12_WriteWithWarnings {
     ensures:
         for failure in stack.failures:
             FailureWarned(
-                layer: failure.layer,
-                piece: failure.piece,
+                pair: failure.pair,
                 reason: failure.reason
             )
         stack.exit_code = 0
@@ -422,9 +423,11 @@ rule TR12_WriteAlignedStack {
         stack.status = written
     @guidance
         -- alignment_failures runs after slicing and before any file is
-        -- written. It reports, for every piece: TR-2 not met
-        -- (not_alignable), the number does not fit (TR-3, TR-11:
-        -- number_does_not_fit) and TR-5 not met (mark_misplaced).
+        -- written. It reports, for every pair of adjacent pieces, TR-2 not
+        -- met: no shared mark (no_shared_mark) or a turn that maps the
+        -- shared marks onto themselves (rotation_not_fixed). Built as
+        -- check_alignment (#92). The other two checks that this rule once
+        -- named, TR-3 and TR-5, stay warnings of the drawer.
 }
 
 -- Settings (TR-16) ----------------------------------------------------------

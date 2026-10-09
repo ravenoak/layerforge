@@ -85,6 +85,8 @@ entity Run {
     min_hole_ratio: Decimal             -- times layer_height: a term of the least hole size (TR-6)
     min_hole_kerf_factor: Decimal       -- times kerf: the other term (TR-6)
     min_overlap_area: Decimal           -- the least overlap that counts as a shared pairing (TR-9)
+    allow_unaligned: Boolean            -- write the files although a pair is not aligned in one way (TR-12, FR-32)
+    alignment_checked: Boolean          -- true once the pairs have been checked and the files may be written (FR-32)
     available_shapes: List<String>
     angle: Decimal                      -- radians; the command takes degrees
     config_error: String?               -- set when the config file is unreadable or has a bad key or value (FR-30)
@@ -98,6 +100,7 @@ entity Run {
     status: requested | rejected | scaled | sliced | written
 
     height: mesh.max_z - mesh.min_z
+    all_adjusted: slices.count > 0 and slices.all(s => s.status = adjusted)
     all_drawn: slices.count > 0 and slices.all(s => s.status = drawn)
     slices: Slice with run = this
 
@@ -111,6 +114,7 @@ entity Run {
         requested -> rejected
         requested -> scaled
         scaled -> sliced
+        sliced -> rejected
         sliced -> written
         terminal: rejected, written
     }
@@ -180,6 +184,8 @@ rule FR1_StartRun {
             min_hole_ratio: config.default_min_hole_ratio,
             min_hole_kerf_factor: config.default_min_hole_kerf_factor,
             min_overlap_area: config.default_min_overlap_area,
+            allow_unaligned: options.allow_unaligned ?? config.default_allow_unaligned,   -- or the file value (FR-32)
+            alignment_checked: false,
             available_shapes: options.available_shapes,
             angle: radians(options.mark_angle),
             config_error: settings_file_error(options),
@@ -469,14 +475,46 @@ rule FR22_AdjustMarks {
         -- The earlier mark of a close pair stays. Each slice is adjusted on
         -- its own: dropping a mark here does not drop its copy on the
         -- neighbour slice on the other side of the same boundary. A slice
-        -- can end with a contour that has no mark. One warning is logged
-        -- for the slice; it is still written.
+        -- can end with a contour that has no mark: the pair it belongs to
+        -- then fails the check of FR32.
+}
+
+rule FR32_RefuseUnalignedStack {
+    when: run: Run.all_adjusted
+    requires: run.status = sliced
+    requires: not run.alignment_checked
+    requires: not run.allow_unaligned
+    requires: alignment_failures(run).count > 0
+    ensures: run.status = rejected
+    @guidance
+        -- alignment_failures checks every pair of overlapping pieces in adjacent
+        -- slices, once all slices are adjusted and before any file is written.
+        -- The marks both slices hold, with the centre inside both pieces, are the
+        -- shared marks of the pair. The pair fails when it has none, or when a
+        -- turn other than none maps them onto themselves. One line per failure,
+        -- naming both slices and both pieces, and "Nothing was written. Use
+        -- --allow-unaligned to write the files anyway." go to stderr; exit code
+        -- 1 and no file is written. A model of one layer has no pair. A number
+        -- that does not fit is not a failure (FR-26).
+}
+
+rule FR32_AllowAlignedOrWarn {
+    when: run: Run.all_adjusted
+    requires: run.status = sliced
+    requires: not run.alignment_checked
+    requires: run.allow_unaligned or alignment_failures(run).count = 0
+    ensures: run.alignment_checked = true
+    @guidance
+        -- With --allow-unaligned (checks.allow_unaligned) each failure is
+        -- logged as one warning and the files are written; the exit code is 0.
+        -- A stack without failures is written without a message.
 }
 
 -- SVG output (FR-24 to FR-27) ---------------------------------------------
 
 rule FR24_WriteSvg {
     when: slice: Slice.status becomes adjusted
+    requires: slice.run.alignment_checked
     ensures:
         SvgFile.created(
             slice: slice,

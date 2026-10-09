@@ -1,6 +1,6 @@
 # The pre-write alignment check and `--allow-unaligned` (#92, TR-12)
 
-Status: draft, awaiting owner review.
+Status: approved 2026-10-09, built in #92.
 
 ## Context
 
@@ -74,7 +74,6 @@ class AlignmentFailure:
     upper_slice: int
     upper_piece: int
     reason: Literal["no_shared_mark", "rotation_not_fixed"]
-    detail: str  # the message tail, for the person
 
 
 def check_alignment(slices: Sequence[Slice]) -> list[AlignmentFailure]: ...
@@ -107,11 +106,11 @@ For each pair of adjacent slices `(a, b)` and each `AdjacentPair` of
 A failure line names both pieces and gives advice for its reason:
 
 ```
-slices 7 and 8 (piece 0 and piece 0): the pieces share no mark. Try a smaller
---mark-min-distance or --mark-size (marks.min_distance or marks.size in the config file).
-slices 3 and 4 (piece 0 and piece 0): the marks they share are the same after a turn (a circle
-or a square alone cannot fix the rotation). Allow a shape with a direction in --available-shapes.
+slices 7 and 8 (piece 0 and piece 0): the pieces share no mark. Try a smaller --mark-min-distance or --mark-size (marks.min_distance or marks.size in the config file).
+slices 0 and 1 (piece 0 and piece 0): the marks they share look the same after a turn, so the layers could be stacked turned. A circle or a square alone cannot fix the rotation. Allow a shape with a direction in --available-shapes (marks.shapes in the config file).
 ```
+
+`AlignmentFailure.message()` builds each line from its `reason`; the class holds no text field.
 
 ### The setting and the option
 
@@ -172,7 +171,7 @@ Tests first, each watched failing for the right reason.
   circle fails `rotation_not_fixed`; one square fails; no shared mark fails `no_shared_mark`; a
   mark in only one slice is not shared; a single slice passes; `--mark-tolerance 0` does not
   raise.
-- End to end through `cli`: the 20 mm cube exits 0 and writes all files; the thin tube exits 1,
+- End to end through `cli`: the 20 mm cube exits 0 and writes all files; the cone exits 1,
   writes nothing, and stderr names the slices and pieces; the same with `--allow-unaligned` exits
   0 and writes every file with one warning per failure; `--available-shapes circle` exits 1.
 - Option, config key and `--help` are covered by `test_defaults_documented.py`.

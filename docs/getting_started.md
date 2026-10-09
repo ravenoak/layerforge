@@ -80,12 +80,19 @@ starts with `Error:` and exits with code 2 is also preceded by a `Usage:` line.
 - ``Error: Cannot load 'nope.stl': string is not a file: `nope.stl` `` (exit code 1)
   – check the `--stl-file` path. A file that is not a mesh gives
   ``Error: Cannot load 'junk.stl': the mesh contains no geometry``.
-- ``WARNING:root:No reference mark fits 1 of 1 contours in slice 0. Try a smaller --mark-min-distance or --mark-size.``
-  (the run continues, exit code 0; the numbers vary) – the mark and the material around it
-  do not fit the piece. By default a mark is as big as the layer height, and a hole needs half the
-  layer height of material around it. A square piece 6 mm wide or less gets no mark at a layer
-  height of 3, and a 10 mm cube gets none at a layer height of 5. Use a smaller `--mark-size` or
-  `--mark-min-distance`.
+- ``Error: slices 0 and 1 (piece 0 and piece 0): the pieces share no mark. Try a smaller --mark-min-distance or --mark-size (marks.min_distance or marks.size in the config file).``
+  followed by ``Nothing was written. Use --allow-unaligned to write the files anyway.``
+  (exit code 1, no file written; the numbers vary) – the two pieces have no hole in common, so
+  the layers could not be aligned. One line is printed for each such pair. By default a mark is as
+  big as the layer height, and a hole needs half the layer height of material around it. A square
+  piece 6 mm wide or less gets no mark at a layer height of 3, and a 10 mm cube gets none at a
+  layer height of 5. Use a smaller `--mark-size` or `--mark-min-distance`. With
+  `--allow-unaligned` the same line is a ``WARNING:root:`` line, the files are written and the
+  exit code is 0.
+- ``Error: slices 0 and 1 (piece 0 and piece 0): the marks they share look the same after a turn, so the layers could be stacked turned. A circle or a square alone cannot fix the rotation. Allow a shape with a direction in --available-shapes (marks.shapes in the config file).``
+  (exit code 1, no file written) – every shape in `--available-shapes` looks the same after a
+  turn, for example `--available-shapes circle`. Add the triangle or the arrow, or give
+  `--allow-unaligned` to write the files anyway.
 - ``WARNING:root:The mark size 1 is below the least hole size 3 for a sheet of 3 and a kerf of 0.3. Holes this small may not cut cleanly.``
   (the run continues, exit code 0) – `--mark-size` is smaller than the larger of the layer height
   and 1.5 times the kerf. Your laser may not cut a hole that small. Raise `--mark-size`, or ignore

@@ -9,6 +9,7 @@ from layerforge.models import ModelFactory, SlicerService
 from layerforge.models.loading import LoaderFactory
 from layerforge.models.reference_marks import ReferenceMarkConfig
 from layerforge.models.reference_marks.config import TOLERANCE_FACTOR
+from layerforge.models.slicing.adjacency import UnrepairableContourError
 from layerforge.settings import Settings, find_config_file, merge_settings, read_config_file
 from layerforge.svg import SVGGenerator
 from layerforge.svg.drawing import StrategyContext
@@ -184,7 +185,13 @@ def _run(
         min_overlap_area=settings.checks.min_overlap_area,
     )
 
-    slices = SlicerService.slice_model(model, config=config)
+    try:
+        slices = SlicerService.slice_model(model, config=config)
+    except UnrepairableContourError as exc:
+        raise click.ClickException(
+            f"Cannot slice '{stl_file}': slice {exc.layer_index}, piece {exc.piece_index} "
+            "is not a valid polygon and cannot be repaired. The mesh may be broken at that height."
+        ) from exc
     svg_writer = SVGFileWriter()
     style = SVGStyle(
         cut_color=output.cut_color,

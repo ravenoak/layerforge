@@ -232,6 +232,11 @@ output, the first release will raise the minor version.
 
 ### Fixed
 
+- A slice piece that `shapely.make_valid` cannot repair into a polygon with area now stops the
+  command with `Error: Cannot slice '<file>': slice N, piece M is not a valid polygon and cannot
+  be repaired. The mesh may be broken at that height.` and exit code 1, not a traceback.
+  `adjacent_pairs` raises the new `UnrepairableContourError`, a `ValueError`, from
+  `layerforge.models.slicing.adjacency`. (#211)
 - `adjacent_pairs`'s polygon repair no longer raises `ValueError` for a self-intersecting
   contour that `shapely.make_valid` resolves into a `GeometryCollection` holding a
   `MultiPolygon` alongside the self-intersection's leftover line (rather than a bare

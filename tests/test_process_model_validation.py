@@ -2,8 +2,11 @@ import xml.etree.ElementTree as ET
 
 import click
 import pytest
+from click.testing import CliRunner
+from shapely.geometry import Polygon
 
-from layerforge.cli import process_model
+from layerforge.cli import cli, process_model
+from layerforge.models import Model
 
 
 def test_process_model_invalid_layer_height(cylinder_stl, tmp_path):
@@ -151,3 +154,22 @@ def test_process_model_bad_units_fail_before_slicing(cylinder_stl, tmp_path):
         process_model(stl_file=str(cylinder_stl), output_folder=str(out), units="ft")
 
     assert not out.exists()
+
+
+def test_cli_an_unrepairable_slice_contour_is_a_clear_error(cylinder_stl, tmp_path, monkeypatch):
+    # Real slice pieces come from symmetric_difference and are valid, so the contour source is
+    # patched: a zero-area closed line is invalid and make_valid leaves no polygon (#211).
+    # The second piece is the bad one, so a swap of slice and piece in the message shows.
+    valid = Polygon([(0, 0), (10, 0), (10, 10), (0, 10)])
+    degenerate = Polygon([(0, 0), (5, 5), (10, 10), (0, 0)])
+    monkeypatch.setattr(Model, "calculate_slice_contours", lambda self, z: [valid, degenerate])
+    out = tmp_path / "out"
+
+    result = CliRunner().invoke(cli, ["--stl-file", str(cylinder_stl), "--output-folder", str(out)])
+
+    assert result.exit_code == 1
+    assert "Error: Cannot slice" in result.output
+    assert "slice 0, piece 1" in result.output
+    assert "Traceback" not in result.output
+    assert not isinstance(result.exception, ValueError)
+    assert not out.exists() or list(out.iterdir()) == []

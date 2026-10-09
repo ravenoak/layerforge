@@ -13,13 +13,12 @@
 -- included. This invariant is written as the spec's target, not a built
 -- guarantee, for non-drifting geometry. Real enforcement (e.g. a forced
 -- periodic retirement) is a follow-up: #215.
--- TR10_SnapToStoredMark still describes a whole-stack registry
--- lookup (nearest_stored_mark(stack, ...)); the built code has no such
--- registry (#63 deliberately removed the one it replaced) and only checks
--- tolerance against the one pairing in play, so this rule is not built and
--- may need to be revised to match the pair-local design rather than simply
--- implemented as written. The rest of the tool does not do any of this
--- spec yet. What the tool does today is in layerforge.allium and
+-- TR10_FreshPointClearOfMarksInPlay is built (#63, #210): a fresh point
+-- is refused within the snapping radius of a mark in play for its
+-- pairing, as ReferenceMarkCalculator.choose_mark_for_pair does. There is
+-- no whole-stack registry (#63 removed it), so nothing snaps a point to
+-- a mark elsewhere in the stack. The rest of the tool does not do any of
+-- this spec yet. What the tool does today is in layerforge.allium and
 -- docs/requirements.md.
 --
 -- Scope: layers, pieces, reference marks (holes), shared marks between
@@ -312,18 +311,28 @@ default ShapeDefinition arrow_definition = {
 
 -- Reference marks (TR-9, TR-10) -------------------------------------------
 
-rule TR10_SnapToStoredMark {
-    when: MarkPointProposed(piece, point)
-    let stack = piece.layer.stack
-    let stored = nearest_stored_mark(stack, point, stack.mark_tolerance)
-    ensures:
-        if stored != null:
-            MarkPointResolved(piece: piece, point: stored.centre)
-        else:
-            MarkPointResolved(piece: piece, point: point)
+rule TR10_FreshPointClearOfMarksInPlay {
+    when: MarkPointProposed(pair, point)
+    let in_play = marks_in_play(pair)
+    requires: in_play.all(m => point_distance(point, m.centre) > pair.stack.mark_tolerance)
+    ensures: MarkPointAccepted(pair: pair, point: point)
     @guidance
-        -- The snapping radius is mark_tolerance. When two stored marks are
-        -- in range, the nearer one wins.
+        -- A fresh point is refused when it lies within mark_tolerance of any
+        -- mark in play for this pairing, so it can never be mistaken for
+        -- that mark (TR-10). The marks in play are the candidates carried
+        -- from the pairing before, including those retired at this pair,
+        -- the marks already placed on either piece by a different pairing
+        -- (a split or a merge), and, across a boundary that places no
+        -- mark, the positions that were in play before it (they keep
+        -- propagating, avoid-only). Built as the tolerance test of the
+        -- fresh-point loop in ReferenceMarkCalculator.choose_mark_for_pair,
+        -- which tests `avoid_all`. The other tests in that loop (the
+        -- region, and the gap of min_distance) belong to TR-5 and TR-9;
+        -- this rule states only the tolerance condition. A candidate that
+        -- still fits is reused with its stored coordinates before any
+        -- fresh point is tried. Nothing is snapped: there is no registry of
+        -- the whole stack, so a point is never compared with a mark of a
+        -- part of the stack that is not in this pairing (#63).
 }
 
 rule TR9_RetireWhenNoLongerValid {

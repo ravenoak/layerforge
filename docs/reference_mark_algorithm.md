@@ -79,15 +79,17 @@ reference marks.
 
 ### `tolerance`
 
-A candidate position within the tolerance radius of a stored mark is that mark. It
-takes the stored coordinates and look, and the nearest stored mark wins. Sampled
-candidates in that range are skipped, so no two stored marks lie within the
-tolerance of each other.
+A fresh sampled point within the tolerance radius of a mark in play for its pairing
+is skipped, so it cannot be taken for that mark (TR-10). The marks in play are the
+candidates carried from the boundary before, the marks already placed on either
+piece by a different pairing, and the positions kept through a boundary that places
+no mark (above). A carried mark that still fits is reused with its
+stored coordinates and look, before any fresh point is tried.
 
 ```mermaid
 flowchart LR
-    A((Stored mark)) -- within tolerance --> B[Reuse]
-    A -- beyond tolerance --> C[New mark]
+    A((Mark in play)) -- within tolerance --> B[Point skipped]
+    A -- beyond tolerance --> C[Point may be used]
 ```
 
 ### `min_distance`

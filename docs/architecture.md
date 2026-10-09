@@ -44,7 +44,7 @@ flowchart LR
 | `models.loading` | `LoaderFactory`, the `Mesh` interface, and the trimesh loader. |
 | `models` | `ModelFactory` builds a `Model` (scaled mesh and layer height). |
 | `models.slicing` | `SlicerService` computes positions and builds `Slice` objects. |
-| `models.reference_marks` | Mark configuration, calculator, manager (shared registry), adjuster, and `rotation_symmetry`, the test that no turn maps a set of marks onto itself (TR-2). |
+| `models.reference_marks` | Mark configuration, `plan_marks` (marks per pair of adjacent layers), calculator, adjuster, and `rotation_symmetry`, the test that no turn maps a set of marks onto itself (TR-2). |
 | `svg` | `SVGGenerator` and `SliceSVGDrawer` draw one SVG per slice. |
 | `svg.drawing` | One strategy per mark shape, looked up through `StrategyContext`. |
 | `domain.shapes` | Shape data: circle, square, triangle, arrow. Each gives its closed outline as a polygon (TR-7). |

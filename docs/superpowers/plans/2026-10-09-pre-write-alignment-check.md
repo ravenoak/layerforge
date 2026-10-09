@@ -128,7 +128,10 @@ def test_one_slice_and_no_slices_pass():
 
 def test_a_mark_tolerance_of_zero_does_not_raise():
     mark = _mark("circle")
-    slices = [_slice(0, [SQUARE], [mark], tolerance=0.0), _slice(1, [SQUARE], [mark], tolerance=0.0)]
+    slices = [
+        _slice(0, [SQUARE], [mark], tolerance=0.0),
+        _slice(1, [SQUARE], [mark], tolerance=0.0),
+    ]
     assert [f.reason for f in check_alignment(slices)] == ["rotation_not_fixed"]
 
 

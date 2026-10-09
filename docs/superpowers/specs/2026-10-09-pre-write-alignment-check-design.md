@@ -74,7 +74,8 @@ class AlignmentFailure:
     upper_slice: int
     upper_piece: int
     reason: Literal["no_shared_mark", "rotation_not_fixed"]
-    detail: str   # the message tail, for the person
+    detail: str  # the message tail, for the person
+
 
 def check_alignment(slices: Sequence[Slice]) -> list[AlignmentFailure]: ...
 ```

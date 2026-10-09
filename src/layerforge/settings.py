@@ -51,6 +51,7 @@ _OPTION_KEYS: dict[str, tuple[str, ...]] = {
     "cut_color": ("output", "cut_color"),
     "engrave_color": ("output", "engrave_color"),
     "number_height": ("number", "height"),
+    "allow_unaligned": ("checks", "allow_unaligned"),
 }
 _OPTION_HINTS = {keys: "--" + name.replace("_", "-") for name, keys in _OPTION_KEYS.items()}
 
@@ -115,11 +116,14 @@ class NumberSettings(BaseModel):
 
 
 class ChecksSettings(BaseModel):
-    """The ``[checks]`` table: when two pieces of adjacent layers count as sharing a mark (TR-9)."""
+    """The ``[checks]`` table: when two pieces count as sharing a mark (TR-9), and whether a
+    stack that cannot be aligned in one way is still written (TR-12).
+    """
 
     model_config = _STRICT
 
     min_overlap_area: float = Field(default=0.0, ge=0)  # no option (TR-16)
+    allow_unaligned: bool = False
 
 
 class Settings(BaseModel):

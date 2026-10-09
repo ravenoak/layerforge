@@ -105,6 +105,7 @@ def resolve_settings(
     cut_color: str | None = None,
     engrave_color: str | None = None,
     number_height: float | None = None,
+    allow_unaligned: bool | None = None,
 ) -> Settings:
     """Check every option against the settings of the config file, and return the run's settings.
 
@@ -135,6 +136,7 @@ def resolve_settings(
             "cut_color": cut_color,
             "engrave_color": engrave_color,
             "number_height": number_height,
+            "allow_unaligned": allow_unaligned,
         },
     )
     _check_output_folder(output_folder)
@@ -224,6 +226,7 @@ def process_model(
     cut_color: str | None = None,
     engrave_color: str | None = None,
     number_height: float | None = None,
+    allow_unaligned: bool | None = None,
     config_path: Path | None = None,
 ) -> None:
     """Process the model and generate SVG slices.
@@ -267,6 +270,9 @@ def process_model(
     number_height : float, optional
         The height of the layer number, in the unit of the run. Falls back to the config file,
         then its default (5 mm).
+    allow_unaligned : bool, optional
+        Write the files even when two adjacent layers could be stacked in more than one way.
+        Falls back to the config file, then its default (off).
     config_path : Path, optional
         The TOML config file. Without it ``layerforge.toml`` in the current
         directory is used if it exists.
@@ -405,6 +411,14 @@ def process_model(
     f"the run. It must fit clear of the outline, the holes and the marks. "
     f"Default {_DEFAULTS.number.height:g} mm.",
 )
+@click.option(
+    "--allow-unaligned",
+    is_flag=True,
+    default=None,
+    help="Write the files even when two adjacent layers could be stacked in more than one way. "
+    "Each such pair is then a warning and the exit code is 0. Without it nothing is written "
+    "and the exit code is 1.",
+)
 def cli(
     stl_file: str | None,
     config_path: Path | None,
@@ -422,6 +436,7 @@ def cli(
     cut_color: str | None,
     engrave_color: str | None,
     number_height: float | None,
+    allow_unaligned: bool | None,
 ) -> None:
     """Slice an STL model into one SVG file per layer.
 

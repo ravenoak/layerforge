@@ -468,10 +468,12 @@ invariant TR2_OneWayToAlign {
     -- rotation_symmetry(marks, tolerance).has_nonidentity (#90). It is true
     -- when some rotation other than none, about the centroid of the mark
     -- centres, maps the set of marks onto itself. The tolerance is a length
-    -- that the caller passes; which one the check uses is decided in #92.
+    -- that the caller passes; check_alignment (#92) passes the mark tolerance of the
+    -- run, floored at 1e-6 because rotation_symmetry refuses 0.
     -- Angles are compared modulo the symmetry order declared for each shape
     -- (TR-7), so a square turned a quarter is the same mark. A mark listed
-    -- twice counts once (TR-9, TR-10). Nothing calls it yet (#92).
+    -- twice counts once (TR-9, TR-10). check_alignment calls it for every pair
+    -- before any file is written (#92).
     -- Dowel holes are excluded by using alignment_marks (TR-15).
     -- Known gap (#63, phase 1): the built code can leave a pairing with zero
     -- alignment marks, when neither a carried candidate nor a fresh point

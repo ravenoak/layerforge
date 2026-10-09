@@ -128,6 +128,8 @@ entity Slice {
     marks: PlacedMark with slice = this
     status: planned | cut | marked | adjusted | drawn
 
+    ready_to_write: status = adjusted and run.alignment_checked   -- FR-32: no file before the check
+
     transitions status {
         planned -> cut
         cut -> marked
@@ -513,8 +515,8 @@ rule FR32_AllowAlignedOrWarn {
 -- SVG output (FR-24 to FR-27) ---------------------------------------------
 
 rule FR24_WriteSvg {
-    when: slice: Slice.status becomes adjusted
-    requires: slice.run.alignment_checked
+    when: slice: Slice.ready_to_write
+    requires: slice.status = adjusted
     ensures:
         SvgFile.created(
             slice: slice,

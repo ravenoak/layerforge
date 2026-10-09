@@ -47,12 +47,29 @@ def _area_of(geometry: shapely.Geometry) -> Polygon | MultiPolygon:
     return merged if isinstance(merged, (Polygon, MultiPolygon)) else Polygon()
 
 
+class UnrepairableContourError(ValueError):
+    """A piece of a layer that cannot be repaired into a polygon with area (#211).
+
+    Attributes
+    ----------
+    layer_index : int
+        The index of the layer, which is the index of its slice.
+    piece_index : int
+        The index of the piece in that layer.
+    """
+
+    def __init__(self, layer_index: int, piece_index: int) -> None:
+        super().__init__(f"layer {layer_index} piece {piece_index} is not a valid polygon")
+        self.layer_index = layer_index
+        self.piece_index = piece_index
+
+
 def _repaired(polygon: Polygon, layer_index: int, piece_index: int) -> Polygon:
     """Return ``polygon``, repaired if it is not valid (the same approach `_sample_points` uses).
 
     Raises
     ------
-    ValueError
+    UnrepairableContourError
         If ``polygon`` cannot be repaired into a polygon with area, naming where it came from.
     """
     if polygon.is_valid:
@@ -60,7 +77,7 @@ def _repaired(polygon: Polygon, layer_index: int, piece_index: int) -> Polygon:
     repaired = make_valid(polygon)
     parts = polygon_parts(repaired)
     if not parts:
-        raise ValueError(f"layer {layer_index} piece {piece_index} is not a valid polygon")
+        raise UnrepairableContourError(layer_index, piece_index)
     return max(parts, key=lambda g: g.area)
 
 
@@ -90,6 +107,8 @@ def adjacent_pairs(
     ------
     ValueError
         If ``min_overlap_area`` or ``clearance`` is not a finite number of 0 or more.
+    UnrepairableContourError
+        If a piece is not a valid polygon and cannot be repaired into one with area.
     """
     _check("min_overlap_area", min_overlap_area)
     _check("clearance", clearance)

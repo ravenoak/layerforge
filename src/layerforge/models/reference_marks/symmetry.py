@@ -56,6 +56,12 @@ def rotation_symmetry(marks: Sequence[ReferenceMark], *, tolerance: float) -> Ro
     centre within ``tolerance``) counts once, as in TR-10. Two different marks closer than
     ``2 * tolerance`` cannot be told apart, and the answer for them is not defined.
 
+    The cost grows with the cube of the number of marks when the set has a symmetry, and far
+    slower when it has none (#203, circles of size 3, one machine): 100 marks in a ring take
+    0.16 s, 200 take 1.2 s and 400 take 10 s, while 400 random marks take 0.06 s. Pass the marks
+    of one pair of pieces, as TR-2 asks. `plan_marks` gives a pair of pieces at most one mark
+    (#63), so that set is far below the sizes above. Do not pass every mark of a stack.
+
     Parameters
     ----------
     marks : Sequence of ReferenceMark

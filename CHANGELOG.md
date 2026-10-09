@@ -27,7 +27,8 @@ output, the first release will raise the minor version.
   run: one line per pair on stderr, no file written, exit code 1. `--allow-unaligned`
   (`checks.allow_unaligned`) writes the files anyway and logs each pair as a warning. The
   warning `No reference mark fits N of M contours in slice I` is gone: a piece with a
-  neighbour and no mark fails the check, and a model of one layer passes without a message.
+  neighbour (an overlap of at least `checks.min_overlap_area`) and no mark fails the check, and a
+  model of one layer passes without a message.
   A number that does not fit stays a warning. `Slice` no longer takes `total_slices`.
 - **Breaking:** Marks are chosen per pair of adjacent layers, not once per slice against every
   mark of the whole run (TR-9, #63). A mark is retired the moment it stops fitting the next

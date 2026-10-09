@@ -81,6 +81,14 @@ def test_a_piece_that_overlaps_nothing_has_no_pair_and_passes():
     assert check_alignment([_slice(0, [SQUARE], [mark]), _slice(1, [SQUARE, far], [mark])]) == []
 
 
+def test_pieces_that_overlap_by_less_than_the_threshold_are_not_a_pair():
+    """TR-9: `plan_marks` does not mark such a pair, so the check does not ask for a mark."""
+    config = ReferenceMarkConfig(min_overlap_area=1e9)
+    lower = Slice(0, 0.0, [SQUARE], config, layer_height=LAYER_HEIGHT)
+    upper = Slice(1, 1.0, [SQUARE], config, layer_height=LAYER_HEIGHT)
+    assert check_alignment([lower, upper]) == []
+
+
 def test_the_messages_name_both_pieces_and_the_remedy():
     none = AlignmentFailure(3, 0, 4, 2, "no_shared_mark").message()
     assert none.startswith("slices 3 and 4 (piece 0 and piece 2): ")

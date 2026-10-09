@@ -123,7 +123,8 @@ option (CLI, then file, then default). The alignment spec already lists the key
 
 `Slice._warn_about_unmarked_contours` and the `total_slices` argument of `Slice` that only it
 reads. A piece with a neighbour and no mark now fails the check with `no_shared_mark`, with the
-same advice as the old warning.
+same advice as the old warning. A neighbour is an overlap of at least `checks.min_overlap_area`
+(TR-9): a smaller overlap is not a pair, so it is neither marked nor checked.
 
 ### Documentation and specs
 

@@ -67,7 +67,8 @@ def test_every_cut_element_has_the_cut_colour_a_hairline_and_no_fill(cube_stl, t
 @pytest.mark.parametrize("shape", ["circle", "square", "triangle", "arrow"])
 def test_a_mark_of_every_shape_is_drawn_in_the_cut_colour(cube_stl, tmp_path, shape):
     """Each shape used to have a colour of its own: red, blue, green and black."""
-    slices = _slices(cube_stl, tmp_path / "out", "--available-shapes", shape)
+    # A lone circle or square is refused by the alignment check; this test is about the colour.
+    slices = _slices(cube_stl, tmp_path / "out", "--available-shapes", shape, "--allow-unaligned")
 
     marks = [el for root in slices for el in _cut(root) if el.get("class") == "mark"]
     assert marks

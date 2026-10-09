@@ -1,6 +1,5 @@
 """A mark is a hole with an extent (TR-5). Clearance is checked on the whole hole."""
 
-import logging
 import math
 from collections.abc import Sequence
 
@@ -146,15 +145,6 @@ def test_the_web_comes_from_the_layer_height_and_the_ratio():
     assert (len(thick.ref_marks), len(thin.ref_marks), len(no_web.ref_marks)) == (0, 1, 1)
 
 
-def test_the_warning_for_a_slice_without_marks_names_the_mark_size_too(caplog):
-    layer = _slice(BAR, size=8, min_distance=1)
-    with caplog.at_level(logging.WARNING):
-        _process(layer)
-    (record,) = [r for r in caplog.records if r.levelno == logging.WARNING]
-    assert "--mark-min-distance" in record.getMessage()
-    assert "--mark-size" in record.getMessage()
-
-
 # A mark is drawn as a polygon or a circle, by its shape (#61); the class tells it apart.
 MARK = 'class="mark"'
 
@@ -164,7 +154,16 @@ def _run_bar(tmp_path, width, *args, config=None):
     stl = tmp_path / "bar.stl"
     trimesh.creation.box(extents=(20, width, 10)).export(stl)
     out = tmp_path / "out"
-    options = ["--stl-file", str(stl), "--layer-height", "5", "--output-folder", str(out)]
+    # These tests drop a mark on purpose, so the pair may share none: the check would refuse it.
+    options = [
+        "--stl-file",
+        str(stl),
+        "--layer-height",
+        "5",
+        "--output-folder",
+        str(out),
+        "--allow-unaligned",
+    ]
     if config is not None:
         (tmp_path / "web.toml").write_text(config)
         options += ["--config", str(tmp_path / "web.toml")]

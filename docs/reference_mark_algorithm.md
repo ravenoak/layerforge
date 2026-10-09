@@ -96,8 +96,9 @@ flowchart LR
 
 Marks must stay at least this far from contours **and** other marks. Holes
 count as contour edges. If a contour is too small for any mark to keep this
-distance, it gets no mark and a warning names the slice. Use a smaller
-`min_distance` in that case.
+distance, it gets no mark, and the pair it belongs to fails the check before the files are
+written (the command stops with exit code 1 and names the two slices; see
+`--allow-unaligned`). Use a smaller `min_distance` in that case.
 
 ```mermaid
 flowchart LR
@@ -144,9 +145,9 @@ the rest.
   6&nbsp;mm-square piece 9&nbsp;mm tall (three 3&nbsp;mm layers, so two boundaries), a 6.000&nbsp;mm
   width gets no mark on any of its three slices, while 6.003&nbsp;mm and 6.004&nbsp;mm each get one
   on every slice (`tests/test_disc_matches_chosen_shape.py`). A 10&nbsp;mm cube at the same defaults
-  gets marks throughout. If a contour gets no mark, the warning names the slice: use a smaller
-  `--mark-size`, or a thinner sheet -- unless the warning instead says the model has only one
-  layer, in which case no size or distance change helps.
+  gets marks throughout. If a piece gets no mark, the check names the pair of slices and stops the
+  run: use a smaller `--mark-size`, or a thinner sheet. A model of one layer has no neighbour to
+  align to, so it passes without a message.
 - **Thick sheet** – the mark grows with the sheet (a 5&nbsp;mm sheet gives a size of 5, and its web is
   2.5), so a 10&nbsp;mm cube gets no marks at that sheet. Set a smaller `--mark-size`; a size below the
   least hole size for the sheet is a warning, not an error.

@@ -18,7 +18,8 @@ configuration options or the equivalent CLI arguments:
 - `kerf` – the width of material the tool removes. It is a top-level key (`--kerf`), not a mark option. Use 0 for a CNC router or hand work.
 - `min_hole_ratio` and `min_hole_kerf_factor` – the two factors of the default size. They are keys of the config file only, in `[marks]`, with no command-line flag.
 - `min_web_ratio` – the least material between two holes, and between a hole and an outline, as a multiple of the layer height. It is a key of the config file only, `[marks]` `min_web_ratio`, with no command-line flag.
-- `checks.min_overlap_area` – the least area two pieces of adjacent layers must share to count as sharing a mark (TR-9). It is a key of the config file only, `[checks]` `min_overlap_area`, with no command-line flag.
+- `checks.min_overlap_area` – the least area two pieces of adjacent layers must share to count as sharing a mark (TR-9). It is a key of the config file only, `[checks]` `min_overlap_area`, with no command-line flag. Two pieces that overlap by less than this are not checked by the alignment check either, and can be stacked in any way.
+- `checks.allow_unaligned` – write the files even when two adjacent layers could be stacked in more than one way (TR-12). Each such pair is then a warning and the exit code is 0. It is the same as `--allow-unaligned`. Default `false`.
 
 These correspond to the CLI flags `--mark-tolerance`, `--mark-min-distance`,
 `--available-shapes`, `--mark-angle` and `--mark-size` respectively, and `--kerf`
@@ -85,6 +86,7 @@ beats the default.
 | `marks.min_hole_ratio` | none | `1.0` |
 | `marks.min_hole_kerf_factor` | none | `1.5` |
 | `checks.min_overlap_area` | none | `0.0` |
+| `checks.allow_unaligned` | `--allow-unaligned` | `false` |
 | `output.cut_color` | `--cut-color` | `"red"` |
 | `output.engrave_color` | `--engrave-color` | `"black"` |
 | `output.hairline_width` | none | `0.01` |

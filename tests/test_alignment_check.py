@@ -4,7 +4,7 @@ TR-2 and TR-12 (#92). The slices are built by hand, so each case states the mark
 """
 
 import pytest
-from shapely.geometry import box
+from shapely.geometry import Point, Polygon, box
 
 from layerforge.models.reference_marks import ReferenceMark, ReferenceMarkConfig
 from layerforge.models.slicing.alignment_check import AlignmentFailure, check_alignment
@@ -23,6 +23,13 @@ def _mark(shape, x=10.0, y=10.0):
     return ReferenceMark(x=x, y=y, shape=shape, size=3.0)
 
 
+def _ids(failures):
+    """The pieces and the reason of each failure, without the place."""
+    return [
+        (f.lower_slice, f.lower_piece, f.upper_slice, f.upper_piece, f.reason) for f in failures
+    ]
+
+
 def test_a_pair_that_shares_one_triangle_passes():
     mark = _mark("triangle")
     assert check_alignment([_slice(0, [SQUARE], [mark]), _slice(1, [SQUARE], [mark])]) == []
@@ -32,12 +39,12 @@ def test_a_pair_that_shares_one_triangle_passes():
 def test_a_pair_that_shares_one_circle_or_square_does_not_fix_the_rotation(shape):
     mark = _mark(shape)
     failures = check_alignment([_slice(0, [SQUARE], [mark]), _slice(1, [SQUARE], [mark])])
-    assert failures == [AlignmentFailure(0, 0, 1, 0, "rotation_not_fixed")]
+    assert _ids(failures) == [(0, 0, 1, 0, "rotation_not_fixed")]
 
 
 def test_a_pair_with_no_marks_shares_no_mark_and_is_not_read_as_unlimited_symmetry():
     failures = check_alignment([_slice(0, [SQUARE], []), _slice(1, [SQUARE], [])])
-    assert failures == [AlignmentFailure(0, 0, 1, 0, "no_shared_mark")]
+    assert _ids(failures) == [(0, 0, 1, 0, "no_shared_mark")]
 
 
 def test_a_mark_in_only_one_slice_is_not_shared():
@@ -72,7 +79,7 @@ def test_each_pair_of_a_split_is_checked_on_its_own():
     mark = _mark("triangle", x=5.0, y=10.0)  # inside the left piece only
     lower = _slice(0, [box(0, 0, 22, 20)], [mark])
     upper = _slice(1, [left, right], [mark])
-    assert check_alignment([lower, upper]) == [AlignmentFailure(0, 0, 1, 1, "no_shared_mark")]
+    assert _ids(check_alignment([lower, upper])) == [(0, 0, 1, 1, "no_shared_mark")]
 
 
 def test_a_piece_that_overlaps_nothing_has_no_pair_and_passes():
@@ -89,10 +96,41 @@ def test_pieces_that_overlap_by_less_than_the_threshold_are_not_a_pair():
     assert check_alignment([lower, upper]) == []
 
 
-def test_the_messages_name_both_pieces_and_the_remedy():
-    none = AlignmentFailure(3, 0, 4, 2, "no_shared_mark").message()
-    assert none.startswith("slices 3 and 4 (piece 0 and piece 2): ")
+def test_the_messages_name_both_pieces_the_place_and_the_remedy():
+    where = "slices 3 and 4 (pieces 0 and 2, at x 5, y -1.5 in the model): "
+    none = AlignmentFailure(3, 0, 4, 2, 5.0, -1.5, "no_shared_mark").message()
+    assert none.startswith(where)
     assert "--mark-min-distance" in none and "--mark-size" in none
-    turn = AlignmentFailure(3, 0, 4, 2, "rotation_not_fixed").message()
-    assert turn.startswith("slices 3 and 4 (piece 0 and piece 2): ")
+    turn = AlignmentFailure(3, 0, 4, 2, 5.0, -1.5, "rotation_not_fixed").message()
+    assert turn.startswith(where)
     assert "--available-shapes" in turn
+
+
+@pytest.mark.parametrize(
+    ("x", "y", "shown"),
+    [
+        (-1e-17, -0.0, "at x 0, y 0 in the model"),  # float noise and negative zero read as 0
+        (3.14159265, -1.5, "at x 3.142, y -1.5 in the model"),  # three decimals
+        (1234.5, 0.0004, "at x 1234.5, y 0 in the model"),
+    ],
+)
+def test_the_place_is_rounded_to_three_decimals_without_exponents_or_negative_zero(x, y, shown):
+    assert shown in AlignmentFailure(0, 0, 1, 0, x, y, "no_shared_mark").message()
+
+
+def test_a_failure_names_a_point_inside_both_pieces_even_when_the_centroid_is_in_a_hole():
+    # The centroid of a ring is (20, 20), in the hole: it is not on either piece.
+    ring = Polygon(box(0, 0, 40, 40).exterior.coords, [box(10, 10, 30, 30).exterior.coords])
+    failures = check_alignment([_slice(0, [ring], []), _slice(1, [ring], [])])
+    assert len(failures) == 1
+    point = Point(failures[0].x, failures[0].y)
+    assert ring.contains(point)
+
+
+def test_the_place_is_where_the_two_pieces_overlap():
+    left, right = box(0, 0, 10, 10), box(100, 100, 120, 120)
+    upper = box(5, 5, 15, 15)  # overlaps `left` in (5, 5)-(10, 10) and `right` not at all
+    failures = check_alignment([_slice(0, [left, right], []), _slice(1, [upper], [])])
+    assert len(failures) == 1
+    assert left.contains(Point(failures[0].x, failures[0].y))
+    assert upper.contains(Point(failures[0].x, failures[0].y))

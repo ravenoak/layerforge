@@ -494,10 +494,12 @@ rule FR32_RefuseUnalignedStack {
         -- The marks both slices hold, with the centre inside both pieces, are the
         -- shared marks of the pair. The pair fails when it has none, or when a
         -- turn other than none maps them onto themselves. One line per failure,
-        -- naming both slices and both pieces, and "Nothing was written. Use
-        -- --allow-unaligned to write the files anyway." go to stderr; exit code
-        -- 1 and no file is written. A model of one layer has no pair. A number
-        -- that does not fit is not a failure (FR-26).
+        -- naming both slices, both pieces (their positions in the slice's list)
+        -- and a point inside both (x and y in the model's coordinates), and
+        -- "Nothing was written. Use --allow-unaligned to write the files
+        -- anyway." go to stderr; exit code 1 and no file is written. A model of
+        -- one layer has no pair. A number that does not fit is not a failure
+        -- (FR-26).
 }
 
 rule FR32_AllowAlignedOrWarn {

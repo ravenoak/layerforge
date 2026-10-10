@@ -181,7 +181,7 @@ height = 6.0
 | `--mark-angle` | Still degrees. 0 points along +x and turns counter-clockwise. |
 | `--available-shapes` | Limits the shapes. It no longer sets the order. |
 | `--number-height` | Built in #75. Default 5 mm (proposed), stated in `--units`. |
-| `--allow-unaligned` | New. Turns alignment errors into warnings. |
+| `--allow-unaligned` | New. Turns alignment errors into warnings. `--no-allow-unaligned` turns them back into errors for one run when the config file allows them (#222). |
 | `--cut-color`, `--engrave-color` | Built in #83. Replace `--mark-color`. |
 
 The project is at version 0.1.0, so removing `--mark-color` and changing defaults is acceptable.

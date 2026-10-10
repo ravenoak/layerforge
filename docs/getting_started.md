@@ -80,16 +80,22 @@ starts with `Error:` and exits with code 2 is also preceded by a `Usage:` line.
 - ``Error: Cannot load 'nope.stl': string is not a file: `nope.stl` `` (exit code 1)
   – check the `--stl-file` path. A file that is not a mesh gives
   ``Error: Cannot load 'junk.stl': the mesh contains no geometry``.
-- ``Error: slices 0 and 1 (piece 0 and piece 0): the pieces share no mark. Try a smaller --mark-min-distance or --mark-size (marks.min_distance or marks.size in the config file).``
+- ``Error: slices 0 and 1 (pieces 0 and 0, at x 0, y 0 in the model): the pieces share no mark. Try a smaller --mark-min-distance or --mark-size (marks.min_distance or marks.size in the config file).``
   followed by ``Nothing was written. Use --allow-unaligned to write the files anyway.``
   (exit code 1, no file written; the numbers vary) – the two pieces have no hole in common, so
-  the layers could not be aligned. One line is printed for each such pair. By default a mark is as
+  the layers could not be aligned. One line is printed for each such pair. A piece number is the
+  position of the piece in the list of pieces of its slice, counted from 0, which the files do not
+  show. So `x` and `y` give a point inside both pieces, in the unit of the run and the coordinates of
+  the model with y up, to tell which pieces are meant. The SVG file draws that point at `(x, -y)`
+  in its own coordinates. Its `viewBox` starts a margin outside the outline, so a viewer may
+  measure from another corner. A cube centred on the origin, as in these two examples, gives `x 0, y 0`. By default a mark is as
   big as the layer height, and a hole needs half the layer height of material around it. A square
   piece 6 mm wide or less gets no mark at a layer height of 3, and a 10 mm cube gets none at a
   layer height of 5. Use a smaller `--mark-size` or `--mark-min-distance`. With
   `--allow-unaligned` the same line is a ``WARNING:root:`` line, the files are written and the
   exit code is 0.
-- ``Error: slices 0 and 1 (piece 0 and piece 0): the marks they share look the same after a turn, so the layers could be stacked turned. A circle or a square alone cannot fix the rotation. Allow a shape with a direction in --available-shapes (marks.shapes in the config file).``
+- ``Error: slices 0 and 1 (pieces 0 and 0, at x 0, y 0 in the model): the marks they share look the same after a turn, so the layers could be stacked turned. A circle or a square alone cannot fix the rotation. Allow a shape with a direction in --available-shapes (marks.shapes in the config file).``
+  followed by ``Nothing was written. Use --allow-unaligned to write the files anyway.``
   (exit code 1, no file written) – every shape in `--available-shapes` looks the same after a
   turn, for example `--available-shapes circle`. Add the triangle or the arrow, or give
   `--allow-unaligned` to write the files anyway.

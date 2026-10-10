@@ -1,6 +1,7 @@
 """The command checks every pair of adjacent layers before it writes (TR-2, TR-12, #92)."""
 
 import logging
+import re
 
 import click
 import pytest
@@ -44,8 +45,10 @@ def test_a_stack_with_pairs_that_share_no_mark_writes_nothing_and_exits_1(cone_s
     assert result.exit_code == 1
     assert not out.exists()
     assert "Traceback" not in result.stderr
-    assert "slices 7 and 8 (piece 0 and piece 0): the pieces share no mark" in result.stderr
-    assert "slices 8 and 9 (piece 0 and piece 0): the pieces share no mark" in result.stderr
+    number = r"-?\d+(?:\.\d+)?"  # a plain number: no exponent, no bare sign
+    place = rf"\(pieces 0 and 0, at x {number}, y {number} in the model\)"
+    assert re.search(rf"slices 7 and 8 {place}: the pieces share no mark", result.stderr)
+    assert re.search(rf"slices 8 and 9 {place}: the pieces share no mark", result.stderr)
     assert result.stderr.count("the pieces share no mark") == 2  # every failure, not the first
     assert "Nothing was written. Use --allow-unaligned" in result.stderr
 

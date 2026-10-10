@@ -193,6 +193,11 @@ output, the first release will raise the minor version.
 
 ### Added
 
+- A line of the alignment check now says where the pair is: `slices 7 and 8 (pieces 0 and 0, at
+  x 3.2, y 1.5 in the model)`. The point lies inside both pieces, in the coordinates of the
+  model with y up, rounded to three decimals (the SVG files draw it at `(x, -y)`). Before, a slice with several pieces gave
+  only piece numbers, which the files do not show. Piece numbers are now written `pieces 0 and
+  2`, not `piece 0 and piece 2`. (#223)
 - `--no-allow-unaligned` turns the alignment check back on for one run when the config file
   sets `checks.allow_unaligned = true`. Before, `--allow-unaligned` could only turn it on, so a
   run could not override the file. Without either form the file decides, as before. (#222)

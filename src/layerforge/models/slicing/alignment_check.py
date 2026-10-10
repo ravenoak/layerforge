@@ -23,6 +23,11 @@ _MIN_SYMMETRY_TOLERANCE = 1e-6
 Reason = Literal["no_shared_mark", "rotation_not_fixed"]
 
 
+def _shown(value: float) -> str:
+    """Return ``value`` to three decimals, with float noise and negative zero as ``0``."""
+    return f"{round(value, 3) + 0.0:g}"
+
+
 @dataclass(frozen=True)
 class AlignmentFailure:
     """A pair of overlapping pieces that can be assembled in more than one way.
@@ -33,6 +38,10 @@ class AlignmentFailure:
         The index of the lower slice and of the piece in it.
     upper_slice, upper_piece : int
         The index of the upper slice and of the piece in it.
+    x, y : float
+        A point inside both pieces, in the coordinates of the model, with y up. The SVG files
+        draw it at ``(x, -y)``. It tells the person which piece is meant, because the files
+        show only the slice number.
     reason : {"no_shared_mark", "rotation_not_fixed"}
         ``no_shared_mark``: no mark is a hole in both pieces. ``rotation_not_fixed``: a turn
         other than none maps the shared marks onto themselves.
@@ -42,13 +51,16 @@ class AlignmentFailure:
     lower_piece: int
     upper_slice: int
     upper_piece: int
+    x: float
+    y: float
     reason: Reason
 
     def message(self) -> str:
         """Return one line for the person: which pieces, what is wrong, what to try."""
         where = (
             f"slices {self.lower_slice} and {self.upper_slice} "
-            f"(piece {self.lower_piece} and piece {self.upper_piece})"
+            f"(pieces {self.lower_piece} and {self.upper_piece}, "
+            f"at x {_shown(self.x)}, y {_shown(self.y)} in the model)"
         )
         if self.reason == "no_shared_mark":
             return (
@@ -101,7 +113,11 @@ def check_alignment(slices: Sequence[Slice]) -> list[AlignmentFailure]:
                 reason = "rotation_not_fixed"
             else:
                 continue
+            # `representative_point` lies inside the overlap, which the centroid may not (a ring).
+            place = pair.overlap.representative_point()
             failures.append(
-                AlignmentFailure(lower.index, pair.lower, upper.index, pair.upper, reason)
+                AlignmentFailure(
+                    lower.index, pair.lower, upper.index, pair.upper, place.x, place.y, reason
+                )
             )
     return failures

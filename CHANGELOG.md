@@ -166,12 +166,15 @@ output, the first release will raise the minor version.
   names the file or option, before any output is written. (#70, G-11)
 - Candidate points are sampled with a fixed seed, so the same model gives the
   same marks on every run. (#70, G-9)
-- A shared mark is now one mark. A point within `--mark-tolerance` of a stored
-  mark takes its coordinates, and the nearest stored mark wins. A new mark is
-  no longer placed within the tolerance of a stored mark. A slice that cannot
-  reuse a stored mark, and has no room outside its tolerance, may now get no
-  mark, with the usual warning, where it used to get a mark at a drifting
-  position.
+- A shared mark is now one mark: a mark that still fits the next pair of layers is reused
+  with its stored coordinates, so it has identical coordinates in every layer that holds it. A
+  new mark is no longer placed within `--mark-tolerance` of a mark in play for its pair of
+  layers, and a piece with no room outside that tolerance may now get no mark where it used to
+  get a mark at a drifting position. A piece with a neighbour and no mark fails the alignment
+  check (see the `--allow-unaligned` entry above). The first version of this entry also said
+  that a point within the tolerance of a stored mark takes its coordinates, and that the
+  nearest stored mark wins. That described a registry of the whole run, which #63 removed:
+  nothing snaps a point to a mark in another part of the stack now (TR-10, #210).
   (#72, #82, G-15, G-22)
 - The command prints `Using settings from <file>` to stderr when it reads a
   config file, from `--config` or from `layerforge.toml` in the current

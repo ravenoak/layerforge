@@ -48,12 +48,13 @@ direction (`symmetry_order` 1). The square has order 4 and the circle none.
 ## Non-goals
 
 - **More shapes with a direction.** Two exist. Models that need three or more at one piece (a
-  stool, a hand) fail the check at the defaults after this change. A new issue, ranked high,
-  tracks adding shapes (outline, `symmetry_order`, drawing, docs).
+  stool, a hand) fail the check at the defaults after this change. That follows from the rule
+  and has not been run: the first run is a test in the TR-8 PR. #230, ranked high, tracks
+  adding shapes (outline, `symmetry_order`, drawing, docs).
 - **Pieces that do not overlap.** The engraved number is the slice index, so every piece of a
   slice carries the same number. A piece can be laid on a different piece of the slice below
   that it does not overlap, if that one has a hole of the same shape. The rule covers
-  overlapping pieces only. A new issue tracks this.
+  overlapping pieces only. #231 tracks this.
 - **TR-4** (baseline of two shared marks, #224) and **#213 item 2 and the spread bias**.
 - **A hard cap** (a layer that cannot get a fresh mark fails the check). The owner chose soft.
 

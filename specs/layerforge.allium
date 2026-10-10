@@ -624,5 +624,6 @@ surface Command {
 
 -- G-4  One mark per contour, and nothing checks that adjacent layers align in one way.
 -- G-16 Overlapping shells in one mesh give false holes.
+-- G-32 Two marks on one piece can have the same shape (TR-8, #213).
 -- G-4 has a target in
 -- docs/alignment_requirements.md (TR-1 to TR-16).

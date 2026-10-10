@@ -12,7 +12,12 @@
 -- ends up a hole in every layer of the stack, three or more layers
 -- included. This invariant is written as the spec's target, not a built
 -- guarantee, for non-drifting geometry. Real enforcement (e.g. a forced
--- periodic retirement) is a follow-up: #215.
+-- periodic retirement) is a follow-up: #215. The owner chose a soft cap
+-- (marks.max_layers) on 2026-10-09; it is drafted and not built.
+-- TR-8's second sentence is not enforced either: two marks on one piece can
+-- have the same shape (measured: two triangles on one piece of the sheared
+-- cylinder of #107), and check_alignment does not see it. The draft design is docs/superpowers/specs/
+-- 2026-10-09-distinct-marks-and-mark-cap-design.md. Tracked in #213.
 -- TR10_FreshPointClearOfMarksInPlay is built (#63, #210): a fresh point
 -- is refused within the snapping radius of a mark in play for its
 -- pairing, as ReferenceMarkCalculator.choose_mark_for_pair does. There is

@@ -193,6 +193,9 @@ output, the first release will raise the minor version.
 
 ### Added
 
+- `--no-allow-unaligned` turns the alignment check back on for one run when the config file
+  sets `checks.allow_unaligned = true`. Before, `--allow-unaligned` could only turn it on, so a
+  run could not override the file. Without either form the file decides, as before. (#222)
 - The warning that a number does not fit now gives the tallest height that does fit
   (`Try --number-height 4.83 (number.height in the config file)`), or says that no height
   fits. Measured, with circle marks and before #61: the 10 mm cube at the defaults needs

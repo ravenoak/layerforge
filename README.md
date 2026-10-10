@@ -83,7 +83,7 @@ The CLI exposes parameters for tuning reference mark generation:
 - `--available-shapes` – comma separated list of the shapes a mark may take. The order does not matter; a shape with a direction is preferred.
 - `--mark-angle` – default orientation angle for generated marks in degrees.
 - `--number-height` – the height of the layer number on each piece, in `--units`. Default 5 mm. It is placed clear of the outline, the holes and the marks, and a warning says when it does not fit.
-- `--allow-unaligned` – write the files even when two adjacent layers could be stacked in more than one way. Without it the command prints the pairs, writes nothing and exits with 1. Same as `checks.allow_unaligned`.
+- `--allow-unaligned` – write the files even when two adjacent layers could be stacked in more than one way. Without it the command prints the pairs, writes nothing and exits with 1. Same as `checks.allow_unaligned`. `--no-allow-unaligned` asks for the check on one run when the config file allows it.
 - `--cut-color` and `--engrave-color` – the colours of the cut lines (default red) and of the number (default black).
 
 The default of each option is in the [keys table](docs/configuration.md#config-file) and in `--help`.

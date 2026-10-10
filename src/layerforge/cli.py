@@ -430,12 +430,12 @@ def process_model(
     f"Default {_DEFAULTS.number.height:g} mm.",
 )
 @click.option(
-    "--allow-unaligned",
-    is_flag=True,
+    "--allow-unaligned/--no-allow-unaligned",
     default=None,
     help="Write the files even when two adjacent layers could be stacked in more than one way. "
     "Each such pair is then a warning and the exit code is 0. Without it nothing is written "
-    "and the exit code is 1.",
+    "and the exit code is 1. --no-allow-unaligned asks for the check on one run when the "
+    "config file allows it.",
 )
 def cli(
     stl_file: str | None,
